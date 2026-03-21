@@ -1,27 +1,23 @@
-
-  <script type="module">
-    import * as THREE from 'three';
+   import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
-    /* ==== Variables Multi-Pieza ==== */
+    /* ==== Variables Globales ==== */
+    let userName = ""; // Se asignará en el login
     let scene, camera, renderer, controls;
-    let loadedMeshes = {}; // DICCIONARIO para multiples mallas. Key = fileName
-    
+    let loadedMeshes = {}; 
     let raycaster = new THREE.Raycaster();
     let mouse = new THREE.Vector2();
     let mode = false;
     let currentPoint = null;
     let currentNormal = null;
-    let targetFileName = null; // A qué pieza va la incidencia actual
-    let issues = []; // TODAS las incidencias cargadas en la sesión
+    let targetFileName = null; 
+    let issues = []; 
     let selectedMarker = null;
     let moveIssueMode = false;
     let bounds = { center: new THREE.Vector3(), size: new THREE.Vector3(), radius: 1 };
     let viewDistance = 200;
     let currentPhotos = [];
-
-    // Pulsación larga
     let pressTimer;
     let isDragging = false;
 
@@ -36,11 +32,42 @@
     const photoGrid = document.getElementById('photoGrid');
     const fileListUI = document.getElementById('fileListUI');
 
-    const userName = localStorage.getItem('userName') || 'anon';
-
-    function storageKey(fileName) {
-      return `issues_${fileName}`;
+    // === SISTEMA DE LOGIN ===
+    function checkAuthStatus() {
+      userName = localStorage.getItem('userName');
+      if (!userName) {
+        document.getElementById('loginOverlay').style.display = 'flex';
+      } else {
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('currentUserDisplay').innerText = userName;
+        document.getElementById('userAvatarLetter').innerText = userName.charAt(0).toUpperCase();
+      }
     }
+
+    window.processLogin = function() {
+      const nameInput = document.getElementById('loginName').value.trim();
+      if (nameInput) {
+        localStorage.setItem('userName', nameInput);
+        checkAuthStatus();
+      } else {
+        alert("Por favor, introduce tu nombre o ID para continuar.");
+      }
+    };
+
+    window.processLogout = function() {
+      localStorage.removeItem('userName');
+      document.getElementById('loginName').value = '';
+      checkAuthStatus();
+    };
+
+    // Permitir "Enter" en el input de login
+    document.getElementById('loginName').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') processLogin();
+    });
+
+    checkAuthStatus(); // Ejecutar al cargar la página
+
+    function storageKey(fileName) { return `issues_${fileName}`; }
 
     window.togglePanel = function(forceOpen = false) {
       if (forceOpen) {
@@ -51,6 +78,11 @@
         document.body.classList.toggle('panel-open');
       }
     }
+
+    window.openLightbox = function(src) {
+      document.getElementById('lightboxImg').src = src;
+      document.getElementById('lightbox').classList.add('active');
+    };
 
     init();
     animate();
@@ -89,13 +121,11 @@
       document.getElementById('saveIssue').onclick = saveIssueFn;
       document.getElementById('deleteIssueBtn').onclick = deleteSelectedIssue;
       addBtn.onclick = () => {
-        mode = !mode;
-        addBtn.classList.toggle('active', mode);
+        mode = !mode; addBtn.classList.toggle('active', mode);
       };
       document.getElementById('moveIssueBtn').onclick = () => {
         if(!selectedMarker){ alert("Selecciona una esfera de incidencia primero."); return; }
-        moveIssueMode = true;
-        document.getElementById('moveIssueBtn').classList.add('active');
+        moveIssueMode = true; document.getElementById('moveIssueBtn').classList.add('active');
       };
       document.querySelectorAll('.fab[data-view]').forEach(btn => {
         btn.addEventListener('click', () => setView(btn.dataset.view));
@@ -103,8 +133,7 @@
       document.querySelectorAll('.layer-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          applyShadingAll(btn.dataset.mode);
+          btn.classList.add('active'); applyShadingAll(btn.dataset.mode);
         });
       });
 
@@ -159,7 +188,7 @@
       currentPhotos.forEach((photo, index) => {
         const div = document.createElement('div'); div.className = 'photo-thumb-container';
         const img = document.createElement('img'); img.src = photo.dataUrl; img.className = 'photo-thumb';
-        img.onclick = () => { document.getElementById('lightboxImg').src = photo.dataUrl; document.getElementById('lightbox').classList.add('active'); };
+        img.onclick = () => window.openLightbox(photo.dataUrl);
         const delBtn = document.createElement('button'); delBtn.className = 'delete-photo-btn'; delBtn.innerHTML = '✕';
         delBtn.onclick = (e) => { e.preventDefault(); currentPhotos.splice(index, 1); renderPhotoGrid(); };
         div.appendChild(img); div.appendChild(delBtn); photoGrid.appendChild(div);
@@ -172,7 +201,7 @@
       if(files.length === 0) return;
 
       files.forEach(file => {
-        if(loadedMeshes[file.name]) { console.warn("Ya está cargado", file.name); return; }
+        if(loadedMeshes[file.name]) return;
         
         const reader = new FileReader();
         reader.onload = (evt) => {
@@ -181,12 +210,11 @@
           geo.computeVertexNormals();
 
           let mesh = new THREE.Mesh( geo, new THREE.MeshPhongMaterial({color: 0xffffff, side: THREE.DoubleSide}) );
-          mesh.userData.fileName = file.name; // ID crucial
+          mesh.userData.fileName = file.name;
           
           loadedMeshes[file.name] = mesh;
           scene.add(mesh);
 
-          // Cargar sus incidencias del localStorage
           loadIssuesForFile(file.name);
           
           const activeMode = document.querySelector('.layer-btn.active').dataset.mode;
@@ -216,8 +244,7 @@
         const mesh = loadedMeshes[name];
         const isVisible = mesh.visible;
 
-        const item = document.createElement('div');
-        item.className = 'file-item';
+        const item = document.createElement('div'); item.className = 'file-item';
         item.innerHTML = `
           <div class="file-item-name" title="${name}">${name}</div>
           <div class="file-item-actions">
@@ -233,12 +260,8 @@
     window.toggleMeshVisibility = function(name) {
       if(loadedMeshes[name]) {
         loadedMeshes[name].visible = !loadedMeshes[name].visible;
-        // Si hay un helper de aristas, lo ocultamos también
-        if(loadedMeshes[name].userData.edgesHelper) {
-          loadedMeshes[name].userData.edgesHelper.visible = loadedMeshes[name].visible;
-        }
-        updateFileListUI();
-        renderIssues(); // Solo renderiza marcadores de mallas visibles
+        if(loadedMeshes[name].userData.edgesHelper) loadedMeshes[name].userData.edgesHelper.visible = loadedMeshes[name].visible;
+        updateFileListUI(); renderIssues();
       }
     };
 
@@ -246,58 +269,40 @@
       if(loadedMeshes[name]) {
         scene.remove(loadedMeshes[name]);
         if(loadedMeshes[name].userData.edgesHelper) scene.remove(loadedMeshes[name].userData.edgesHelper);
-        loadedMeshes[name].geometry.dispose();
-        loadedMeshes[name].material.dispose();
+        loadedMeshes[name].geometry.dispose(); loadedMeshes[name].material.dispose();
         delete loadedMeshes[name];
-        
-        // Quitar de memoria de sesión (el localStorage NO se borra, por si vuelve a cargar)
         issues = issues.filter(i => i.fileName !== name);
-        
-        updateFileListUI();
-        renderIssues();
-        fitCameraGlobal(false);
+        updateFileListUI(); renderIssues(); fitCameraGlobal(false);
         document.getElementById('fileNameDisplay').innerText = `${Object.keys(loadedMeshes).length} Pieza(s) en escena`;
       }
     };
 
-    /* ================== CÁMARA GLOBAL ================== */
+    /* ================== CÁMARA Y SOMBREADO ================== */
     function fitCameraGlobal(immediate=true){
       const meshesArray = Object.values(loadedMeshes).filter(m => m.visible);
       if(meshesArray.length === 0) return;
-
       const combinedBox = new THREE.Box3();
       meshesArray.forEach(m => {
         m.geometry.computeBoundingBox();
         let box = m.geometry.boundingBox.clone();
-        box.applyMatrix4(m.matrixWorld);
-        combinedBox.union(box);
+        box.applyMatrix4(m.matrixWorld); combinedBox.union(box);
       });
-
-      combinedBox.getCenter(bounds.center);
-      combinedBox.getSize(bounds.size);
+      combinedBox.getCenter(bounds.center); combinedBox.getSize(bounds.size);
       bounds.radius = combinedBox.getBoundingSphere(new THREE.Sphere()).radius;
-
       const vFov = THREE.MathUtils.degToRad(camera.fov);
       const hFov = 2 * Math.atan(Math.tan(vFov/2)*camera.aspect);
-      const dV = bounds.radius/Math.tan(vFov/2);
-      const dH = bounds.radius/Math.tan(hFov/2);
+      const dV = bounds.radius/Math.tan(vFov/2); const dH = bounds.radius/Math.tan(hFov/2);
       viewDistance = Math.max(dV,dH)*1.2;
-
       setView("iso", immediate);
     }
 
     function animateCamera(toPos, toTarget=bounds.center, ms=500){
-      const fromPos = camera.position.clone();
-      const fromTgt = controls.target.clone();
-      const start = performance.now();
-      const ease = t => 0.5 - 0.5*Math.cos(Math.PI*t);
+      const fromPos = camera.position.clone(); const fromTgt = controls.target.clone();
+      const start = performance.now(); const ease = t => 0.5 - 0.5*Math.cos(Math.PI*t);
       function step(now){
-        const p = Math.min(1, (now-start)/ms);
-        const e = ease(p);
-        camera.position.lerpVectors(fromPos, toPos, e);
-        controls.target.lerpVectors(fromTgt, toTarget, e);
-        controls.update();
-        if(p<1) requestAnimationFrame(step);
+        const p = Math.min(1, (now-start)/ms); const e = ease(p);
+        camera.position.lerpVectors(fromPos, toPos, e); controls.target.lerpVectors(fromTgt, toTarget, e);
+        controls.update(); if(p<1) requestAnimationFrame(step);
       }
       requestAnimationFrame(step);
     }
@@ -310,45 +315,36 @@
         const toPos = bounds.center.clone().addScaledVector(dir, viewDistance);
         return immediate ? (camera.position.copy(toPos), controls.target.copy(bounds.center), controls.update()) : animateCamera(toPos, bounds.center);
       }
-      const dir = dirs[kind].clone();
-      const toPos = bounds.center.clone().addScaledVector(dir, viewDistance);
+      const dir = dirs[kind].clone(); const toPos = bounds.center.clone().addScaledVector(dir, viewDistance);
       if(immediate){ camera.position.copy(toPos); controls.target.copy(bounds.center); controls.update(); }
       else { animateCamera(toPos, bounds.center); }
     }
 
-    /* ================== SOMBREADO ================== */
     function applyShadingAll(mode){
       Object.values(loadedMeshes).forEach(mesh => {
         mesh.material.wireframe = (mode === "wireframe");
         if(mesh.userData.edgesHelper) {
-          scene.remove(mesh.userData.edgesHelper);
-          mesh.userData.edgesHelper.geometry.dispose();
-          mesh.userData.edgesHelper.material.dispose();
-          mesh.userData.edgesHelper = null;
+          scene.remove(mesh.userData.edgesHelper); mesh.userData.edgesHelper.geometry.dispose();
+          mesh.userData.edgesHelper.material.dispose(); mesh.userData.edgesHelper = null;
         }
         if(mode==="shadedEdges"){
           const eg = new THREE.EdgesGeometry(mesh.geometry, 15);
           const em = new THREE.LineBasicMaterial({color: 0x444444});
           const helper = new THREE.LineSegments(eg, em);
-          helper.visible = mesh.visible;
-          mesh.userData.edgesHelper = helper;
-          scene.add(helper);
+          helper.visible = mesh.visible; mesh.userData.edgesHelper = helper; scene.add(helper);
         }
       });
     }
 
-    /* ================== RAYCASTER MULTI ================== */
+    /* ================== RAYCASTER ================== */
     function updateMouse(e) {
       const rect = renderer.domElement.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1; mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     }
     
     function getIntersection() {
       raycaster.setFromCamera(mouse, camera);
-      // Intersectar solo con las mallas VISIBLES
       const visibleMeshes = Object.values(loadedMeshes).filter(m => m.visible);
       return raycaster.intersectObjects(visibleMeshes);
     }
@@ -364,8 +360,7 @@
       const hit = getIntersection();
       if(hit.length > 0) {
         if(navigator.vibrate) navigator.vibrate(50);
-        const h = hit[0];
-        currentPoint = h.point;
+        const h = hit[0]; currentPoint = h.point;
         currentNormal = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : null;
         targetFileName = h.object.userData.fileName;
         openNewIssueForm();
@@ -374,32 +369,23 @@
 
     function onClick(event){
       if(isDragging) return;
-      updateMouse(event);
-      raycaster.setFromCamera(mouse, camera);
+      updateMouse(event); raycaster.setFromCamera(mouse, camera);
 
-      // 1) Esferas
       const markerObjs = [];
       scene.traverse(o => { if(o.userData && o.userData.marker) markerObjs.push(o); });
       const hitMarkers = raycaster.intersectObjects(markerObjs, true);
       if(hitMarkers.length > 0){ selectMarker(hitMarkers[0].object); return; }
 
-      // 2) Mover
       if(moveIssueMode && selectedMarker){
         const hit = getIntersection();
-        if(hit.length > 0){
-          moveSelectedIssue(hit[0]);
-          moveIssueMode = false;
-          document.getElementById('moveIssueBtn').classList.remove('active');
-        }
+        if(hit.length > 0){ moveSelectedIssue(hit[0]); moveIssueMode = false; document.getElementById('moveIssueBtn').classList.remove('active'); }
         return;
       }
 
-      // 3) Añadir manual con +
       if(mode){
         const hit = getIntersection();
         if(hit.length > 0) {
-          const h = hit[0];
-          currentPoint = h.point;
+          const h = hit[0]; currentPoint = h.point;
           currentNormal = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : null;
           targetFileName = h.object.userData.fileName;
           openNewIssueForm();
@@ -407,11 +393,17 @@
       }
     }
 
-    /* ================== LÓGICA INCIDENCIAS ================== */
+    /* ================== LÓGICA INCIDENCIAS Y TRAZABILIDAD ================== */
     function openNewIssueForm() {
       deselectMarker();
-      elIssueComment.value = "";
+      
+      document.getElementById('formMainTitle').innerText = "Nueva Incidencia";
       document.getElementById('issueTargetFile').innerText = `En pieza: ${targetFileName}`;
+      document.getElementById('saveIssue').innerText = "Crear Incidencia";
+      document.getElementById('historyContainer').style.display = "none";
+      document.getElementById('updateDivider').style.display = "none";
+      
+      elIssueComment.value = "";
       currentPhotos = []; renderPhotoGrid();
       
       form.style.display = "block"; window.togglePanel(true);
@@ -422,13 +414,64 @@
       deselectMarker();
       selectedMarker = marker; marker.scale.set(1.5,1.5,1.5);
       if(marker.material.emissive) marker.material.emissive.set(0x4285F4);
+      
       const issue = issues.find(i => i.id === marker.userData.issueId);
       if(issue){
+        document.getElementById('formMainTitle').innerText = "Detalle de Incidencia";
         document.getElementById('issueTargetFile').innerText = `En pieza: ${issue.fileName}`;
-        targetFileName = issue.fileName; // por si guarda cambios
-        elIssueType.value = issue.type; elIssueComment.value = issue.comment; elIssueStatus.value = issue.status;
-        currentPhotos = issue.photos ? JSON.parse(JSON.stringify(issue.photos)) : [];
+        document.getElementById('saveIssue').innerText = "Añadir Actualización";
+        document.getElementById('updateDivider').style.display = "block";
+        
+        targetFileName = issue.fileName;
+        elIssueType.value = issue.type;
+        elIssueStatus.value = issue.status;
+        
+        // Limpiar inputs para que el usuario escriba la NUEVA actualización
+        elIssueComment.value = "";
+        currentPhotos = [];
         renderPhotoGrid();
+
+        // --- RENDERIZAR HISTORIAL ---
+        const hContainer = document.getElementById('historyContainer');
+        const hTimeline = document.getElementById('historyTimeline');
+        hTimeline.innerHTML = "";
+
+        if(!issue.history || issue.history.length === 0) {
+            issue.history = [{
+               date: issue.createdAt || new Date().toISOString(),
+               user: issue.createdBy || "Anónimo",
+               status: issue.status,
+               comment: issue.comment,
+               photos: issue.photos || []
+            }];
+        }
+
+        if(issue.history && issue.history.length > 0) {
+           hContainer.style.display = "block";
+           issue.history.forEach(entry => {
+              const dateObj = new Date(entry.date);
+              const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+              const cHex = '#' + getColor(entry.status).toString(16).padStart(6, '0');
+              
+              let photosHTML = "";
+              if(entry.photos && entry.photos.length > 0) {
+                 photosHTML = `<div style="display:flex; gap:4px; margin-top:6px; flex-wrap:wrap;">` + 
+                    entry.photos.map(p => `<img src="${p.dataUrl}" style="width:36px; height:36px; object-fit:cover; border-radius:4px; cursor:pointer; border: 1px solid var(--border-color);" onclick="window.openLightbox('${p.dataUrl}')">`).join('') +
+                 `</div>`;
+              }
+
+              const d = document.createElement('div');
+              d.className = "history-entry";
+              d.innerHTML = `
+                 <div class="history-dot" style="background:${cHex};"></div>
+                 <div class="history-date">${dateStr} - 👤 ${entry.user}</div>
+                 <div class="history-comment">${entry.comment || '<i style="color:#aaa;">Sin comentario adicional</i>'}</div>
+                 ${photosHTML}
+              `;
+              hTimeline.appendChild(d);
+           });
+        }
+
         form.style.display = "block"; window.togglePanel(true);
       }
     }
@@ -446,7 +489,7 @@
       const id = selectedMarker.userData.issueId;
       const fName = issues.find(i => i.id === id).fileName;
       issues = issues.filter(i => i.id !== id);
-      saveToStorage(fName); // Actualiza LS de esa pieza
+      saveToStorage(fName); 
       scene.remove(selectedMarker); selectedMarker.geometry.dispose(); selectedMarker.material.dispose();
       deselectMarker(); renderIssues();
     }
@@ -460,61 +503,88 @@
         let n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
         issue.normal = {x:n.x, y:n.y, z:n.z};
       }
-      // Si movemos de una pieza a otra!
       const oldFileName = issue.fileName;
       issue.fileName = hit.object.userData.fileName; 
-      issue.updatedAt = new Date().toISOString(); issue.updatedBy = userName;
-      
+      issue.updatedAt = new Date().toISOString(); 
       selectedMarker.position.copy(hit.point);
-      saveToStorage(oldFileName); // Guarda los borrados del viejo
-      saveToStorage(issue.fileName); // Guarda insercion en el nuevo
+      saveToStorage(oldFileName); 
+      saveToStorage(issue.fileName); 
       renderIssues();
     }
 
     function saveIssueFn(){
       const nowIso = new Date().toISOString();
+      
+      // 1. SI ESTAMOS EDITANDO UNA EXISTENTE (AÑADIR AL HISTORIAL)
       if(selectedMarker){
         const issue = issues.find(i => i.id === selectedMarker.userData.issueId);
         if(issue){
-          issue.type = elIssueType.value; issue.comment = elIssueComment.value; issue.status = elIssueStatus.value;
-          issue.photos = JSON.parse(JSON.stringify(currentPhotos)); issue.updatedAt = nowIso; issue.updatedBy = userName;
+          const hasNewComment = elIssueComment.value.trim() !== "";
+          const hasNewPhotos = currentPhotos.length > 0;
+          const statusChanged = issue.status !== elIssueStatus.value;
+          
+          if(hasNewComment || hasNewPhotos || statusChanged) {
+             const newUpdate = {
+                date: nowIso,
+                user: userName, // <--- LA FIRMA SE TOMA DEL LOGIN
+                status: elIssueStatus.value,
+                comment: elIssueComment.value,
+                photos: JSON.parse(JSON.stringify(currentPhotos))
+             };
+             issue.history.push(newUpdate);
+          }
+
+          issue.type = elIssueType.value; 
+          issue.status = elIssueStatus.value;
+          issue.updatedAt = nowIso; 
+          issue.updatedBy = userName;
+          
           if(saveToStorage(issue.fileName)) { renderIssues(); deselectMarker(); }
           return;
         }
       }
+      
+      // 2. SI ES UNA NUEVA INCIDENCIA
       if(!targetFileName){ alert("Asocia la incidencia a una pieza."); return; }
+      
+      const initialHistory = [{
+         date: nowIso,
+         user: userName, // <--- LA FIRMA SE TOMA DEL LOGIN
+         status: elIssueStatus.value,
+         comment: elIssueComment.value,
+         photos: JSON.parse(JSON.stringify(currentPhotos))
+      }];
+
       const issue = {
         id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now(),
         fileName: targetFileName,
         x: currentPoint.x, y: currentPoint.y, z: currentPoint.z,
         normal: currentNormal ? {x:currentNormal.x, y:currentNormal.y, z:currentNormal.z} : null,
-        type: elIssueType.value, comment: elIssueComment.value, status: elIssueStatus.value,
-        photos: JSON.parse(JSON.stringify(currentPhotos)),
+        type: elIssueType.value, 
+        status: elIssueStatus.value,
+        history: initialHistory, 
         createdAt: nowIso, updatedAt: nowIso, createdBy: userName, updatedBy: userName
       };
+
       issues.push(issue);
       if(saveToStorage(targetFileName)) { renderIssues(); deselectMarker(); } 
-      else { issues.pop(); } // revierte si falla la cuota
+      else { issues.pop(); } 
     }
 
     function getColor(status){ return status==="open" ? 0xEA4335 : status==="review" ? 0xFBBC04 : 0x34A853; }
 
     function renderIssues(){
       list.innerHTML = "";
-      // Limpiar esferas
       const toRemove = [];
       scene.traverse(obj => { if(obj.userData && obj.userData.marker===true) toRemove.push(obj); });
       toRemove.forEach(obj => { if(obj.parent) obj.parent.remove(obj); obj.geometry.dispose(); obj.material.dispose(); });
 
-      // Agrupar para la lista UI
       const issuesPorPieza = {};
       issues.forEach(i => {
-        // Solo renderizamos (3D y UI) si la malla está visible
         if(loadedMeshes[i.fileName] && loadedMeshes[i.fileName].visible) {
           if(!issuesPorPieza[i.fileName]) issuesPorPieza[i.fileName] = [];
           issuesPorPieza[i.fileName].push(i);
 
-          // Crear bolita 3D
           let m = new THREE.Mesh(new THREE.SphereGeometry(2,16,16), new THREE.MeshStandardMaterial({color: getColor(i.status)}));
           m.position.set(i.x, i.y, i.z); m.userData = { marker: true, issueId: i.id };
           scene.add(m);
@@ -535,9 +605,12 @@
         fileIssues.forEach(i => {
           let el = document.createElement("div"); el.className = "issue";
           let cHex = '#' + getColor(i.status).toString(16).padStart(6, '0');
-          const cText = (i.comment && i.comment.trim().length > 0) ? i.comment : 'Sin comentario';
-          const pBadge = (i.photos && i.photos.length > 0) ? `<span style="font-size:10px; background:#e8eaed; color:#5f6368; padding:2px 6px; border-radius:10px; margin-left:6px;">📸 ${i.photos.length}</span>` : '';
-          el.innerHTML = `<div style="flex-grow:1;"><strong style="font-size:14px;">${i.type}</strong> ${pBadge}<br><span style="color:var(--text-secondary); font-size:12px;">${cText}</span></div><div class="status-dot" style="background-color: ${cHex};"></div>`;
+          
+          const latestEntry = (i.history && i.history.length > 0) ? i.history[i.history.length - 1] : i;
+          const cText = (latestEntry.comment && latestEntry.comment.trim().length > 0) ? latestEntry.comment : 'Sin comentario';
+          const pBadge = (latestEntry.photos && latestEntry.photos.length > 0) ? `<span style="font-size:10px; background:#e8eaed; color:#5f6368; padding:2px 6px; border-radius:10px; margin-left:6px;">📸 ${latestEntry.photos.length}</span>` : '';
+          
+          el.innerHTML = `<div style="flex-grow:1;"><strong style="font-size:14px;">${i.type}</strong> ${pBadge}<br><span style="color:var(--text-secondary); font-size:12px;">${cText}</span><br><span style="color:#aaa; font-size:10px;">👤 ${latestEntry.user || 'Anónimo'}</span></div><div class="status-dot" style="background-color: ${cHex};"></div>`;
           el.onclick = () => {
             controls.target.set(i.x, i.y, i.z);
             animateCamera(new THREE.Vector3(i.x+50, i.y+50, i.z+50), new THREE.Vector3(i.x, i.y, i.z));
@@ -552,7 +625,6 @@
     // === PERSISTENCIA ===
     function loadIssuesForFile(fileName){
       const saved = JSON.parse(localStorage.getItem(storageKey(fileName)) || '[]');
-      // Añadimos al global evitando duplicados por si se llama 2 veces
       saved.forEach(s => { if(!issues.find(i => i.id === s.id)) issues.push(s); });
     }
 
@@ -571,17 +643,9 @@
     // === EXPORTAR / IMPORTAR ===
     window.exportIssues = function(singleFileName = null) {
       if(Object.keys(loadedMeshes).length === 0) { alert("Carga piezas primero."); return; }
-      
       const filesToExport = singleFileName ? [singleFileName] : Object.keys(loadedMeshes);
       const issuesToExport = singleFileName ? issues.filter(i => i.fileName === singleFileName) : issues;
-
-      const payload = {
-        schemaVersion: 2,
-        exportedAt: new Date().toISOString(),
-        filesIncluded: filesToExport,
-        issues: issuesToExport
-      };
-
+      const payload = { schemaVersion: 3, exportedAt: new Date().toISOString(), filesIncluded: filesToExport, issues: issuesToExport };
       const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = singleFileName ? `issues_${singleFileName}.json` : `issues_sesion_global.json`;
@@ -595,19 +659,15 @@
         try {
           const data = JSON.parse(ev.target.result);
           if(!data || !Array.isArray(data.issues)) throw new Error('Estructura JSON no válida.');
-          
           let affectedFiles = new Set();
           data.issues.forEach(i => {
-             const fname = i.fileName || 'desconocido';
-             affectedFiles.add(fname);
-             // Reemplazar o actualizar en el array global si está cargado
+             const fname = i.fileName || 'desconocido'; affectedFiles.add(fname);
              const idx = issues.findIndex(old => old.id === i.id);
              if(idx >= 0) issues[idx] = i; else issues.push(i);
           });
-          
           affectedFiles.forEach(fname => saveToStorage(fname));
           renderIssues();
-          alert("Importación correcta. Si las piezas están en pantalla, verás sus marcadores.");
+          alert("Importación correcta. Si las piezas están en pantalla, verás sus marcadores con todo su historial de cambios.");
         } catch(err){
           if(err.name === 'QuotaExceededError') alert('⚠️ El archivo llenó el almacenamiento local.');
           else alert('Error al importar: ' + err.message);

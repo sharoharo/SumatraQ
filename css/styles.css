@@ -1,4 +1,4 @@
-   /* === ESTILOS BASE (Material Design) === */
+/* === ESTILOS BASE (Material Design) === */
     :root {
       --surface-color: #ffffff;
       --background-map: #e5e3df;
@@ -20,6 +20,25 @@
     /* === INTERFAZ FLOTANTE === */
     .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
     .interactive-element { pointer-events: auto; }
+
+    /* === PANTALLA DE IDENTIFICACIÓN (LOGIN) === */
+    #loginOverlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); z-index: 10000;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px); pointer-events: auto;
+    }
+    .login-card {
+      background: var(--surface-color); padding: 32px; border-radius: 12px;
+      width: 320px; box-shadow: var(--shadow-2); text-align: center;
+    }
+    .login-card h2 { margin: 0 0 8px 0; color: var(--primary-blue); font-size: 22px; }
+    .login-card p { color: var(--text-secondary); font-size: 13px; margin-bottom: 24px; line-height: 1.4;}
+    .login-input {
+      width: 100%; padding: 12px; border: 1px solid var(--border-color);
+      border-radius: 6px; margin-bottom: 16px; font-size: 14px; box-sizing: border-box; font-family: inherit;
+    }
+    .login-input:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
 
     /* === 1. BARRA SUPERIOR Y CARGA === */
     .search-box {
@@ -70,24 +89,40 @@
     .panel-header { padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-weight: 500; font-size: 16px; color: var(--text-primary); }
     .panel-content { padding: 16px; overflow-y: auto; flex-grow: 1; }
 
-    /* === NUEVO: LISTA DE PIEZAS === */
+    /* === PERFIL USUARIO === */
+    .user-profile-card {
+      display: flex; align-items: center; justify-content: space-between; background: #f8f9fa; 
+      padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;
+    }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-blue); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
+    
+    /* === LISTA DE PIEZAS === */
     .files-container { margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
     .file-item { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; }
     .file-item-name { flex-grow: 1; font-size: 13px; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .file-item-actions { display: flex; gap: 4px; }
     .icon-action-btn { background: transparent; border: none; cursor: pointer; color: var(--text-secondary); border-radius: 4px; padding: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background 0.2s;}
-    .icon-action-btn:hover { background: #f1f3f4; color: var(--text-primary); }
+    .icon-action-btn:hover { background: #e8eaed; color: var(--text-primary); }
     .icon-action-btn.active-eye { color: var(--primary-blue); }
 
-    /* Formularios y Listas */
+    /* === FORMULARIOS, LISTAS Y TIMELINE === */
     .form-container { display: none; background: #f8f9fa; padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px; }
     label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px; font-weight: 500;}
     select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; font-size: 14px; box-sizing: border-box; margin-bottom: 12px; background: #fff;}
-    .btn-primary { background: var(--primary-blue); color: white; border: none; padding: 12px; border-radius: 24px; font-weight: 500; cursor: pointer; width: 100%; }
+    .btn-primary { background: var(--primary-blue); color: white; border: none; padding: 12px; border-radius: 24px; font-weight: 500; cursor: pointer; width: 100%; font-family: inherit;}
     .btn-inline { width: auto; padding: 8px 12px; border-radius: 20px; margin-right: 8px; font-size: 13px; }
     .issue { padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; background: #fff; transition: background 0.2s; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
     .issue:hover { background: #f8f9fa; border-color: #bdc1c6; }
     .status-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-left: 8px;}
+
+    /* Historial / Timeline */
+    .history-container { display: none; margin-bottom: 16px; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); }
+    .history-timeline { border-left: 2px solid var(--border-color); margin-left: 8px; padding-left: 12px; max-height: 200px; overflow-y: auto; }
+    .history-entry { position: relative; margin-bottom: 16px; }
+    .history-entry:last-child { margin-bottom: 0; }
+    .history-dot { position: absolute; left: -18px; top: 4px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; }
+    .history-date { font-size: 10px; color: var(--text-secondary); font-weight: 500; }
+    .history-comment { font-size: 13px; color: var(--text-primary); margin: 4px 0; }
 
     /* === FOTOS Y LIGHTBOX === */
     .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; margin-bottom: 12px; }
@@ -96,6 +131,7 @@
     .photo-thumb:hover { opacity: 0.8; }
     .delete-photo-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .delete-photo-btn:hover { background: rgba(234, 67, 53, 0.9); }
+    
     .lightbox { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
     .lightbox.active { display: flex; opacity: 1; }
     .lightbox-img { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
