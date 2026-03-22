@@ -677,3 +677,50 @@
     }
 
     function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+
+    // ************************************ NEW ***************************
+    //
+
+    window.exportToCSV = function() {
+  if (issues.length === 0) {
+    alert("No hay incidencias para exportar.");
+    return;
+  }
+
+  // 1. Cabeceras con columnas de historial
+  const headers = ["ID_INCIDENCIA", "PIEZA", "COORD_X", "COORD_Y", "COORD_Z", "TIPO", "ESTADO_EN_MOMENTO", "FECHA_CAMBIO", "USUARIO_ACCION", "COMENTARIO_HISTORICO"];
+  const SEPARATOR = ";";
+  let rows = [];
+
+  // 2. Recorremos cada incidencia
+  issues.forEach(i => {
+    // 3. Por cada incidencia, recorremos su HISTORIAL completo
+    if (i.history && i.history.length > 0) {
+      i.history.forEach(entry => {
+        rows.push([
+          i.id,
+          i.fileName,
+          i.x ? i.x.toFixed(4).replace('.', ',') : "0,0000",
+          i.y ? i.y.toFixed(4).replace('.', ',') : "0,0000",
+          i.z ? i.z.toFixed(4).replace('.', ',') : "0,0000",
+          i.type,
+          entry.status,      // Estado en ese momento específico
+          entry.date,        // Fecha de esa modificación
+          entry.user || "Anónimo",
+          entry.comment || ""
+        ].map(val => {
+          let safeVal = String(val).replace(new RegExp(SEPARATOR, 'g'), ' ');
+          return `"${safeVal.replace(/"/g, '""')}"`; 
+        }));
+      });
+    }
+  });
+
+  // 4. Generar y descargar el archivo
+  const csvContent = `sep=${SEPARATOR}\n` + headers.join(SEPARATOR) + "\n" + rows.map(r => r.join(SEPARATOR)).join("\n");
+  const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Historial_Trazabilidad_${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
+};
