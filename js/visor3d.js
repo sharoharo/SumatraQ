@@ -143,3 +143,45 @@ export function removeMesh(name) {
     fitCameraGlobal(false);
   }
 }
+// Añade esto al final de visor3d.js
+
+export function animateCamera(toPos, toTarget = State.bounds.center, ms = 500) {
+  const fromPos = State.camera.position.clone(); 
+  const fromTgt = State.controls.target.clone();
+  const start = performance.now(); 
+  const ease = t => 0.5 - 0.5 * Math.cos(Math.PI * t);
+  
+  function step(now){
+    const p = Math.min(1, (now - start) / ms); 
+    const e = ease(p);
+    State.camera.position.lerpVectors(fromPos, toPos, e); 
+    State.controls.target.lerpVectors(fromTgt, toTarget, e);
+    State.controls.update(); 
+    if(p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+export function setView(kind, immediate = false) {
+  if (Object.keys(State.loadedMeshes).length === 0 && kind !== "fit") return;
+  const dirs = { iso: new THREE.Vector3(1, 1, 1).normalize() };
+  
+  if (kind === "fit") {
+    const dir = State.camera.position.clone().sub(State.controls.target).normalize();
+    const toPos = State.bounds.center.clone().addScaledVector(dir, State.viewDistance);
+    if (immediate) {
+      State.camera.position.copy(toPos); 
+      State.controls.target.copy(State.bounds.center); 
+      State.controls.update();
+    } else animateCamera(toPos, State.bounds.center);
+    return;
+  }
+  
+  const dir = dirs[kind] ? dirs[kind].clone() : new THREE.Vector3(1, 1, 1).normalize(); 
+  const toPos = State.bounds.center.clone().addScaledVector(dir, State.viewDistance);
+  if (immediate) { 
+    State.camera.position.copy(toPos); 
+    State.controls.target.copy(State.bounds.center); 
+    State.controls.update(); 
+  } else animateCamera(toPos, State.bounds.center);
+}

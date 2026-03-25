@@ -1,37 +1,34 @@
-# SumatraQ
-# 🛠️ 3D Issue Tracker & Google Cloud Sync
+# 🏭 Sumatra Q - Visor CAD 3D y Trazabilidad de Incidencias
 
-Una aplicación web de alto rendimiento para la gestión de incidencias directamente sobre modelos 3D (STL), con sincronización en tiempo real a **Google Sheets** y almacenamiento de imágenes en **Google Drive**.
+Aplicación web interactiva para la inspección de modelos 3D (STL), registro de incidencias de calidad y trazabilidad total. Diseñada con una arquitectura modular y conectada en tiempo real a una base de datos en la nube (Google Sheets + Google Drive).
 
-![Estado del Proyecto](https://img.shields.io/badge/Estado-Operativo-brightgreen)
-![Tecnologías](https://img.shields.io/badge/Stack-Three.js%20%7C%20Google%20Apps%20Script%20%7C%20JS%20Vanilla-blue)
+![Estado](https://img.shields.io/badge/Estado-Producci%C3%B3n-success)
+![Tecnología](https://img.shields.io/badge/Tecnolog%C3%ADa-Three.js-black)
+![Backend](https://img.shields.io/badge/Backend-Google_Apps_Script-blue)
 
-## 🚀 Funcionalidades Actuales
+## ✨ Características Principales
 
-- **Visor 3D Multi-Pieza:** Carga de múltiples archivos STL simultáneamente mediante `Three.js`.
-- **Anotación Espacial:** Colocación de marcadores de incidencia mediante clic o pulsación larga en puntos exactos de la geometría.
-- **Trazabilidad Completa:** Historial detallado por cada incidencia (quién, cuándo y qué cambió).
-- **Gestión de Medios:** Captura y compresión de fotos (cámara o galería) asociadas a cada reporte.
-- **Nube Híbrida:** - Guardado local instantáneo (`LocalStorage`).
-    - Backup asíncrono en **Google Sheets**.
-    - Repositorio de fotos organizado en **Google Drive**.
-- **Herramientas de Análisis:** Diferentes modos de visualización (Sombreado, Alámbrico, Aristas) y exportación de datos a **CSV**.
+* **🌍 Visor 3D Avanzado:** Carga de múltiples piezas STL simultáneas. Modos de visualización (Sombreado, Aristas, Alambre) y controles de cámara fluidos (Isométrica, Zoom Extensión, Vuelo hacia el punto).
+* **☁️ Sincronización Bidireccional:** Conexión en tiempo real con Google Sheets. Las incidencias previas se cargan automáticamente desde la nube al abrir una pieza.
+* **📍 Raycasting y Posicionamiento:** Clic sobre el modelo 3D para registrar coordenadas exactas (X, Y, Z). Detección de movimiento de puntos con registro automático en el historial.
+* **📸 Galería Estilo Google Maps:** Visualización de imágenes subidas a Google Drive integradas nativamente en la web mediante una galería de carrusel horizontal.
+* **⏳ Trazabilidad Completa:** Cada incidencia cuenta con una línea de tiempo (historial) que registra estados (Abierto, En revisión, Cerrado), inspector, fecha y comentarios.
+* **🔐 Autenticación Integrada:** Sistema de login seguro que valida las credenciales directamente contra la base de datos de la nube.
+* **📊 Exportación de Datos:** Capacidad de exportar la sesión visual actual a JSON y el historial completo de trazabilidad a formato CSV (Excel).
 
-## 🛠️ Instalación y Configuración
+## 🏗️ Arquitectura del Proyecto
 
-### 1. Requisitos previos
-- Un servidor local (ej. Live Server en VS Code).
-- Una cuenta de Google para el backend.
+El proyecto está construido utilizando **Vanilla JavaScript (ES6 Modules)**, separando la lógica para un mantenimiento escalable y profesional:
 
-### 2. Configuración del Backend (Google Apps Script)
-1. Crea un nuevo script en [script.google.com](https://script.google.com).
-2. Pega el código de `doPost(e)` proporcionado en la documentación técnica del proyecto.
-3. Configura la constante `FOLDER_ID` con el ID de tu carpeta de Google Drive.
-4. Implementa como **Aplicación Web** con acceso para "Cualquier persona".
-5. Copia la URL de ejecución y pégala en la constante `GOOGLE_SCRIPT_URL` dentro de `app.js`.
+* `index.html` / `styles.css`: Estructura e interfaz de usuario (UI/UX).
+* `app.js`: Archivo principal (Director de orquesta) que inicializa la app y expone métodos al DOM.
+* `estado.js`: Gestor del estado global de la aplicación (Escena 3D, configuración, caché de datos).
+* `auth.js`: Lógica de inicio de sesión y validación de sesiones.
+* `visor3d.js`: Motor gráfico basado en Three.js (Luces, renderizado, carga de STLs, cámaras).
+* `incidencias.js`: Motor de lógica de negocio (Raycasting, reconstrucción de historiales desde la nube, gestión de la galería de imágenes y envíos a Apps Script).
 
-### 3. Ejecución Local
-```bash
-# No requiere instalación de dependencias externas (usa módulos ESM)
-# Simplemente sirve el directorio mediante un servidor web
-python -m http.server 8000
+## 🚀 Instalación y Uso Local
+
+1. **Clonar el repositorio:**
+   ```bash
+   git clone [https://github.com/TU_USUARIO/sumatra-q-visor3d.git](https://github.com/TU_USUARIO/sumatra-q-visor3d.git)

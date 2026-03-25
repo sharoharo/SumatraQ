@@ -1,6 +1,7 @@
 // incidencias.js
 import * as THREE from 'three';
 import { State, CONFIG } from './estado.js';
+import { animateCamera } from './visor3d.js';
 
 /* ==========================================
    1. LÓGICA DE RATÓN Y CLICKS (RAYCASTER)
@@ -49,6 +50,7 @@ export function onClick(event){
   
   if(hitMarkers.length > 0){ selectMarker(hitMarkers[0].object); return; }
 
+  // --- MOVER PUNTO Y REGISTRO AUTOMÁTICO ---
   if(State.moveIssueMode && State.selectedMarker){
     const hit = getIntersection();
     if(hit.length > 0){ 
@@ -57,16 +59,30 @@ export function onClick(event){
       issueToMove.y = hit[0].point.y;
       issueToMove.z = hit[0].point.z;
       
-      const oldFileName = issueToMove.fileName;
       issueToMove.fileName = hit[0].object.userData.fileName; 
-      
       State.selectedMarker.position.copy(hit[0].point);
-      saveToStorage(oldFileName); 
-      saveToStorage(issueToMove.fileName);
       
+      if (!issueToMove.history) issueToMove.history = [];
+      const updateMove = {
+        date: new Date().toISOString(),
+        user: State.userName || "Sistema",
+        status: issueToMove.status,
+        comment: "📍 Ubicación del punto modificada en el modelo 3D.",
+        photos: []
+      };
+      issueToMove.history.push(updateMove);
+
       State.moveIssueMode = false; 
       document.getElementById('moveIssueBtn').classList.remove('active'); 
       renderIssues();
+
+      try {
+        fetch(CONFIG.GOOGLE_SCRIPT_URL, { 
+          method: "POST", mode: "no-cors", 
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(issueToMove) 
+        });
+      } catch (e) { console.error("Error subiendo posición", e); }
     }
     return;
   }
@@ -82,7 +98,7 @@ export function onClick(event){
 }
 
 /* ==========================================
-   2. FORMULARIOS E HISTORIAL
+   2. FORMULARIOS E HISTORIAL (MAPS STYLE)
    ========================================== */
 export function openNewIssueForm() {
   deselectMarker();
@@ -90,6 +106,10 @@ export function openNewIssueForm() {
   const targetLabel = document.getElementById('issueTargetFile');
   if(targetLabel) targetLabel.innerText = `En pieza: ${State.targetFileName}`;
   
+  // Limpiar galería superior si existe
+  const topG = document.getElementById('topGalleryContainer');
+  if(topG) topG.innerHTML = '';
+
   document.getElementById('saveIssue').innerText = "Crear Incidencia";
   
   const hContainer = document.getElementById('historyContainer');
@@ -121,6 +141,34 @@ export function selectMarker(marker){
     const targetLabel = document.getElementById('issueTargetFile');
     if(targetLabel) targetLabel.innerText = `En pieza: ${issue.fileName}`;
     
+    // ========================================================
+    // 🌟 GALERÍA ESTILO GOOGLE MAPS EN LA CABECERA
+    // ========================================================
+    let allPhotos = [];
+    if(issue.history) {
+      issue.history.forEach(h => { 
+        if(h.photos) allPhotos = allPhotos.concat(h.photos); 
+      });
+    }
+    
+    let topGallery = document.getElementById('topGalleryContainer');
+    if(!topGallery) { 
+      topGallery = document.createElement('div'); 
+      topGallery.id = 'topGalleryContainer'; 
+      targetLabel.parentNode.insertBefore(topGallery, targetLabel.nextSibling); 
+    }
+    topGallery.innerHTML = '';
+
+    if(allPhotos.length > 0) {
+      let galleryHTML = `<div style="display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; margin-bottom: 15px; border-bottom: 1px solid #eee;">`;
+      allPhotos.forEach(p => {
+        galleryHTML += `<img src="${p.dataUrl}" style="height: 140px; min-width: 180px; object-fit: cover; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="window.openLightbox('${p.dataUrl}')">`;
+      });
+      galleryHTML += `</div>`;
+      topGallery.innerHTML = galleryHTML;
+    }
+    // ========================================================
+
     document.getElementById('saveIssue').innerText = "Añadir Actualización";
     const updateDiv = document.getElementById('updateDivider');
     if(updateDiv) updateDiv.style.display = "block";
@@ -133,19 +181,18 @@ export function selectMarker(marker){
     State.currentPhotos = []; 
     renderPhotoGrid();
 
-    // --- RENDERIZAR HISTORIAL RESTAURADO ---
+    // --- RENDERIZAR HISTORIAL LIMPIO (SIN FOTOS) ---
     const hContainer = document.getElementById('historyContainer');
     const hTimeline = document.getElementById('historyTimeline');
     if(hTimeline) hTimeline.innerHTML = "";
 
-    // Si es una incidencia antigua sin historial, se lo creamos
     if(!issue.history || issue.history.length === 0) {
         issue.history = [{
            date: issue.createdAt || issue.date || new Date().toISOString(),
            user: issue.createdBy || issue.user || "Anónimo",
            status: issue.status,
            comment: issue.comment,
-           photos: issue.photos || []
+           photos: []
         }];
     }
 
@@ -156,16 +203,8 @@ export function selectMarker(marker){
           const dateObj = new Date(entry.date);
           const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
           
-          // Color dinámico según la BD o fallback
           const typeInDb = State.db.tiposIncidencias.find(t => t.Nombre_Falla === issue.type);
           const cHex = typeInDb && typeInDb.Color_Hex ? typeInDb.Color_Hex : '#' + getColor(entry.status).toString(16).padStart(6, '0');
-          
-          let photosHTML = "";
-          if(entry.photos && entry.photos.length > 0) {
-             photosHTML = `<div style="display:flex; gap:4px; margin-top:6px; flex-wrap:wrap;">` + 
-                entry.photos.map(p => `<img src="${p.dataUrl}" style="width:36px; height:36px; object-fit:cover; border-radius:4px; cursor:pointer; border: 1px solid var(--border-color);" onclick="window.openLightbox('${p.dataUrl}')">`).join('') +
-             `</div>`;
-          }
 
           const d = document.createElement('div');
           d.className = "history-entry";
@@ -173,7 +212,6 @@ export function selectMarker(marker){
              <div class="history-dot" style="background:${cHex};"></div>
              <div class="history-date">${dateStr} - 👤 ${entry.user}</div>
              <div class="history-comment">${entry.comment || '<i style="color:#aaa;">Sin comentario adicional</i>'}</div>
-             ${photosHTML}
           `;
           if(hTimeline) hTimeline.appendChild(d);
        });
@@ -196,10 +234,7 @@ export function deselectMarker() {
 export function deleteSelectedIssue(){
   if(!State.selectedMarker) return;
   const id = State.selectedMarker.userData.issueId;
-  const fName = State.issues.find(i => i.id === id).fileName;
-  
   State.issues = State.issues.filter(i => i.id !== id);
-  saveToStorage(fName);
   
   State.scene.remove(State.selectedMarker); 
   if(State.selectedMarker.geometry) State.selectedMarker.geometry.dispose();
@@ -210,7 +245,7 @@ export function deleteSelectedIssue(){
 }
 
 /* ==========================================
-   3. GUARDADO, CARGA Y NUBE
+   3. CARGA DESDE LA NUBE Y GUARDADO
    ========================================== */
 export async function saveIssueFn() {
   const nowIso = new Date().toISOString();
@@ -249,8 +284,6 @@ export async function saveIssueFn() {
     issueToUpload = newIssue;
   }
 
-  // Guardar en LocalStorage para no perderlo al recargar
-  saveToStorage(issueToUpload.fileName);
   renderIssues(); 
   deselectMarker(); 
   
@@ -266,23 +299,20 @@ export async function saveIssueFn() {
       body: JSON.stringify(issueToUpload) 
     });
     setTimeout(() => { 
-      alert("✅ Guardado local y enviado a la nube"); 
+      alert("✅ Enviado a la nube"); 
       if (btn) { btn.innerText = originalText; btn.disabled = false; }
     }, 600);
   } catch (error) { 
-    alert("Guardado en local. Error en nube."); 
+    alert("Error en nube."); 
     if (btn) { btn.innerText = originalText; btn.disabled = false; }
   }
 }
 
-// RESTAURADO: Función para cargar incidencias previas
 export function loadIssuesForFile(fileName) { 
   if (!State.db.incidenciasRegistradas) return;
 
-  // 1. Filtramos solo las filas de Excel que pertenecen a la pieza actual
   const filasPieza = State.db.incidenciasRegistradas.filter(row => row.PIEZA === fileName);
 
-  // 2. Agrupamos las filas por ID (porque una incidencia puede tener 5 actualizaciones)
   const incidenciasMap = {};
   filasPieza.forEach(row => {
     const id = row.ID;
@@ -290,34 +320,32 @@ export function loadIssuesForFile(fileName) {
     incidenciasMap[id].push(row);
   });
 
-  // 3. Reconstruimos las esferas y su historial
   Object.keys(incidenciasMap).forEach(id => {
-    // Ordenamos las filas por fecha de más antigua a más nueva
     const historial = incidenciasMap[id].sort((a, b) => new Date(a.FECHA) - new Date(b.FECHA));
-    // El estado actual de la esfera (color, posición) es el de su última actualización
     const ultimaFila = historial[historial.length - 1]; 
 
     if (!State.issues.find(i => i.id === id)) {
       const nuevaIncidencia = {
         id: id,
         fileName: fileName,
-        // Convertimos las comas del Excel ("10,5") en puntos de coordenadas 3D (10.5)
         x: parseFloat(String(ultimaFila.COORD_X).replace(',', '.')),
         y: parseFloat(String(ultimaFila.COORD_Y).replace(',', '.')),
         z: parseFloat(String(ultimaFila.COORD_Z).replace(',', '.')),
         type: ultimaFila.TIPO,
         status: ultimaFila.ESTADO,
-        
-        // Reconstruimos la línea de tiempo
         history: historial.map(h => {
           let fotosProcesadas = [];
           if (h.FOTOS_URL && typeof h.FOTOS_URL === 'string' && h.FOTOS_URL.trim() !== "") {
-             // Separamos las URLs por el símbolo "|"
              fotosProcesadas = h.FOTOS_URL.split('|').map(url => {
                let cleanUrl = url.trim();
-               // Truco para que las fotos de Google Drive se vean como imágenes (<img>)
+               
+               // 👇 FIX DE GOOGLE DRIVE THUMBNAILS 👇
                const match = cleanUrl.match(/\/d\/(.+?)\//);
-               if(match && match[1]) cleanUrl = `https://drive.google.com/uc?export=view&id=${match[1]}`;
+               if(match && match[1]) {
+                 cleanUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+               }
+               // ------------------------------------
+
                return { dataUrl: cleanUrl };
              });
           }
@@ -333,17 +361,6 @@ export function loadIssuesForFile(fileName) {
       State.issues.push(nuevaIncidencia);
     }
   });
-}
-
-function saveToStorage(fileName){
-  try {
-    const fileIssues = State.issues.filter(i => i.fileName === fileName);
-    localStorage.setItem(`issues_${fileName}`, JSON.stringify(fileIssues));
-    return true;
-  } catch (e) {
-    if (e.name === 'QuotaExceededError') alert("⚠️ Almacenamiento local lleno por el peso de las fotos.");
-    return false;
-  }
 }
 
 /* ==========================================
@@ -394,9 +411,16 @@ function renderIssueListUI() {
       <div style="font-size:11px; color:#666; margin-top:4px;">${issue.comment || 'Sin comentario'}</div>
       <div style="font-size:10px; color:#999; margin-top:2px;">👤 ${issue.user || 'Anónimo'}</div>
     `;
+    
     card.onclick = () => {
       State.scene.traverse(obj => {
-        if(obj.userData && obj.userData.issueId === issue.id) selectMarker(obj);
+        if(obj.userData && obj.userData.issueId === issue.id) {
+          selectMarker(obj);
+          const targetPos = obj.position.clone();
+          const dir = State.camera.position.clone().sub(State.controls.target).normalize();
+          const cameraPos = targetPos.clone().addScaledVector(dir, 80); 
+          animateCamera(cameraPos, targetPos, 800);
+        }
       });
     };
     list.appendChild(card);
@@ -447,7 +471,6 @@ export function renderPhotoGrid() {
       <img src="${photo.dataUrl}" class="photo-thumb" onclick="window.openLightbox('${photo.dataUrl}')">
       <button class="delete-photo-btn" onclick="event.preventDefault(); State.currentPhotos.splice(${index}, 1); renderPhotoGrid();">✕</button>
     `;
-    // Attach event programmatically to avoid scope issues in modules
     div.querySelector('.delete-photo-btn').onclick = (e) => {
       e.preventDefault();
       State.currentPhotos.splice(index, 1);
