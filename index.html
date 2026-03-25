@@ -9,14 +9,17 @@
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 <body>
-  <div id="loginOverlay">
-    <div class="login-card">
-      <h2>Sumatra Q</h2>
-      <p>Identifícate para registrar y firmar las inspecciones y hallazgos en la sesión.</p>
-      <input type="text" id="loginName" class="login-input" placeholder="Nombre del Inspector..." />
-      <button class="btn-primary" id="btnLogin">Entrar al Sistema</button>
-    </div>
+ <div id="loginOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; display:flex; justify-content:center; align-items:center;">
+  <div style="background:white; padding:30px; border-radius:12px; text-align:center; max-width:320px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+    <h2 style="margin-top:0; color:#4285F4; font-family:sans-serif;">Sumatra Q</h2>
+    <p style="font-size:13px; color:#666; margin-bottom:20px;">Identifícate con tus credenciales de sistema.</p>
+    
+    <input type="email" id="loginEmail" placeholder="Tu Email" style="width:100%; padding:12px; margin-bottom:12px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px;">
+    <input type="password" id="loginPassword" placeholder="Tu Contraseña" style="width:100%; padding:12px; margin-bottom:20px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px;">
+    
+    <button id="loginBtn" onclick="processLogin()" style="width:100%; padding:14px; background:#4285F4; color:white; border:none; border-radius:6px; font-weight:bold; font-size:15px; cursor:pointer; transition:0.3s;">Conectando a BD...</button>
   </div>
+</div>
 
   <div id="map-container"></div>
 
@@ -64,10 +67,8 @@
           </div>
 
           <label>Tipo:</label>
-          <select id="issueType">
-            <option>rebaba</option>
-            <option>rayadura</option>
-            <option>fisura</option>
+          <select id="issueType" style="width:100%; padding:10px; margin-bottom:15px; border-radius:6px; border:1px solid #ccc;">
+            <option value="">Cargando tipos de incidencia...</option>
           </select>
 
           <div id="updateDivider" style="display:none; margin: 16px 0 8px 0; border-top: 1px dashed var(--border-color); padding-top: 8px;">
