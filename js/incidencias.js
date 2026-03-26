@@ -383,7 +383,7 @@ export function renderIssues() {
     const colorFinal = typeInDb && typeInDb.Color_Hex ? parseInt(typeInDb.Color_Hex.replace('#', '0x')) : getColor(issue.status);
     
     const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(1.5, 16, 16), 
+      new THREE.SphereGeometry(3.0, 16, 16), 
       new THREE.MeshPhongMaterial({ color: colorFinal, emissive: 0x000000, shininess: 100 })
     ); 
     sphere.position.set(issue.x, issue.y, issue.z); 

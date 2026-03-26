@@ -1,34 +1,40 @@
-# 🏭 Sumatra Q - Visor CAD 3D y Trazabilidad de Incidencias
+# 🦧 Sumatra Q - Visor CAD e Inspección 3D
 
-Aplicación web interactiva para la inspección de modelos 3D (STL), registro de incidencias de calidad y trazabilidad total. Diseñada con una arquitectura modular y conectada en tiempo real a una base de datos en la nube (Google Sheets + Google Drive).
+**Sumatra Q** es una plataforma web profesional de inspección de calidad y trazabilidad de piezas industriales. Permite la visualización de archivos STL, el registro geolocalizado de incidencias en 3D y la gestión de datos en tiempo real mediante integración con Google Cloud.
 
-![Estado](https://img.shields.io/badge/Estado-Producci%C3%B3n-success)
-![Tecnología](https://img.shields.io/badge/Tecnolog%C3%ADa-Three.js-black)
-![Backend](https://img.shields.io/badge/Backend-Google_Apps_Script-blue)
+![Status](https://img.shields.io/badge/Status-Estable-success)
+![Version](https://img.shields.io/badge/Version-1.2.0-blue)
 
 ## ✨ Características Principales
 
-* **🌍 Visor 3D Avanzado:** Carga de múltiples piezas STL simultáneas. Modos de visualización (Sombreado, Aristas, Alambre) y controles de cámara fluidos (Isométrica, Zoom Extensión, Vuelo hacia el punto).
-* **☁️ Sincronización Bidireccional:** Conexión en tiempo real con Google Sheets. Las incidencias previas se cargan automáticamente desde la nube al abrir una pieza.
-* **📍 Raycasting y Posicionamiento:** Clic sobre el modelo 3D para registrar coordenadas exactas (X, Y, Z). Detección de movimiento de puntos con registro automático en el historial.
-* **📸 Galería Estilo Google Maps:** Visualización de imágenes subidas a Google Drive integradas nativamente en la web mediante una galería de carrusel horizontal.
-* **⏳ Trazabilidad Completa:** Cada incidencia cuenta con una línea de tiempo (historial) que registra estados (Abierto, En revisión, Cerrado), inspector, fecha y comentarios.
-* **🔐 Autenticación Integrada:** Sistema de login seguro que valida las credenciales directamente contra la base de datos de la nube.
-* **📊 Exportación de Datos:** Capacidad de exportar la sesión visual actual a JSON y el historial completo de trazabilidad a formato CSV (Excel).
+* **🖥️ Visor 3D Multi-Pieza:** Carga de múltiples archivos STL con modos de visualización (Sombreado, Aristas, Alambre).
+* **📍 Sistema de Incidencias:** Registro de fallas mediante clic directo sobre la superficie 3D.
+* **📂 Gestión de Datos Pro:**
+    * Sincronización bidireccional con **Google Sheets**.
+    * Almacenamiento de imágenes de inspección en **Google Drive**.
+* **📊 Reportes y Exportación:**
+    * Generación de reportes detallados en **PDF** con resumen analítico.
+    * Exportación de bases de datos a **Excel (CSV)**.
+* **🎨 Interfaz Corporativa:** * Splash Screen de carga profesional.
+    * Filtros dinámicos por estado (Abierto, Revisión, Cerrado).
 
-## 🏗️ Arquitectura del Proyecto
+## 🚀 Tecnologías Utilizadas
 
-El proyecto está construido utilizando **Vanilla JavaScript (ES6 Modules)**, separando la lógica para un mantenimiento escalable y profesional:
+* **Three.js:** Motor gráfico para el renderizado 3D.
+* **HTML5/CSS3/JS:** Arquitectura modular y diseño responsive.
+* **html2pdf.js:** Motor de generación de documentos PDF.
+* **Google Apps Script:** Backend serverless para gestión de base de datos.
 
-* `index.html` / `styles.css`: Estructura e interfaz de usuario (UI/UX).
-* `app.js`: Archivo principal (Director de orquesta) que inicializa la app y expone métodos al DOM.
-* `estado.js`: Gestor del estado global de la aplicación (Escena 3D, configuración, caché de datos).
-* `auth.js`: Lógica de inicio de sesión y validación de sesiones.
-* `visor3d.js`: Motor gráfico basado en Three.js (Luces, renderizado, carga de STLs, cámaras).
-* `incidencias.js`: Motor de lógica de negocio (Raycasting, reconstrucción de historiales desde la nube, gestión de la galería de imágenes y envíos a Apps Script).
+## 🛠️ Instalación y Uso
 
-## 🚀 Instalación y Uso Local
-
-1. **Clonar el repositorio:**
+1. Clona este repositorio:
    ```bash
-   git clone [https://github.com/TU_USUARIO/sumatra-q-visor3d.git](https://github.com/TU_USUARIO/sumatra-q-visor3d.git)
+   git clone [https://github.com/TU_USUARIO/SumatraQ.git](https://github.com/TU_USUARIO/SumatraQ.git)
+
+
+   SumatraQ/
+├── css/            # Estilos CSS (diseño y animaciones)
+├── js/             # Lógica modular (3D, Auth, Incidencias)
+├── img/            # Recursos visuales y logotipos
+├── index.html      # Punto de entrada de la aplicación
+└── README.md       # Documentación técnica

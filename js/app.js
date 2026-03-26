@@ -80,6 +80,17 @@ window.onload = () => {
   fetchDatabase();
   init3D();
   animate();
+  
+  // 👇 MAGIA DEL SPLASH SCREEN 👇
+  // Esperamos 1.5 segundos para que la animación se luzca y el 3D cargue por detrás
+  setTimeout(() => {
+    const splash = document.getElementById('splashScreen');
+    if (splash) {
+      splash.style.opacity = '0';
+      splash.style.visibility = 'hidden';
+    }
+  }, 1500); 
+  // 👆 FIN MAGIA SPLASH SCREEN 👆
 };
 
 function animate() { 
