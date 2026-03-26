@@ -102,6 +102,7 @@
           <button class="btn-primary btn-inline" id="exportGlobalBtn">Exportar Sesión</button>
           <button class="btn-primary btn-inline" id="importBtn">Importar JSON</button>
           <button class="btn-primary" onclick="exportToCSV()" style="background-color: #1e8e3e; margin-top: 10px;">📊 Exportar a EXCEL (CSV)</button>
+          <button class="btn-primary" onclick="window.generatePDF()" style="background-color: #d93025; margin-top: 10px;">📄 Generar PDF</button>
           <input type="file" id="importInput" accept="application/json" style="display:none" />
         </div>
 
@@ -136,6 +137,7 @@
     <img id="lightboxImg" class="lightbox-img" src="" alt="Ampliación" />
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script type="importmap">
     {
       "imports": {

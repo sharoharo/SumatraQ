@@ -537,3 +537,111 @@ export function setFilter(status) {
   // Recargar las esferas y la lista con el nuevo filtro
   renderIssues();
 }
+
+export function generatePDF() {
+  if (State.issues.length === 0) {
+    alert("No hay incidencias registradas para generar el reporte.");
+    return;
+  }
+
+  // 1. Crear el contenedor HTML (invisible) que se convertirá en PDF
+  const element = document.createElement('div');
+  element.style.padding = '20px';
+  element.style.fontFamily = 'Arial, sans-serif';
+  element.style.color = '#333';
+
+  // 2. Calcular resumen
+  const openCount = State.issues.filter(i => i.status === 'open').length;
+  const reviewCount = State.issues.filter(i => i.status === 'review').length;
+  const closedCount = State.issues.filter(i => i.status === 'closed').length;
+  const dateStr = new Date().toLocaleDateString();
+
+  // 3. Generar las filas de la tabla
+  let tableRows = '';
+  State.issues.forEach(issue => {
+    const statusColor = issue.status === 'open' ? '#e94335' : (issue.status === 'review' ? '#fbbc04' : '#34a853');
+    const statusText = issue.status === 'open' ? 'Abierto' : (issue.status === 'review' ? 'Revisión' : 'Cerrado');
+    
+    // Coger el último comentario
+    let lastComment = issue.comment || 'Sin comentario';
+    let lastUser = issue.user || 'Anónimo';
+    if (issue.history && issue.history.length > 0) {
+      const lastUpdate = issue.history[issue.history.length - 1];
+      lastComment = lastUpdate.comment || lastComment;
+      lastUser = lastUpdate.user || lastUser;
+    }
+
+    tableRows += `
+      <tr style="border-bottom: 1px solid #ddd;">
+        <td style="padding: 10px; font-size: 11px;">${issue.fileName}</td>
+        <td style="padding: 10px; font-size: 11px; font-weight: bold;">${issue.type}</td>
+        <td style="padding: 10px; font-size: 11px;">
+          <span style="color:${statusColor}; font-weight:bold;">${statusText}</span>
+        </td>
+        <td style="padding: 10px; font-size: 11px;">${lastUser}</td>
+        <td style="padding: 10px; font-size: 11px; color: #555;">${lastComment}</td>
+      </tr>
+    `;
+  });
+
+  // 4. Maquetar el documento HTML
+  element.innerHTML = `
+    <div style="border-bottom: 3px solid #4285F4; padding-bottom: 10px; margin-bottom: 20px;">
+      <h1 style="color: #4285F4; margin: 0; font-size: 24px;">Reporte de Calidad e Inspección</h1>
+      <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Generado el: <strong>${dateStr}</strong></p>
+      <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Inspector activo: <strong>${State.userName || 'Sistema'}</strong></p>
+    </div>
+    
+    <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #ddd;">
+        <div style="font-size: 24px; font-weight: bold; color: #e94335;">${openCount}</div>
+        <div style="font-size: 12px; color: #666; text-transform: uppercase;">Abiertas</div>
+      </div>
+      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #ddd;">
+        <div style="font-size: 24px; font-weight: bold; color: #fbbc04;">${reviewCount}</div>
+        <div style="font-size: 12px; color: #666; text-transform: uppercase;">En Revisión</div>
+      </div>
+      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #ddd;">
+        <div style="font-size: 24px; font-weight: bold; color: #34a853;">${closedCount}</div>
+        <div style="font-size: 12px; color: #666; text-transform: uppercase;">Cerradas</div>
+      </div>
+    </div>
+
+    <h3 style="color: #333; font-size: 16px; margin-bottom: 10px;">Detalle de Incidencias:</h3>
+    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+      <thead>
+        <tr style="background-color: #4285F4; color: white;">
+          <th style="padding: 10px; font-size: 12px;">Pieza</th>
+          <th style="padding: 10px; font-size: 12px;">Tipo de Falla</th>
+          <th style="padding: 10px; font-size: 12px;">Estado</th>
+          <th style="padding: 10px; font-size: 12px;">Último Inspector</th>
+          <th style="padding: 10px; font-size: 12px;">Comentario Reciente</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRows}
+      </tbody>
+    </table>
+    
+    <div style="margin-top: 40px; text-align: center; font-size: 10px; color: #999;">
+      Documento generado automáticamente por Sumatra Q - Visor 3D
+    </div>
+  `;
+
+  // 5. Opciones para el generador de PDF
+  const opt = {
+    margin:       10,
+    filename:     `Reporte_Inspeccion_${dateStr.replace(/\//g, '-')}.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  // 6. Ejecutar
+  const originalText = document.querySelector('button[onclick="window.generatePDF()"]').innerText;
+  document.querySelector('button[onclick="window.generatePDF()"]').innerText = "⏳ Generando...";
+  
+  html2pdf().set(opt).from(element).save().then(() => {
+    document.querySelector('button[onclick="window.generatePDF()"]').innerText = originalText;
+  });
+}
