@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { State, CONFIG } from './estado.js';
 import { animateCamera } from './visor3d.js';
+State.currentFilter = 'all'; // Filtro por defecto
 
 /* ==========================================
    1. LÓGICA DE RATÓN Y CLICKS (RAYCASTER)
@@ -372,6 +373,9 @@ export function renderIssues() {
   toRemove.forEach(obj => State.scene.remove(obj));
 
   State.issues.forEach(issue => {
+    // 👇 LA MAGIA DEL FILTRO 3D 👇
+    if (State.currentFilter !== 'all' && issue.status !== State.currentFilter) return;
+    
     const mesh = State.loadedMeshes[issue.fileName]; 
     if(!mesh || !mesh.visible) return;
     
@@ -396,6 +400,9 @@ function renderIssueListUI() {
   list.innerHTML = "";
   
   State.issues.forEach(issue => {
+    // 👇 LA MAGIA DEL FILTRO EN LA LISTA 👇
+    if (State.currentFilter !== 'all' && issue.status !== State.currentFilter) return;
+
     const card = document.createElement('div');
     card.className = 'issue-card';
     
@@ -517,4 +524,16 @@ export function exportToCSV() {
   link.href = URL.createObjectURL(blob);
   link.download = `Historial_Trazabilidad_${new Date().toISOString().split('T')[0]}.csv`;
   link.click();
+}
+
+export function setFilter(status) {
+  State.currentFilter = status;
+  
+  // Pintar el botón activo
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === status);
+  });
+  
+  // Recargar las esferas y la lista con el nuevo filtro
+  renderIssues();
 }

@@ -167,3 +167,25 @@
   background-color: #ffcdd2;
   color: #b71c1c;
 }
+
+/* Estilos para los Filtros de Incidencias */
+.filter-btn {
+  flex: 1;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px 0;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #555;
+}
+.filter-btn.active {
+  background: #e8f0fe;
+  border-color: #4285f4;
+  color: #1a73e8;
+  font-weight: bold;
+}
+.filter-btn:hover:not(.active) {
+  background: #eef2f5;
+}

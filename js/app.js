@@ -4,7 +4,7 @@ import { fetchDatabase, processLogin, processLogout, checkAuthStatus } from './a
 import { init3D, loadSTLs, updateFileListUI, toggleMeshVisibility, removeMesh, setView, applyShadingAll } from './visor3d.js';
 import { 
   onClick, onPointerDown, onPointerMove, onPointerUp, 
-  saveIssueFn, deleteSelectedIssue, handlePhotoInput, exportIssues, exportToCSV 
+  saveIssueFn, deleteSelectedIssue, handlePhotoInput, exportIssues, exportToCSV, setFilter 
 } from './incidencias.js';
 
 /* --- EXPONER FUNCIONES AL HTML (PÚBLICAS) --- */
@@ -14,6 +14,7 @@ window.toggleMeshVisibility = toggleMeshVisibility;
 window.removeMesh = removeMesh;
 window.exportIssues = exportIssues;
 window.exportToCSV = exportToCSV;
+window.setFilter = setFilter;
 
 window.togglePanel = function(forceOpen = false) {
   const panel = document.getElementById('functionalityPanel');

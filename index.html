@@ -106,6 +106,16 @@
         </div>
 
         <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-secondary);">LISTA DE INCIDENCIAS</h3>
+        
+        <div class="filters-wrapper" style="margin-bottom: 15px;">
+          <div style="font-size: 11px; color: #666; margin-bottom: 8px; font-weight: bold;">FILTRAR POR ESTADO:</div>
+          <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+            <button class="filter-btn active" onclick="window.setFilter('all')" data-filter="all">Todos</button>
+            <button class="filter-btn" onclick="window.setFilter('open')" data-filter="open" style="border-bottom: 3px solid #e94335;">Abiertos</button>
+            <button class="filter-btn" onclick="window.setFilter('review')" data-filter="review" style="border-bottom: 3px solid #fbbc04;">Revisión</button>
+            <button class="filter-btn" onclick="window.setFilter('closed')" data-filter="closed" style="border-bottom: 3px solid #34a853;">Cerrados</button>
+          </div>
+        </div>
         <div id="list"></div>
       </div>
     </div>
