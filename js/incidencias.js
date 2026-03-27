@@ -302,21 +302,26 @@ export async function saveIssueFn() {
   const originalText = btn ? btn.innerText : "Guardar";
   if (btn) { btn.innerText = "⏳ Subiendo..."; btn.disabled = true; }
   
-  try {
-    fetch(CONFIG.GOOGLE_SCRIPT_URL, { 
-      method: "POST", 
-      mode: "no-cors", 
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(issueToUpload) 
-    });
+  // --- CÓDIGO SENIOR PARA EL FETCH ---
+  fetch(CONFIG.GOOGLE_SCRIPT_URL, { 
+    method: "POST", 
+    mode: "no-cors", 
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(issueToUpload) 
+  })
+  .then(() => {
+    // Si la petición sale bien
     setTimeout(() => { 
       alert("✅ Enviado a la nube"); 
       if (btn) { btn.innerText = originalText; btn.disabled = false; }
     }, 600);
-  } catch (error) { 
-    alert("Error en nube."); 
+  })
+  .catch(error => { 
+    // Ahora sí atrapará los errores de red (ej. sin wifi)
+    console.error("Error de subida:", error);
+    alert("❌ Error de conexión al guardar en la nube."); 
     if (btn) { btn.innerText = originalText; btn.disabled = false; }
-  }
+  });
 }
 
 export function loadIssuesForFile(fileName) { 
@@ -557,110 +562,132 @@ export function setFilter(status, buttonClicked) {
   renderIssues();
 }
 
-export function generatePDF() {
-  if (State.issues.length === 0) {
-    alert("No hay incidencias registradas para generar el reporte.");
+// ==========================================
+// 📄 GENERACIÓN DE REPORTE PDF (CON LOGO DE IMAGEN)
+// ==========================================
+export const generatePDF = function() {
+  window.generatePDF = generatePDF;
+
+  const activeFilter = State.currentFilter || 'all';
+  const issuesToPrint = State.issues.filter(issue => {
+    if (activeFilter === 'all') return true;
+    return issue.status === activeFilter;
+  });
+
+  if (issuesToPrint.length === 0) {
+    alert("⚠️ No hay incidencias en este filtro para generar el reporte.");
     return;
   }
 
-  // 1. Crear el contenedor HTML (invisible) que se convertirá en PDF
-  const element = document.createElement('div');
-  element.style.padding = '20px';
-  element.style.fontFamily = 'Arial, sans-serif';
-  element.style.color = '#333';
+  const btn = document.querySelector('button[onclick="window.generatePDF()"]');
+  const originalText = btn ? btn.innerHTML : '📄 Generar PDF';
+  if (btn) btn.innerHTML = '⏳ Diseñando reporte...';
 
-  // 2. Calcular resumen
-  const openCount = State.issues.filter(i => i.status === 'open').length;
-  const reviewCount = State.issues.filter(i => i.status === 'review').length;
-  const closedCount = State.issues.filter(i => i.status === 'closed').length;
-  const dateStr = new Date().toLocaleDateString();
+  const countOpen = issuesToPrint.filter(i => i.status === 'open').length;
+  const countRev = issuesToPrint.filter(i => i.status === 'review').length;
+  const countClosed = issuesToPrint.filter(i => i.status === 'closed').length;
 
-  // 3. Generar las filas de la tabla
-  let tableRows = '';
-  State.issues.forEach(issue => {
-    const statusColor = issue.status === 'open' ? '#e94335' : (issue.status === 'review' ? '#fbbc04' : '#34a853');
-    const statusText = issue.status === 'open' ? 'Abierto' : (issue.status === 'review' ? 'Revisión' : 'Cerrado');
-    
-    // Coger el último comentario
-    let lastComment = issue.comment || 'Sin comentario';
-    let lastUser = issue.user || 'Anónimo';
-    if (issue.history && issue.history.length > 0) {
-      const lastUpdate = issue.history[issue.history.length - 1];
-      lastComment = lastUpdate.comment || lastComment;
-      lastUser = lastUpdate.user || lastUser;
-    }
+  const fecha = new Date().toLocaleDateString('es-ES');
+  const filtroNombres = { 'all': 'Todas las incidencias', 'open': 'Sólo Abiertas', 'review': 'En Revisión', 'closed': 'Sólo Cerradas' };
 
-    tableRows += `
-      <tr style="border-bottom: 1px solid #ddd;">
-        <td style="padding: 10px; font-size: 11px;">${issue.fileName}</td>
-        <td style="padding: 10px; font-size: 11px; font-weight: bold;">${issue.type}</td>
-        <td style="padding: 10px; font-size: 11px;">
-          <span style="color:${statusColor}; font-weight:bold;">${statusText}</span>
-        </td>
-        <td style="padding: 10px; font-size: 11px;">${lastUser}</td>
-        <td style="padding: 10px; font-size: 11px; color: #555;">${lastComment}</td>
-      </tr>
-    `;
-  });
-
-  // 4. Maquetar el documento HTML
-  element.innerHTML = `
-    <div style="border-bottom: 3px solid #4285F4; padding-bottom: 10px; margin-bottom: 20px;">
-      <h1 style="color: #4285F4; margin: 0; font-size: 24px;">Reporte de Calidad e Inspección</h1>
-      <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Generado el: <strong>${dateStr}</strong></p>
-      <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Inspector activo: <strong>${State.userName || 'Sistema'}</strong></p>
-    </div>
-    
-    <div style="display: flex; gap: 20px; margin-bottom: 30px;">
-      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #ddd;">
-        <div style="font-size: 24px; font-weight: bold; color: #e94335;">${openCount}</div>
-        <div style="font-size: 12px; color: #666; text-transform: uppercase;">Abiertas</div>
-      </div>
-      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #ddd;">
-        <div style="font-size: 24px; font-weight: bold; color: #fbbc04;">${reviewCount}</div>
-        <div style="font-size: 12px; color: #666; text-transform: uppercase;">En Revisión</div>
-      </div>
-      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #ddd;">
-        <div style="font-size: 24px; font-weight: bold; color: #34a853;">${closedCount}</div>
-        <div style="font-size: 12px; color: #666; text-transform: uppercase;">Cerradas</div>
-      </div>
-    </div>
-
-    <h3 style="color: #333; font-size: 16px; margin-bottom: 10px;">Detalle de Incidencias:</h3>
-    <table style="width: 100%; border-collapse: collapse; text-align: left;">
-      <thead>
-        <tr style="background-color: #4285F4; color: white;">
-          <th style="padding: 10px; font-size: 12px;">Pieza</th>
-          <th style="padding: 10px; font-size: 12px;">Tipo de Falla</th>
-          <th style="padding: 10px; font-size: 12px;">Estado</th>
-          <th style="padding: 10px; font-size: 12px;">Último Inspector</th>
-          <th style="padding: 10px; font-size: 12px;">Comentario Reciente</th>
+  // --- CABECERA TABULAR CON TU LOGO ---
+  let html = `
+    <div style="padding: 20px; font-family: Arial, sans-serif; color: #333; background-color: #fff; width: 700px; margin: 0 auto;">
+      
+      <table style="width: 100%; border-spacing: 0; margin-bottom: 25px; border-bottom: 2px solid #ddd; padding-bottom: 15px;">
+        <tr>
+          <td style="vertical-align: middle;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              
+              <img src="./img/SumatraQ_logo.jpg" alt="Logo Sumatra Q" style="width: 45px; height: 45px; border-radius: 10px; object-fit: contain; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.1);">
+              
+              <div>
+                <h1 style="color: #4285F4; margin: 0; font-size: 24px; font-weight: bold;">Reporte de Inspección</h1>
+                <p style="margin: 2px 0 0 0; color: #666; font-size: 14px; font-weight: bold;">Sumatra Q - Control de Calidad</p>
+              </div>
+            </div>
+          </td>
+          
+          <td style="vertical-align: bottom; text-align: right; width: 220px;">
+            <p style="margin: 0; color: #666; font-size: 12px;"><strong>Generado:</strong> ${fecha}</p>
+            <p style="margin: 4px 0 0 0; color: #666; font-size: 11px;"><strong>Filtro:</strong> ${filtroNombres[activeFilter]}</p>
+          </td>
         </tr>
-      </thead>
-      <tbody>
-        ${tableRows}
-      </tbody>
-    </table>
-    
-    <div style="margin-top: 40px; text-align: center; font-size: 10px; color: #999;">
-      Documento generado automáticamente por Sumatra Q - Visor 3D
-    </div>
+      </table>
+      <table style="width: 100%; border-spacing: 10px; margin-bottom: 25px;">
+        <tr>
+          <td style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; text-align: center; background: #fafafa; width: 33%;">
+            <div style="font-size: 24px; font-weight: bold; color: #e94335;">${countOpen}</div>
+            <div style="font-size: 10px; color: #666; font-weight: bold;">ABIERTAS</div>
+          </td>
+          <td style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; text-align: center; background: #fafafa; width: 33%;">
+            <div style="font-size: 24px; font-weight: bold; color: #fbbc04;">${countRev}</div>
+            <div style="font-size: 10px; color: #666; font-weight: bold;">EN REVISIÓN</div>
+          </td>
+          <td style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; text-align: center; background: #fafafa; width: 33%;">
+            <div style="font-size: 24px; font-weight: bold; color: #34a853;">${countClosed}</div>
+            <div style="font-size: 10px; color: #666; font-weight: bold;">CERRADAS</div>
+          </td>
+        </tr>
+      </table>
+      
+      <h3 style="border-bottom: 2px solid #4285F4; padding-bottom: 5px; margin-bottom: 15px; font-size: 18px;">Detalle de Incidencias Filtradas</h3>
   `;
 
-  // 5. Opciones para el generador de PDF
+  // ... (el resto del bucle de incidencias permanece igual que en tu versión tabular estable)
+  issuesToPrint.forEach((issue, index) => {
+    const estadoHTML = issue.status === 'open' ? '<span style="color:#e94335; font-weight:bold;">🔴 Abierto</span>' : 
+                       (issue.status === 'review' ? '<span style="color:#fbbc04; font-weight:bold;">🟡 Revisión</span>' : '<span style="color:#34a853; font-weight:bold;">🟢 Cerrado</span>');
+
+    html += `
+      <div style="page-break-inside: avoid; border: 1px solid #eee; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <table style="width: 100%; margin-bottom: 10px;">
+          <tr>
+            <td style="text-align: left; vertical-align: middle;">
+              <h4 style="margin: 0; font-size: 15px;">#${index + 1} - ${issue.type || 'Falla no especificada'}</h4>
+            </td>
+            <td style="text-align: right; vertical-align: middle; width: 100px; white-space: nowrap;">
+              ${estadoHTML}
+            </td>
+          </tr>
+        </table>
+        
+        <p style="margin: 0 0 5px 0; font-size: 13px;"><strong>Comentario original:</strong> ${issue.comment || 'N/A'}</p>
+        <p style="margin: 0 0 8px 0; font-size: 11px; color: #555;"><strong>Inspector inicial:</strong> 👤 ${issue.user || 'Desconocido'}</p>
+        <p style="margin: 0 0 12px 0; font-size: 10px; color: #888; border-bottom: 1px solid #f5f5f5; padding-bottom: 5px;">
+           Pieza: ${issue.fileName || '---'} | 📍 XYZ: ${(issue.x || 0).toFixed(1)}, ${(issue.y || 0).toFixed(1)}, ${(issue.z || 0).toFixed(1)}
+        </p>
+    `;
+
+    if (issue.history && issue.history.length > 0) {
+      html += `<div style="background: #f8f9fa; padding: 10px; border-left: 3px solid #4285F4; margin-bottom: 5px;">
+                 <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: bold; color: #333;">Trazabilidad de cambios:</p>
+                 <ul style="margin: 0; padding-left: 15px; font-size: 11px; color: #555; list-style-type: none;">`;
+      issue.history.forEach(h => {
+        const hDate = new Date(h.date).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+        html += `<li style="margin-bottom: 3px;">• <strong>${hDate}</strong> - 👤 ${h.user || 'Anónimo'} - ${h.action || 'Actualización'}</li>`;
+      });
+      html += `</ul></div>`;
+    }
+
+    html += `</div>`;
+  });
+  
+  html += `</div>`;
+
   const opt = {
     margin:       10,
-    filename:     `Reporte_Inspeccion_${dateStr.replace(/\//g, '-')}.pdf`,
+    filename:     `Inspeccion_${filtroNombres[activeFilter].replace(/ /g, '_')}.pdf`,
     image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true },
+    html2canvas:  { scale: 2, useCORS: true, letterRendering: true, allowTaint: true },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
-  // 6. Ejecutar
-  const originalText = document.querySelector('button[onclick="window.generatePDF()"]').innerText;
-  document.querySelector('button[onclick="window.generatePDF()"]').innerText = "⏳ Generando...";
-  
-  html2pdf().set(opt).from(element).save().then(() => {
-    document.querySelector('button[onclick="window.generatePDF()"]').innerText = originalText;
+  html2pdf().set(opt).from(html).save().then(() => {
+    if (btn) btn.innerHTML = originalText;
+  }).catch(err => {
+    console.error("Error PDF:", err);
+    if (btn) btn.innerHTML = originalText;
+    alert("Error generando el PDF.");
   });
-}
+};
