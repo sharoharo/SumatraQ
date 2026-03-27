@@ -53,11 +53,39 @@
         <button class="filter-chip" onclick="window.setFilter('closed', this)" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #ccc; background-color: white; color: #555; font-weight: bold; cursor: pointer; border-bottom: 3px solid #34a853; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Cerrados</button>
     </div>
 
-    <div class="layers-control interactive-element">
-      <button class="layer-btn active" data-mode="shaded">Sombreado</button>
-      <button class="layer-btn" data-mode="shadedEdges">Aristas</button>
-      <button class="layer-btn" data-mode="wireframe">Alambre</button>
+   <button id="btnOpenLayers" class="layer-fab interactive-element" title="Tipo de visualización">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+    <polyline points="2 12 12 17 22 12"></polyline>
+    <polyline points="2 17 12 22 22 17"></polyline>
+  </svg>
+</button>
+
+<div id="layersModalOverlay" class="layers-modal-overlay">
+  <div class="layers-modal-content interactive-element">
+    <div class="layers-modal-header">
+      <h4 style="margin:0; font-size:16px; color:#202124;">Tipo de visualización</h4>
+      <button id="btnCloseLayers" style="background:none; border:none; font-size:20px; cursor:pointer; color:#5f6368;">✕</button>
     </div>
+
+    <div style="display:flex; gap:15px; justify-content:space-around; margin-top:20px;">
+      <button class="layer-btn layer-card active" data-mode="shaded">
+        <div class="layer-icon" style="background: linear-gradient(135deg, #e0e0e0, #bdbdbd);"></div>
+        <span>Sombreado</span>
+      </button>
+
+      <button class="layer-btn layer-card" data-mode="shadedEdges">
+        <div class="layer-icon" style="background: linear-gradient(135deg, #e0e0e0, #bdbdbd); border: 2px solid #5f6368;"></div>
+        <span>Aristas</span>
+      </button>
+
+      <button class="layer-btn layer-card" data-mode="wireframe">
+        <div class="layer-icon" style="background: #fff; border: 2px dashed #999;"></div>
+        <span>Alambre</span>
+      </button>
+    </div>
+  </div>
+</div>
 
     <div class="side-panel interactive-element" id="functionalityPanel" style="z-index: 100;">
       
@@ -156,6 +184,25 @@
   </script>
   
   <script type="module" src="./js/app.js"></script>
+
+  <script>
+  // Control del Modal de Capas
+  const btnOpen = document.getElementById('btnOpenLayers');
+  const btnClose = document.getElementById('btnCloseLayers');
+  const modal = document.getElementById('layersModalOverlay');
+
+  btnOpen.addEventListener('click', () => modal.classList.add('active'));
+  btnClose.addEventListener('click', () => modal.classList.remove('active'));
+
+  // Cerrar al pulsar fuera del cuadro o al seleccionar una opción
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.remove('active');
+  });
+  document.querySelectorAll('.layer-card').forEach(btn => {
+    btn.addEventListener('click', () => modal.classList.remove('active'));
+  });
+</script>
+</script>
 
 </body>
 </html>
