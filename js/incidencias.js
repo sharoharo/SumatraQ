@@ -234,6 +234,16 @@ export function deselectMarker() {
 
 export function deleteSelectedIssue(){
   if(!State.selectedMarker) return;
+
+  // 👇 AÑADIMOS LA VENTANA DE CONFIRMACIÓN AQUÍ 👇
+  const seguro = confirm("⚠️ ¿Estás seguro de que deseas eliminar esta incidencia?\n\nEsta acción no se puede deshacer.");
+  
+  // Si el usuario pulsa "Cancelar", detenemos la función y no borramos nada
+  if (!seguro) {
+    return; 
+  }
+  // 👆 FIN DE LA CONFIRMACIÓN 👆
+
   const id = State.selectedMarker.userData.issueId;
   State.issues = State.issues.filter(i => i.id !== id);
   
@@ -526,15 +536,24 @@ export function exportToCSV() {
   link.click();
 }
 
-export function setFilter(status) {
+export function setFilter(status, buttonClicked) {
   State.currentFilter = status;
   
-  // Pintar el botón activo
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.filter === status);
+  // 1. Quitar la clase 'active' a todos los botones (se vuelven grises)
+  document.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.classList.remove('active');
   });
   
-  // Recargar las esferas y la lista con el nuevo filtro
+  // 2. Poner la clase 'active' al botón que hemos pulsado (se vuelve azul)
+  if (buttonClicked) {
+    buttonClicked.classList.add('active');
+  } else if (status === 'all') {
+    // Por seguridad, si se llama a 'all' desde otro sitio
+    const btnAll = document.querySelector('.filter-chip');
+    if (btnAll) btnAll.classList.add('active');
+  }
+  
+  // 3. Recargar la vista 3D y la lista lateral
   renderIssues();
 }
 

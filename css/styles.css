@@ -233,3 +233,129 @@
   50% { transform: scale(1.05); } 
   100% { transform: scale(1); } 
 }
+
+/* ==========================================
+   FILTROS FLOTANTES SOBRE 3D (ESTILO MAPS)
+   ========================================== */
+
+/* Contenedor principal flotante */
+#floating-filter-container {
+  position: absolute;
+  top: 65px; /* Justo debajo de la top-toolbar (que mide 50px + márgenes) */
+  right: 15px; /* Pegado a la derecha como en la foto */
+  width: auto;
+  max-width: calc(100% - 30px); /* Evita que ocupe toda la pantalla en móvil */
+  z-index: 5; /* Por encima del canvas 3D, pero por debajo de menús modales */
+  background: transparent; /* Fondo transparente para integrarse en el 3D */
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Contenedor que permite deslizar horizontalmente */
+.filter-scroll-area {
+  display: flex;
+  overflow-x: auto;
+  gap: 6px; /* Un poco menos de espacio entre botones */
+  padding: 5px; /* Pequeño padding para sombras si las hubiera */
+  justify-content: flex-end; /* Alinea los botones a la derecha */
+
+  /* Ocultar la barra de scroll visualmente */
+  -ms-overflow-style: none;  /* IE y Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.filter-scroll-area::-webkit-scrollbar {
+  display: none; /* Chrome, Safari y Opera */
+}
+
+/* Diseño de los botones individuales (Chips) */
+.filter-chip {
+  flex: 0 0 auto;
+  padding: 7px 15px; /* Un pelín más grandes para facilitar el clic táctil */
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background-color: rgba(255, 255, 255, 0.9); /* Blanco ligeramente transparente */
+  color: #333;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Pequeña sombra para destacar sobre el 3D */
+  transition: all 0.2s ease;
+  white-space: nowrap; /* Evita que el texto se rompa */
+}
+
+.filter-chip:hover {
+  background-color: #f1f3f4;
+  transform: translateY(-1px); /* Pequeño efecto hover */
+}
+
+/* Diseño cuando el botón está seleccionado (Azul Google) */
+.filter-chip.active {
+  border-color: #4285F4;
+  background-color: #e8f0fe;
+  color: #1967d2;
+  font-weight: 600;
+}
+
+/* ==========================================
+   PERFIL FLOTANTE (GOOGLE MAPS STYLE)
+   ========================================== */
+.user-profile-floating {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 100;
+}
+
+/* El círculo con la inicial */
+.user-avatar-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: #1a73e8; /* Azul estilo Google */
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  border: 2px solid white;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-avatar-circle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* La tarjeta que se despliega al pasar el ratón */
+.user-dropdown {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  min-width: 220px;
+  border: 1px solid #eaeaea;
+  transition: all 0.2s ease;
+}
+
+/* Efecto hover para mostrar la tarjeta */
+.user-profile-floating:hover .user-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Para que los botones de Sombreado no choquen con el perfil */
+.layers-control {
+  top: 75px !important; 
+}
