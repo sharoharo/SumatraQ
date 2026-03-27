@@ -153,7 +153,9 @@
         
         <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; width: 100%;">
           <span style="font-size: 10px; color: #999; letter-spacing: 1px; font-weight: 500;">
-            SUMATRA Q • RELEASE v1.2.0-STABLE
+            <<div id="btnOpenInfo" style="position: sticky; bottom: 0; background: white; width: 100%; text-align: center; color: #999; font-size: 10px; padding: 15px 0; cursor: pointer; border-top: 1px solid #eee; z-index: 50;" onmouseover="this.style.color='#4285F4'" onmouseout="this.style.color='#999'" title="Ver información de la aplicación">
+  SUMATRA Q • RELEASE v1.4.0-STABLE ⓘ
+</div>
           </span>
         </div>
 
@@ -203,6 +205,60 @@
   });
 </script>
 </script>
+<div id="infoModalOverlay" class="info-modal-overlay">
+  <div class="info-modal-content">
+    <div class="info-modal-header">
+      <h2 style="margin:0; color:#4285F4; font-size: 20px;">🏭 Sumatra Q - Guía Rápida</h2>
+      <button id="btnCloseInfo" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; transition: color 0.2s;" onmouseover="this.style.color='#e94335'" onmouseout="this.style.color='#999'">✕</button>
+    </div>
+    
+    <div class="info-modal-body">
+      <p><strong>Sumatra Q</strong> es una plataforma web interactiva diseñada para la inspección y el control de calidad de piezas industriales.</p>
+      
+      <h3 style="color:#333; border-bottom:1px solid #eee; padding-bottom:5px; margin-top:20px;">✨ Características</h3>
+      <ul style="padding-left: 20px; margin-bottom: 20px;">
+        <li><strong>Visualización 3D:</strong> Renderizado de archivos STL.</li>
+        <li><strong>Marcadores:</strong> Creación de incidencias con clic derecho o pulsación larga.</li>
+        <li><strong>Trazabilidad:</strong> Historial inmutable de actualizaciones por usuario y fecha.</li>
+        <li><strong>Exportación:</strong> Generación de reportes PDF corporativos y listados CSV.</li>
+      </ul>
 
+      <h3 style="color:#333; border-bottom:1px solid #eee; padding-bottom:5px;">📖 ¿Cómo usar?</h3>
+      <ol style="padding-left: 20px; margin-bottom: 20px;">
+        <li><strong>Cargar pieza:</strong> Usa el botón superior o arrastra un STL a la pantalla.</li>
+        <li><strong>Crear incidencia:</strong> Haz un toque prolongado (móvil) o clic derecho (PC) sobre el defecto en la pieza 3D.</li>
+        <li><strong>Filtrar:</strong> Usa los botones superiores para aislar los problemas.</li>
+        <li><strong>Reporte:</strong> Filtra la vista deseada y pulsa "Generar PDF".</li>
+      </ol>
+      
+      <div style="text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #eee;">
+        <span style="font-size: 11px; color: #aaa;">Desarrollado para la mejora continua del Control de Calidad.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const btnOpenInfo = document.getElementById('btnOpenInfo');
+  const btnCloseInfo = document.getElementById('btnCloseInfo');
+  const infoModal = document.getElementById('infoModalOverlay');
+
+  if (btnOpenInfo && btnCloseInfo && infoModal) {
+    // Abrir al hacer clic en el texto de versión
+    btnOpenInfo.addEventListener('click', () => {
+      infoModal.classList.add('active');
+    });
+
+    // Cerrar al hacer clic en la X
+    btnCloseInfo.addEventListener('click', () => {
+      infoModal.classList.remove('active');
+    });
+    
+    // Cerrar al pulsar fuera del cuadro blanco
+    infoModal.addEventListener('click', (e) => {
+      if (e.target === infoModal) infoModal.classList.remove('active');
+    });
+  }
+</script>
 </body>
 </html>

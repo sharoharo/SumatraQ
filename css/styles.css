@@ -487,3 +487,65 @@
   .layers-modal-content { border-radius: 12px; transform: scale(0.9); }
   .layers-modal-overlay.active .layers-modal-content { transform: scale(1); }
 }
+
+/* ==========================================
+   ESTILOS DEL MODAL DE INFORMACIÓN
+   ========================================== */
+.info-modal-overlay {
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  width: 100vw; 
+  height: 100vh;
+  background: rgba(0,0,0,0.6); /* Fondo oscuro semitransparente */
+  z-index: 3000; /* Por encima de todo */
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  opacity: 0; 
+  visibility: hidden; 
+  transition: opacity 0.3s ease;
+}
+
+.info-modal-overlay.active { 
+  opacity: 1; 
+  visibility: visible; 
+}
+
+.info-modal-content {
+  background: white; 
+  width: 90%; 
+  max-width: 550px; 
+  max-height: 85vh;
+  border-radius: 12px; 
+  display: flex; 
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  transform: translateY(20px); 
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.info-modal-overlay.active .info-modal-content { 
+  transform: translateY(0); 
+}
+
+.info-modal-header {
+  padding: 15px 25px; 
+  border-bottom: 1px solid #eee; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  background-color: #f8f9fa;
+  border-radius: 12px 12px 0 0;
+}
+
+.info-modal-body {
+  padding: 25px; 
+  overflow-y: auto; /* Scroll si el contenido es muy largo */
+  color: #555; 
+  font-size: 14px; 
+  line-height: 1.6;
+}
+
+.info-modal-body p { margin-top: 0; }
+.info-modal-body li { margin-bottom: 8px; }
