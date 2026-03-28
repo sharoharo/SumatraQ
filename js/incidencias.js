@@ -2,8 +2,11 @@
 import * as THREE from 'three';
 import { State } from './estado.js';
 import { animateCamera } from './visor3d.js';
-import { saveIssueToCloud, saveMovementToCloud } from './nube.js';
+import { saveIssueToCloud, saveMovementToCloud } from './nube.js'; // ⬅️ NUEVO IMPORT
 import { renderPhotoGrid } from './fotos.js';
+
+
+
 
 State.currentFilter = 'all';
 
@@ -394,3 +397,4 @@ export function setFilter(status, buttonClicked) {
   
   renderIssues();
 }
+
