@@ -4,8 +4,11 @@ import { fetchDatabase, processLogin, processLogout, checkAuthStatus } from './a
 import { init3D, loadSTLs, updateFileListUI, toggleMeshVisibility, removeMesh, setView, applyShadingAll } from './visor3d.js';
 import { 
   onClick, onPointerDown, onPointerMove, onPointerUp, 
-  saveIssueFn, deleteSelectedIssue, handlePhotoInput, exportIssues, exportToCSV, setFilter, generatePDF 
+  saveIssueFn, deleteSelectedIssue, setFilter 
 } from './incidencias.js';
+import { exportIssues, exportToCSV, generatePDF } from './exportador.js';
+import { handlePhotoInput } from './fotos.js';
+import { initUI } from './ui.js';
 
 /* --- EXPONER FUNCIONES AL HTML (PÚBLICAS) --- */
 window.processLogin = processLogin;
@@ -17,19 +20,10 @@ window.exportToCSV = exportToCSV;
 window.setFilter = setFilter;
 window.generatePDF = generatePDF;
 
-window.togglePanel = function(forceOpen = false) {
-  const panel = document.getElementById('functionalityPanel');
-  if (forceOpen) { panel.classList.add('open'); document.body.classList.add('panel-open'); } 
-  else { panel.classList.toggle('open'); document.body.classList.toggle('panel-open'); }
-};
-
-window.openLightbox = function(src) {
-  document.getElementById('lightboxImg').src = src;
-  document.getElementById('lightbox').classList.add('active');
-};
-
 /* --- ASIGNAR EVENTOS A LOS BOTONES --- */
 window.onload = () => {
+  initUI(); // Arranca los menús y paneles (togglePanel y openLightbox ya viven aquí)
+  
   // Canvas 3D
   const canvas = State.renderer.domElement;
   canvas.addEventListener("click", onClick);
@@ -41,7 +35,7 @@ window.onload = () => {
   document.getElementById('fileInput').onchange = loadSTLs;
   document.getElementById('saveIssue').onclick = saveIssueFn;
   document.getElementById('deleteIssueBtn').onclick = deleteSelectedIssue;
-  
+
   const addBtn = document.getElementById('addBtn');
   if(addBtn) {
     addBtn.onclick = () => { 

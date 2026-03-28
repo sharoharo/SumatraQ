@@ -1,8 +1,11 @@
 // incidencias.js
 import * as THREE from 'three';
-import { State, CONFIG } from './estado.js';
+import { State } from './estado.js';
 import { animateCamera } from './visor3d.js';
-State.currentFilter = 'all'; // Filtro por defecto
+import { saveIssueToCloud, saveMovementToCloud } from './nube.js';
+import { renderPhotoGrid } from './fotos.js';
+
+State.currentFilter = 'all';
 
 /* ==========================================
    1. LÓGICA DE RATÓN Y CLICKS (RAYCASTER)
@@ -51,7 +54,6 @@ export function onClick(event){
   
   if(hitMarkers.length > 0){ selectMarker(hitMarkers[0].object); return; }
 
-  // --- MOVER PUNTO Y REGISTRO AUTOMÁTICO ---
   if(State.moveIssueMode && State.selectedMarker){
     const hit = getIntersection();
     if(hit.length > 0){ 
@@ -77,13 +79,7 @@ export function onClick(event){
       document.getElementById('moveIssueBtn').classList.remove('active'); 
       renderIssues();
 
-      try {
-        fetch(CONFIG.GOOGLE_SCRIPT_URL, { 
-          method: "POST", mode: "no-cors", 
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(issueToMove) 
-        });
-      } catch (e) { console.error("Error subiendo posición", e); }
+      saveMovementToCloud(issueToMove); // ⬅️ LLAMADA A NUBE.JS
     }
     return;
   }
@@ -99,7 +95,7 @@ export function onClick(event){
 }
 
 /* ==========================================
-   2. FORMULARIOS E HISTORIAL (MAPS STYLE)
+   2. FORMULARIOS E HISTORIAL
    ========================================== */
 export function openNewIssueForm() {
   deselectMarker();
@@ -107,7 +103,6 @@ export function openNewIssueForm() {
   const targetLabel = document.getElementById('issueTargetFile');
   if(targetLabel) targetLabel.innerText = `En pieza: ${State.targetFileName}`;
   
-  // Limpiar galería superior si existe
   const topG = document.getElementById('topGalleryContainer');
   if(topG) topG.innerHTML = '';
 
@@ -142,9 +137,6 @@ export function selectMarker(marker){
     const targetLabel = document.getElementById('issueTargetFile');
     if(targetLabel) targetLabel.innerText = `En pieza: ${issue.fileName}`;
     
-    // ========================================================
-    // 🌟 GALERÍA ESTILO GOOGLE MAPS EN LA CABECERA
-    // ========================================================
     let allPhotos = [];
     if(issue.history) {
       issue.history.forEach(h => { 
@@ -168,7 +160,6 @@ export function selectMarker(marker){
       galleryHTML += `</div>`;
       topGallery.innerHTML = galleryHTML;
     }
-    // ========================================================
 
     document.getElementById('saveIssue').innerText = "Añadir Actualización";
     const updateDiv = document.getElementById('updateDivider');
@@ -182,7 +173,6 @@ export function selectMarker(marker){
     State.currentPhotos = []; 
     renderPhotoGrid();
 
-    // --- RENDERIZAR HISTORIAL LIMPIO (SIN FOTOS) ---
     const hContainer = document.getElementById('historyContainer');
     const hTimeline = document.getElementById('historyTimeline');
     if(hTimeline) hTimeline.innerHTML = "";
@@ -234,6 +224,10 @@ export function deselectMarker() {
 
 export function deleteSelectedIssue(){
   if(!State.selectedMarker) return;
+
+  const seguro = confirm("⚠️ ¿Estás seguro de que deseas eliminar esta incidencia?\n\nEsta acción no se puede deshacer.");
+  if (!seguro) return; 
+
   const id = State.selectedMarker.userData.issueId;
   State.issues = State.issues.filter(i => i.id !== id);
   
@@ -246,7 +240,7 @@ export function deleteSelectedIssue(){
 }
 
 /* ==========================================
-   3. CARGA DESDE LA NUBE Y GUARDADO
+   3. GUARDADO UI Y LLAMADA A NUBE
    ========================================== */
 export async function saveIssueFn() {
   const nowIso = new Date().toISOString();
@@ -290,78 +284,21 @@ export async function saveIssueFn() {
   
   const btn = document.getElementById('saveIssue'); 
   const originalText = btn ? btn.innerText : "Guardar";
-  if (btn) { btn.innerText = "⏳ Subiendo..."; btn.disabled = true; }
   
   try {
-    fetch(CONFIG.GOOGLE_SCRIPT_URL, { 
-      method: "POST", 
-      mode: "no-cors", 
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(issueToUpload) 
-    });
+    if (btn) { btn.innerText = "⏳ Subiendo..."; btn.disabled = true; }
+    
+    await saveIssueToCloud(issueToUpload); // ⬅️ LLAMADA A NUBE.JS
+
     setTimeout(() => { 
       alert("✅ Enviado a la nube"); 
       if (btn) { btn.innerText = originalText; btn.disabled = false; }
     }, 600);
-  } catch (error) { 
-    alert("Error en nube."); 
+    
+  } catch (error) {
+    alert("❌ Error de conexión al guardar en la nube."); 
     if (btn) { btn.innerText = originalText; btn.disabled = false; }
   }
-}
-
-export function loadIssuesForFile(fileName) { 
-  if (!State.db.incidenciasRegistradas) return;
-
-  const filasPieza = State.db.incidenciasRegistradas.filter(row => row.PIEZA === fileName);
-
-  const incidenciasMap = {};
-  filasPieza.forEach(row => {
-    const id = row.ID;
-    if (!incidenciasMap[id]) incidenciasMap[id] = [];
-    incidenciasMap[id].push(row);
-  });
-
-  Object.keys(incidenciasMap).forEach(id => {
-    const historial = incidenciasMap[id].sort((a, b) => new Date(a.FECHA) - new Date(b.FECHA));
-    const ultimaFila = historial[historial.length - 1]; 
-
-    if (!State.issues.find(i => i.id === id)) {
-      const nuevaIncidencia = {
-        id: id,
-        fileName: fileName,
-        x: parseFloat(String(ultimaFila.COORD_X).replace(',', '.')),
-        y: parseFloat(String(ultimaFila.COORD_Y).replace(',', '.')),
-        z: parseFloat(String(ultimaFila.COORD_Z).replace(',', '.')),
-        type: ultimaFila.TIPO,
-        status: ultimaFila.ESTADO,
-        history: historial.map(h => {
-          let fotosProcesadas = [];
-          if (h.FOTOS_URL && typeof h.FOTOS_URL === 'string' && h.FOTOS_URL.trim() !== "") {
-             fotosProcesadas = h.FOTOS_URL.split('|').map(url => {
-               let cleanUrl = url.trim();
-               
-               // 👇 FIX DE GOOGLE DRIVE THUMBNAILS 👇
-               const match = cleanUrl.match(/\/d\/(.+?)\//);
-               if(match && match[1]) {
-                 cleanUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
-               }
-               // ------------------------------------
-
-               return { dataUrl: cleanUrl };
-             });
-          }
-          return {
-            date: h.FECHA,
-            user: h.INSPECTOR || "Anónimo",
-            status: h.ESTADO,
-            comment: h.COMENTARIO || "",
-            photos: fotosProcesadas
-          };
-        })
-      };
-      State.issues.push(nuevaIncidencia);
-    }
-  });
 }
 
 /* ==========================================
@@ -373,7 +310,6 @@ export function renderIssues() {
   toRemove.forEach(obj => State.scene.remove(obj));
 
   State.issues.forEach(issue => {
-    // 👇 LA MAGIA DEL FILTRO 3D 👇
     if (State.currentFilter !== 'all' && issue.status !== State.currentFilter) return;
     
     const mesh = State.loadedMeshes[issue.fileName]; 
@@ -400,7 +336,6 @@ function renderIssueListUI() {
   list.innerHTML = "";
   
   State.issues.forEach(issue => {
-    // 👇 LA MAGIA DEL FILTRO EN LA LISTA 👇
     if (State.currentFilter !== 'all' && issue.status !== State.currentFilter) return;
 
     const card = document.createElement('div');
@@ -443,205 +378,19 @@ function getColor(status) {
   }
 }
 
-/* ==========================================
-   5. FOTOS Y EXPORTACIÓN
-   ========================================== */
-export function handlePhotoInput(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const MAX_SIZE = 1280; 
-      let width = img.width, height = img.height;
-      if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } } 
-      else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
-      canvas.width = width; canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      State.currentPhotos.push({ dataUrl: canvas.toDataURL('image/jpeg', 0.8) });
-      renderPhotoGrid();
-    };
-    img.src = ev.target.result;
-  }; 
-  reader.readAsDataURL(file); 
-  e.target.value = ''; 
-}
-
-export function renderPhotoGrid() {
-  const grid = document.getElementById('photoGrid'); 
-  if(!grid) return;
-  grid.innerHTML = '';
-  State.currentPhotos.forEach((photo, index) => {
-    const div = document.createElement('div'); div.className = 'photo-thumb-container';
-    div.innerHTML = `
-      <img src="${photo.dataUrl}" class="photo-thumb" onclick="window.openLightbox('${photo.dataUrl}')">
-      <button class="delete-photo-btn" onclick="event.preventDefault(); State.currentPhotos.splice(${index}, 1); renderPhotoGrid();">✕</button>
-    `;
-    div.querySelector('.delete-photo-btn').onclick = (e) => {
-      e.preventDefault();
-      State.currentPhotos.splice(index, 1);
-      renderPhotoGrid();
-    };
-    grid.appendChild(div);
-  });
-}
-
-export function exportIssues(singleFileName = null) {
-  if(Object.keys(State.loadedMeshes).length === 0) { alert("Carga piezas primero."); return; }
-  const filesToExport = singleFileName ? [singleFileName] : Object.keys(State.loadedMeshes);
-  const issuesToExport = singleFileName ? State.issues.filter(i => i.fileName === singleFileName) : State.issues;
-  const payload = { schemaVersion: 3, exportedAt: new Date().toISOString(), filesIncluded: filesToExport, issues: issuesToExport };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = singleFileName ? `issues_${singleFileName}.json` : `issues_sesion_global.json`;
-  a.click(); URL.revokeObjectURL(a.href);
-}
-
-export function exportToCSV() {
-  if (State.issues.length === 0) { alert("No hay incidencias para exportar."); return; }
-  const headers = ["ID_INCIDENCIA", "PIEZA", "COORD_X", "COORD_Y", "COORD_Z", "TIPO", "ESTADO", "FECHA", "USUARIO", "COMENTARIO"];
-  const SEPARATOR = ";";
-  let rows = [];
-
-  State.issues.forEach(i => {
-    if (i.history && i.history.length > 0) {
-      i.history.forEach(entry => {
-        rows.push([
-          i.id, i.fileName,
-          i.x ? i.x.toFixed(4).replace('.', ',') : "0,0000",
-          i.y ? i.y.toFixed(4).replace('.', ',') : "0,0000",
-          i.z ? i.z.toFixed(4).replace('.', ',') : "0,0000",
-          i.type, entry.status, entry.date, entry.user || "Anónimo", entry.comment || ""
-        ].map(val => `"${String(val).replace(new RegExp(SEPARATOR, 'g'), ' ').replace(/"/g, '""')}"`));
-      });
-    }
-  });
-
-  const csvContent = `sep=${SEPARATOR}\n` + headers.join(SEPARATOR) + "\n" + rows.map(r => r.join(SEPARATOR)).join("\n");
-  const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `Historial_Trazabilidad_${new Date().toISOString().split('T')[0]}.csv`;
-  link.click();
-}
-
-export function setFilter(status) {
+export function setFilter(status, buttonClicked) {
   State.currentFilter = status;
   
-  // Pintar el botón activo
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.filter === status);
+  document.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.classList.remove('active');
   });
   
-  // Recargar las esferas y la lista con el nuevo filtro
-  renderIssues();
-}
-
-export function generatePDF() {
-  if (State.issues.length === 0) {
-    alert("No hay incidencias registradas para generar el reporte.");
-    return;
+  if (buttonClicked) {
+    buttonClicked.classList.add('active');
+  } else if (status === 'all') {
+    const btnAll = document.querySelector('.filter-chip');
+    if (btnAll) btnAll.classList.add('active');
   }
-
-  // 1. Crear el contenedor HTML (invisible) que se convertirá en PDF
-  const element = document.createElement('div');
-  element.style.padding = '20px';
-  element.style.fontFamily = 'Arial, sans-serif';
-  element.style.color = '#333';
-
-  // 2. Calcular resumen
-  const openCount = State.issues.filter(i => i.status === 'open').length;
-  const reviewCount = State.issues.filter(i => i.status === 'review').length;
-  const closedCount = State.issues.filter(i => i.status === 'closed').length;
-  const dateStr = new Date().toLocaleDateString();
-
-  // 3. Generar las filas de la tabla
-  let tableRows = '';
-  State.issues.forEach(issue => {
-    const statusColor = issue.status === 'open' ? '#e94335' : (issue.status === 'review' ? '#fbbc04' : '#34a853');
-    const statusText = issue.status === 'open' ? 'Abierto' : (issue.status === 'review' ? 'Revisión' : 'Cerrado');
-    
-    // Coger el último comentario
-    let lastComment = issue.comment || 'Sin comentario';
-    let lastUser = issue.user || 'Anónimo';
-    if (issue.history && issue.history.length > 0) {
-      const lastUpdate = issue.history[issue.history.length - 1];
-      lastComment = lastUpdate.comment || lastComment;
-      lastUser = lastUpdate.user || lastUser;
-    }
-
-    tableRows += `
-      <tr style="border-bottom: 1px solid #ddd;">
-        <td style="padding: 10px; font-size: 11px;">${issue.fileName}</td>
-        <td style="padding: 10px; font-size: 11px; font-weight: bold;">${issue.type}</td>
-        <td style="padding: 10px; font-size: 11px;">
-          <span style="color:${statusColor}; font-weight:bold;">${statusText}</span>
-        </td>
-        <td style="padding: 10px; font-size: 11px;">${lastUser}</td>
-        <td style="padding: 10px; font-size: 11px; color: #555;">${lastComment}</td>
-      </tr>
-    `;
-  });
-
-  // 4. Maquetar el documento HTML
-  element.innerHTML = `
-    <div style="border-bottom: 3px solid #4285F4; padding-bottom: 10px; margin-bottom: 20px;">
-      <h1 style="color: #4285F4; margin: 0; font-size: 24px;">Reporte de Calidad e Inspección</h1>
-      <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Generado el: <strong>${dateStr}</strong></p>
-      <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Inspector activo: <strong>${State.userName || 'Sistema'}</strong></p>
-    </div>
-    
-    <div style="display: flex; gap: 20px; margin-bottom: 30px;">
-      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #ddd;">
-        <div style="font-size: 24px; font-weight: bold; color: #e94335;">${openCount}</div>
-        <div style="font-size: 12px; color: #666; text-transform: uppercase;">Abiertas</div>
-      </div>
-      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #ddd;">
-        <div style="font-size: 24px; font-weight: bold; color: #fbbc04;">${reviewCount}</div>
-        <div style="font-size: 12px; color: #666; text-transform: uppercase;">En Revisión</div>
-      </div>
-      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #ddd;">
-        <div style="font-size: 24px; font-weight: bold; color: #34a853;">${closedCount}</div>
-        <div style="font-size: 12px; color: #666; text-transform: uppercase;">Cerradas</div>
-      </div>
-    </div>
-
-    <h3 style="color: #333; font-size: 16px; margin-bottom: 10px;">Detalle de Incidencias:</h3>
-    <table style="width: 100%; border-collapse: collapse; text-align: left;">
-      <thead>
-        <tr style="background-color: #4285F4; color: white;">
-          <th style="padding: 10px; font-size: 12px;">Pieza</th>
-          <th style="padding: 10px; font-size: 12px;">Tipo de Falla</th>
-          <th style="padding: 10px; font-size: 12px;">Estado</th>
-          <th style="padding: 10px; font-size: 12px;">Último Inspector</th>
-          <th style="padding: 10px; font-size: 12px;">Comentario Reciente</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${tableRows}
-      </tbody>
-    </table>
-    
-    <div style="margin-top: 40px; text-align: center; font-size: 10px; color: #999;">
-      Documento generado automáticamente por Sumatra Q - Visor 3D
-    </div>
-  `;
-
-  // 5. Opciones para el generador de PDF
-  const opt = {
-    margin:       10,
-    filename:     `Reporte_Inspeccion_${dateStr.replace(/\//g, '-')}.pdf`,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-
-  // 6. Ejecutar
-  const originalText = document.querySelector('button[onclick="window.generatePDF()"]').innerText;
-  document.querySelector('button[onclick="window.generatePDF()"]').innerText = "⏳ Generando...";
   
-  html2pdf().set(opt).from(element).save().then(() => {
-    document.querySelector('button[onclick="window.generatePDF()"]').innerText = originalText;
-  });
+  renderIssues();
 }

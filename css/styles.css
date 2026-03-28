@@ -233,3 +233,319 @@
   50% { transform: scale(1.05); } 
   100% { transform: scale(1); } 
 }
+
+/* ==========================================
+   FILTROS FLOTANTES SOBRE 3D (ESTILO MAPS)
+   ========================================== */
+
+/* Contenedor principal flotante */
+#floating-filter-container {
+  position: absolute;
+  top: 65px; /* Justo debajo de la top-toolbar (que mide 50px + márgenes) */
+  right: 15px; /* Pegado a la derecha como en la foto */
+  width: auto;
+  max-width: calc(100% - 30px); /* Evita que ocupe toda la pantalla en móvil */
+  z-index: 5; /* Por encima del canvas 3D, pero por debajo de menús modales */
+  background: transparent; /* Fondo transparente para integrarse en el 3D */
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Contenedor que permite deslizar horizontalmente */
+.filter-scroll-area {
+  display: flex;
+  overflow-x: auto;
+  gap: 6px; /* Un poco menos de espacio entre botones */
+  padding: 5px; /* Pequeño padding para sombras si las hubiera */
+  justify-content: flex-end; /* Alinea los botones a la derecha */
+
+  /* Ocultar la barra de scroll visualmente */
+  -ms-overflow-style: none;  /* IE y Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.filter-scroll-area::-webkit-scrollbar {
+  display: none; /* Chrome, Safari y Opera */
+}
+
+/* Diseño de los botones individuales (Chips) */
+.filter-chip {
+  flex: 0 0 auto;
+  padding: 7px 15px; /* Un pelín más grandes para facilitar el clic táctil */
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background-color: rgba(255, 255, 255, 0.9); /* Blanco ligeramente transparente */
+  color: #333;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Pequeña sombra para destacar sobre el 3D */
+  transition: all 0.2s ease;
+  white-space: nowrap; /* Evita que el texto se rompa */
+}
+
+.filter-chip:hover {
+  background-color: #f1f3f4;
+  transform: translateY(-1px); /* Pequeño efecto hover */
+}
+
+/* Diseño cuando el botón está seleccionado (Azul Google) */
+.filter-chip.active {
+  border-color: #4285F4;
+  background-color: #e8f0fe;
+  color: #1967d2;
+  font-weight: 600;
+}
+
+/* ==========================================
+   PERFIL FLOTANTE (GOOGLE MAPS STYLE)
+   ========================================== */
+.user-profile-floating {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 100;
+}
+
+/* El círculo con la inicial */
+.user-avatar-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: #1a73e8; /* Azul estilo Google */
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  border: 2px solid white;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-avatar-circle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* La tarjeta que se despliega al pasar el ratón */
+.user-dropdown {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  min-width: 220px;
+  border: 1px solid #eaeaea;
+  transition: all 0.2s ease;
+}
+
+/* Efecto hover para mostrar la tarjeta */
+.user-profile-floating:hover .user-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Para que los botones de Sombreado no choquen con el perfil */
+.layers-control {
+  top: 75px !important; 
+}
+
+/* ==========================================
+   📱 RESPONSIVE DESIGN (MÓVILES Y TABLETS)
+   ========================================== */
+@media (max-width: 768px) {
+  
+  /* 1. Evitar descuadre al rotar el móvil */
+  body, html {
+    overflow-x: hidden;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+  }
+
+  #map-container {
+    width: 100vw !important;
+    height: 100vh !important;
+  }
+
+  /* 2. El buscador le deja espacio al icono de usuario */
+  .search-box {
+    width: calc(100% - 75px) !important;
+    top: 15px !important;
+    left: 10px !important;
+  }
+
+  /* 3. Colocación de los filtros en móvil */
+  .filter-scroll-area {
+    top: 75px !important;
+    left: 10px !important;
+    width: calc(100% - 20px) !important;
+  }
+
+  /* 4. Bajamos los botones de Sombreado/Aristas para que no choquen */
+  .layers-control {
+    top: 130px !important; 
+    left: 10px !important;
+    right: auto !important;
+  }
+  
+  /* 5. Ajuste del menú desplegable de usuario */
+  .user-dropdown {
+    min-width: 180px;
+    right: -10px; 
+  }
+}
+
+/* ==========================================
+   BOTÓN Y MODAL DE CAPAS (GOOGLE MAPS STYLE)
+   ========================================== */
+/* El botón circular flotante */
+.layer-fab {
+  position: absolute;
+  top: 75px;
+  right: 15px; /* Lo ponemos a la derecha, debajo del avatar */
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: white;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+.layer-fab:hover { background-color: #f1f3f4; }
+
+/* Fondo oscuro del panel */
+.layers-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.4);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end; /* En móvil sale desde abajo */
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+}
+.layers-modal-overlay.active { opacity: 1; visibility: visible; }
+
+/* La tarjeta blanca con las opciones */
+.layers-modal-content {
+  background: white;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 16px 16px 0 0;
+  padding: 24px;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.layers-modal-overlay.active .layers-modal-content { transform: translateY(0); }
+
+.layers-modal-header { display: flex; justify-content: space-between; align-items: center; }
+
+/* Tarjetas individuales de cada vista */
+.layer-card {
+  background: none; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 10px; border-radius: 12px; transition: all 0.2s;
+}
+.layer-card:hover { background-color: #f8f9fa; }
+
+/* Diseño para cuando una capa está seleccionada */
+.layer-card.active .layer-icon {
+  border-color: #1a73e8 !important;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3);
+}
+.layer-card.active span { color: #1a73e8; font-weight: 600; }
+
+.layer-icon {
+  width: 60px; height: 60px; border-radius: 12px;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+.layer-card span { font-size: 12px; color: #3c4043; }
+
+/* Ajuste específico para PC (El panel se centra en lugar de pegarse abajo) */
+@media (min-width: 768px) {
+  .layers-modal-overlay { align-items: center; }
+  .layers-modal-content { border-radius: 12px; transform: scale(0.9); }
+  .layers-modal-overlay.active .layers-modal-content { transform: scale(1); }
+}
+
+/* ==========================================
+   ESTILOS DEL MODAL DE INFORMACIÓN
+   ========================================== */
+.info-modal-overlay {
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  width: 100vw; 
+  height: 100vh;
+  background: rgba(0,0,0,0.6); /* Fondo oscuro semitransparente */
+  z-index: 3000; /* Por encima de todo */
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  opacity: 0; 
+  visibility: hidden; 
+  transition: opacity 0.3s ease;
+}
+
+.info-modal-overlay.active { 
+  opacity: 1; 
+  visibility: visible; 
+}
+
+.info-modal-content {
+  background: white; 
+  width: 90%; 
+  max-width: 550px; 
+  max-height: 85vh;
+  border-radius: 12px; 
+  display: flex; 
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  transform: translateY(20px); 
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.info-modal-overlay.active .info-modal-content { 
+  transform: translateY(0); 
+}
+
+.info-modal-header {
+  padding: 15px 25px; 
+  border-bottom: 1px solid #eee; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  background-color: #f8f9fa;
+  border-radius: 12px 12px 0 0;
+}
+
+.info-modal-body {
+  padding: 25px; 
+  overflow-y: auto; /* Scroll si el contenido es muy largo */
+  color: #555; 
+  font-size: 14px; 
+  line-height: 1.6;
+}
+
+.info-modal-body p { margin-top: 0; }
+.info-modal-body li { margin-bottom: 8px; }

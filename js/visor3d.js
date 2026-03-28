@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { State } from './estado.js';
-import { renderIssues, loadIssuesForFile } from './incidencias.js';
+import { renderIssues } from './incidencias.js';
+import { loadIssuesForFile } from './nube.js'; // ⬅️ NUEVO IMPORT
 
 export function init3D() {
   State.scene.background = new THREE.Color(0xe5e3df);

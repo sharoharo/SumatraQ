@@ -5,25 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Sumatra Q - Visor CAD Multi-Pieza</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="css/styles.css">
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 <body>
- <div id="loginOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; display:flex; justify-content:center; align-items:center;">
-  <div style="background:white; padding:30px; border-radius:12px; text-align:center; max-width:320px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-    <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q" style="width: 120px; height: 120px; object-fit: contain; margin: 0 auto 15px auto; display: block;">
-    <p style="font-size:13px; color:#666; margin-bottom:20px;">Identifícate con tus credenciales de sistema.</p>
-    
-    <input type="email" id="loginEmail" placeholder="Tu Email" style="width:100%; padding:12px; margin-bottom:12px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px;">
-    <input type="password" id="loginPassword" placeholder="Tu Contraseña" style="width:100%; padding:12px; margin-bottom:20px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px;">
-    
-    <button id="loginBtn" onclick="processLogin()" style="width:100%; padding:14px; background:#4285F4; color:white; border:none; border-radius:6px; font-weight:bold; font-size:15px; cursor:pointer; transition:0.3s;">Conectando a BD...</button>
+
+  <div id="splashScreen" class="splash-screen">
+    <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q Logo" class="splash-logo">
+    <div class="splash-spinner"></div>
   </div>
-</div>
+
+  <div id="loginOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; display:flex; justify-content:center; align-items:center;">
+    <div style="background:white; padding:30px; border-radius:12px; text-align:center; max-width:320px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+      <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q" style="width: 120px; height: 120px; object-fit: contain; margin: 0 auto 15px auto; display: block;">
+      <p style="font-size:13px; color:#666; margin-bottom:20px;">Identifícate con tus credenciales de sistema.</p>
+      
+      <input type="email" id="loginEmail" placeholder="Tu Email" style="width:100%; padding:12px; margin-bottom:12px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px;">
+      <input type="password" id="loginPassword" placeholder="Tu Contraseña" style="width:100%; padding:12px; margin-bottom:20px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px;">
+      
+      <button id="loginBtn" onclick="processLogin()" style="width:100%; padding:14px; background:#4285F4; color:white; border:none; border-radius:6px; font-weight:bold; font-size:15px; cursor:pointer; transition:0.3s;">Conectando a BD...</button>
+    </div>
+  </div>
 
   <div id="map-container"></div>
 
   <div class="ui-layer">
+    
+    <div class="user-profile-floating interactive-element">
+      <div class="user-avatar-circle" id="userAvatarLetter" title="Tu cuenta">U</div>
+      <div class="user-dropdown">
+        <div style="font-size: 11px; color: #666; margin-bottom: 2px;">Sesión activa:</div>
+        <div id="currentUserDisplay" style="font-size: 13px; font-weight: 500; color: #333; margin-bottom: 12px; word-break: break-all;">---</div>
+        <button onclick="window.processLogout()" class="btn-primary" style="width: 100%; background-color: #fce8e6; color: #d93025; border: 1px solid #f8d7da;">🚪 Salir</button>
+      </div>
+    </div>
     <div class="search-box interactive-element">
       <button class="menu-btn" onclick="togglePanel()" title="Menú">☰</button>
       <div class="search-title" id="fileNameDisplay">Añade STLs (soporta múltiples)...</div>
@@ -31,13 +46,49 @@
       <input type="file" id="fileInput" accept=".stl,.STL" multiple />
     </div>
 
-    <div class="layers-control interactive-element">
-      <button class="layer-btn active" data-mode="shaded">Sombreado</button>
-      <button class="layer-btn" data-mode="shadedEdges">Aristas</button>
-      <button class="layer-btn" data-mode="wireframe">Alambre</button>
+    <div class="filter-scroll-area interactive-element" style="position: absolute; top: 75px; left: 20px; z-index: 1; display: flex; gap: 8px;">
+        <button class="filter-chip active" onclick="window.setFilter('all', this)" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #4285F4; background-color: #e8f0fe; color: #1967d2; font-weight: bold; cursor: pointer; border-bottom: 3px solid #4285F4; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Todos</button>
+        <button class="filter-chip" onclick="window.setFilter('open', this)" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #ccc; background-color: white; color: #555; font-weight: bold; cursor: pointer; border-bottom: 3px solid #e94335; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Abiertos</button>
+        <button class="filter-chip" onclick="window.setFilter('review', this)" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #ccc; background-color: white; color: #555; font-weight: bold; cursor: pointer; border-bottom: 3px solid #fbbc04; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Revisión</button>
+        <button class="filter-chip" onclick="window.setFilter('closed', this)" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #ccc; background-color: white; color: #555; font-weight: bold; cursor: pointer; border-bottom: 3px solid #34a853; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Cerrados</button>
     </div>
 
-    <div class="side-panel interactive-element" id="functionalityPanel">
+   <button id="btnOpenLayers" class="layer-fab interactive-element" title="Tipo de visualización">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+    <polyline points="2 12 12 17 22 12"></polyline>
+    <polyline points="2 17 12 22 22 17"></polyline>
+  </svg>
+</button>
+
+<div id="layersModalOverlay" class="layers-modal-overlay">
+  <div class="layers-modal-content interactive-element">
+    <div class="layers-modal-header">
+      <h4 style="margin:0; font-size:16px; color:#202124;">Tipo de visualización</h4>
+      <button id="btnCloseLayers" style="background:none; border:none; font-size:20px; cursor:pointer; color:#5f6368;">✕</button>
+    </div>
+
+    <div style="display:flex; gap:15px; justify-content:space-around; margin-top:20px;">
+      <button class="layer-btn layer-card active" data-mode="shaded">
+        <div class="layer-icon" style="background: linear-gradient(135deg, #e0e0e0, #bdbdbd);"></div>
+        <span>Sombreado</span>
+      </button>
+
+      <button class="layer-btn layer-card" data-mode="shadedEdges">
+        <div class="layer-icon" style="background: linear-gradient(135deg, #e0e0e0, #bdbdbd); border: 2px solid #5f6368;"></div>
+        <span>Aristas</span>
+      </button>
+
+      <button class="layer-btn layer-card" data-mode="wireframe">
+        <div class="layer-icon" style="background: #fff; border: 2px dashed #999;"></div>
+        <span>Alambre</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+    <div class="side-panel interactive-element" id="functionalityPanel" style="z-index: 100;">
+      
       <div class="panel-header" style="display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 10px;">
           <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q" style="height: 26px; width: 26px; object-fit: contain; border-radius: 4px;">
@@ -45,20 +96,8 @@
         </div>
         <button class="menu-btn" style="width: 32px; height: 32px; margin: 0;" onclick="togglePanel()">✕</button>
       </div>
-      <div class="panel-content">
-        <div class="user-profile-card">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div class="user-avatar" id="userAvatarLetter">U</div>
-            <div>
-              <div style="font-size: 11px; color: var(--text-secondary);">Sesión activa como:</div>
-              <div id="currentUserDisplay" style="font-size: 13px; font-weight: 500; color: var(--text-primary);">---</div>
-            </div>
-          </div>
-         <button onclick="window.processLogout()" class="logout-btn" title="Cerrar sesión">
-  🚪 Salir
-</button> 
-        </div>
 
+      <div class="panel-content">
         <h3 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-secondary);">MIS PIEZAS</h3>
         <div id="fileListUI" class="files-container"></div>
 
@@ -101,7 +140,7 @@
           <button class="btn-primary" id="saveIssue">Guardar</button>
         </div>
 
-        <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <div style="display:flex; flex-wrap: wrap; gap:8px; margin-bottom:12px;">
           <button class="btn-primary btn-inline" id="exportGlobalBtn">Exportar Sesión</button>
           <button class="btn-primary btn-inline" id="importBtn">Importar JSON</button>
           <button class="btn-primary" onclick="exportToCSV()" style="background-color: #1e8e3e; margin-top: 10px;">📊 Exportar a EXCEL (CSV)</button>
@@ -110,21 +149,17 @@
         </div>
 
         <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-secondary);">LISTA DE INCIDENCIAS</h3>
-        
-        <div class="filters-wrapper" style="margin-bottom: 15px;">
-          <div style="font-size: 11px; color: #666; margin-bottom: 8px; font-weight: bold;">FILTRAR POR ESTADO:</div>
-          <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-            <button class="filter-btn active" onclick="window.setFilter('all')" data-filter="all">Todos</button>
-            <button class="filter-btn" onclick="window.setFilter('open')" data-filter="open" style="border-bottom: 3px solid #e94335;">Abiertos</button>
-            <button class="filter-btn" onclick="window.setFilter('review')" data-filter="review" style="border-bottom: 3px solid #fbbc04;">Revisión</button>
-            <button class="filter-btn" onclick="window.setFilter('closed')" data-filter="closed" style="border-bottom: 3px solid #34a853;">Cerrados</button>
-          </div>
-        </div>
         <div id="list"></div>
-      </div>
-    </div>
+        
+        <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; width: 100%;">
+          <span style="font-size: 10px; color: #999; letter-spacing: 1px; font-weight: 500;">
+            <<div id="btnOpenInfo" style="position: sticky; bottom: 0; background: white; width: 100%; text-align: center; color: #999; font-size: 10px; padding: 15px 0; cursor: pointer; border-top: 1px solid #eee; z-index: 50;" onmouseover="this.style.color='#4285F4'" onmouseout="this.style.color='#999'" title="Ver información de la aplicación">
+  SUMATRA Q • RELEASE v1.4.0-STABLE ⓘ
+</div>
+          </span>
+        </div>
 
-    <div class="fab-container interactive-element">
+      </div> </div> <div class="fab-container interactive-element">
       <div class="fab-group">
         <button class="fab" id="moveIssueBtn" title="Mover">🎯</button>
         <button class="fab" id="deleteIssueBtn" title="Borrar">🗑️</button>
@@ -133,26 +168,97 @@
       </div>
       <button class="fab primary" id="addBtn" title="Añadir">➕</button>
     </div>
-  </div>
- 
-<div id="lightbox" class="lightbox interactive-element">
+
+  </div> <div id="lightbox" class="lightbox interactive-element">
     <div class="lightbox-close" id="lightboxClose">&times;</div>
     <img id="lightboxImg" class="lightbox-img" src="" alt="Ampliación" />
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
   <script type="importmap">
     {
       "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+        "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
       }
     }
   </script>
+  
   <script type="module" src="./js/app.js"></script>
-</body>
-<div id="splashScreen" class="splash-screen">
-    <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q Logo" class="splash-logo">
-    <div class="splash-spinner"></div>
+
+  <script>
+  // Control del Modal de Capas
+  const btnOpen = document.getElementById('btnOpenLayers');
+  const btnClose = document.getElementById('btnCloseLayers');
+  const modal = document.getElementById('layersModalOverlay');
+
+  btnOpen.addEventListener('click', () => modal.classList.add('active'));
+  btnClose.addEventListener('click', () => modal.classList.remove('active'));
+
+  // Cerrar al pulsar fuera del cuadro o al seleccionar una opción
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.remove('active');
+  });
+  document.querySelectorAll('.layer-card').forEach(btn => {
+    btn.addEventListener('click', () => modal.classList.remove('active'));
+  });
+</script>
+</script>
+<div id="infoModalOverlay" class="info-modal-overlay">
+  <div class="info-modal-content">
+    <div class="info-modal-header">
+      <h2 style="margin:0; color:#4285F4; font-size: 20px;">🏭 Sumatra Q - Guía Rápida</h2>
+      <button id="btnCloseInfo" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; transition: color 0.2s;" onmouseover="this.style.color='#e94335'" onmouseout="this.style.color='#999'">✕</button>
+    </div>
+    
+    <div class="info-modal-body">
+      <p><strong>Sumatra Q</strong> es una plataforma web interactiva diseñada para la inspección y el control de calidad de piezas industriales.</p>
+      
+      <h3 style="color:#333; border-bottom:1px solid #eee; padding-bottom:5px; margin-top:20px;">✨ Características</h3>
+      <ul style="padding-left: 20px; margin-bottom: 20px;">
+        <li><strong>Visualización 3D:</strong> Renderizado de archivos STL.</li>
+        <li><strong>Marcadores:</strong> Creación de incidencias con clic derecho o pulsación larga.</li>
+        <li><strong>Trazabilidad:</strong> Historial inmutable de actualizaciones por usuario y fecha.</li>
+        <li><strong>Exportación:</strong> Generación de reportes PDF corporativos y listados CSV.</li>
+      </ul>
+
+      <h3 style="color:#333; border-bottom:1px solid #eee; padding-bottom:5px;">📖 ¿Cómo usar?</h3>
+      <ol style="padding-left: 20px; margin-bottom: 20px;">
+        <li><strong>Cargar pieza:</strong> Usa el botón superior o arrastra un STL a la pantalla.</li>
+        <li><strong>Crear incidencia:</strong> Haz un toque prolongado (móvil) o clic derecho (PC) sobre el defecto en la pieza 3D.</li>
+        <li><strong>Filtrar:</strong> Usa los botones superiores para aislar los problemas.</li>
+        <li><strong>Reporte:</strong> Filtra la vista deseada y pulsa "Generar PDF".</li>
+      </ol>
+      
+      <div style="text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #eee;">
+        <span style="font-size: 11px; color: #aaa;">Desarrollado para la mejora continua del Control de Calidad.</span>
+      </div>
+    </div>
   </div>
+</div>
+
+<script>
+  const btnOpenInfo = document.getElementById('btnOpenInfo');
+  const btnCloseInfo = document.getElementById('btnCloseInfo');
+  const infoModal = document.getElementById('infoModalOverlay');
+
+  if (btnOpenInfo && btnCloseInfo && infoModal) {
+    // Abrir al hacer clic en el texto de versión
+    btnOpenInfo.addEventListener('click', () => {
+      infoModal.classList.add('active');
+    });
+
+    // Cerrar al hacer clic en la X
+    btnCloseInfo.addEventListener('click', () => {
+      infoModal.classList.remove('active');
+    });
+    
+    // Cerrar al pulsar fuera del cuadro blanco
+    infoModal.addEventListener('click', (e) => {
+      if (e.target === infoModal) infoModal.classList.remove('active');
+    });
+  }
+</script>
+</body>
 </html>
