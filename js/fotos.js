@@ -34,7 +34,6 @@ export function renderPhotoGrid() {
       <img src="${photo.dataUrl}" class="photo-thumb" onclick="window.openLightbox('${photo.dataUrl}')">
       <button class="delete-photo-btn">✕</button>
     `;
-    // Asignamos el evento de borrar directamente al botón
     div.querySelector('.delete-photo-btn').onclick = (e) => {
       e.preventDefault();
       State.currentPhotos.splice(index, 1);

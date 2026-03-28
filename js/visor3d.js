@@ -1,10 +1,10 @@
-// visor3d.js
+// js/visor3d.js
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { State } from './estado.js';
 import { renderIssues } from './incidencias.js';
-import { loadIssuesForFile } from './nube.js'; // ⬅️ NUEVO IMPORT
+import { loadIssuesForFile } from './nube.js'; 
 
 export function init3D() {
   State.scene.background = new THREE.Color(0xe5e3df);
@@ -117,6 +117,7 @@ export function applyShadingAll(mode) {
     }
   });
 }
+
 export function toggleMeshVisibility(name) {
   if (State.loadedMeshes[name]) {
     State.loadedMeshes[name].visible = !State.loadedMeshes[name].visible;
@@ -124,7 +125,7 @@ export function toggleMeshVisibility(name) {
       State.loadedMeshes[name].userData.edgesHelper.visible = State.loadedMeshes[name].visible;
     }
     updateFileListUI();
-    renderIssues(); // Actualiza las esferas
+    renderIssues(); 
   }
 }
 
@@ -144,7 +145,6 @@ export function removeMesh(name) {
     fitCameraGlobal(false);
   }
 }
-// Añade esto al final de visor3d.js
 
 export function animateCamera(toPos, toTarget = State.bounds.center, ms = 500) {
   const fromPos = State.camera.position.clone(); 

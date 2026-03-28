@@ -23,7 +23,7 @@
       <input type="email" id="loginEmail" placeholder="Tu Email" style="width:100%; padding:12px; margin-bottom:12px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px;">
       <input type="password" id="loginPassword" placeholder="Tu Contraseña" style="width:100%; padding:12px; margin-bottom:20px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px;">
       
-      <button id="loginBtn" onclick="processLogin()" style="width:100%; padding:14px; background:#4285F4; color:white; border:none; border-radius:6px; font-weight:bold; font-size:15px; cursor:pointer; transition:0.3s;">Conectando a BD...</button>
+      <button id="loginBtn" onclick="window.processLogin()" style="width:100%; padding:14px; background:#4285F4; color:white; border:none; border-radius:6px; font-weight:bold; font-size:15px; cursor:pointer; transition:0.3s;">Conectando a BD...</button>
     </div>
   </div>
 
@@ -39,62 +39,67 @@
         <button onclick="window.processLogout()" class="btn-primary" style="width: 100%; background-color: #fce8e6; color: #d93025; border: 1px solid #f8d7da;">🚪 Salir</button>
       </div>
     </div>
+    
     <div class="search-box interactive-element">
-      <button class="menu-btn" onclick="togglePanel()" title="Menú">☰</button>
+      <button class="menu-btn" onclick="window.togglePanel()" title="Menú">☰</button>
       <div class="search-title" id="fileNameDisplay">Añade STLs (soporta múltiples)...</div>
       <label for="fileInput" class="file-label" title="Cargar Archivo">🔩</label>
       <input type="file" id="fileInput" accept=".stl,.STL" multiple />
     </div>
 
-    <div class="filter-scroll-area interactive-element" style="position: absolute; top: 75px; left: 20px; z-index: 1; display: flex; gap: 8px;">
-        <button class="filter-chip active" onclick="window.setFilter('all', this)" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #4285F4; background-color: #e8f0fe; color: #1967d2; font-weight: bold; cursor: pointer; border-bottom: 3px solid #4285F4; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Todos</button>
-        <button class="filter-chip" onclick="window.setFilter('open', this)" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #ccc; background-color: white; color: #555; font-weight: bold; cursor: pointer; border-bottom: 3px solid #e94335; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Abiertos</button>
-        <button class="filter-chip" onclick="window.setFilter('review', this)" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #ccc; background-color: white; color: #555; font-weight: bold; cursor: pointer; border-bottom: 3px solid #fbbc04; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Revisión</button>
-        <button class="filter-chip" onclick="window.setFilter('closed', this)" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #ccc; background-color: white; color: #555; font-weight: bold; cursor: pointer; border-bottom: 3px solid #34a853; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Cerrados</button>
+    <div class="filter-scroll-area interactive-element" style="position: absolute; top: 75px; left: 20px; z-index: 1; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;" id="filterStatusContainer">
+            <button class="filter-chip active" data-filter-type="status" data-val="all">Todos los Estados</button>
+            <button class="filter-chip" data-filter-type="status" data-val="open" style="border-bottom: 3px solid #e94335;">Abiertos</button>
+            <button class="filter-chip" data-filter-type="status" data-val="review" style="border-bottom: 3px solid #fbbc04;">Revisión</button>
+            <button class="filter-chip" data-filter-type="status" data-val="closed" style="border-bottom: 3px solid #34a853;">Cerrados</button>
+        </div>
+        <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;" id="filterPriorityContainer">
+            <button class="filter-chip active" data-filter-type="priority" data-val="all">Todas las Prioridades</button>
+            <button class="filter-chip" data-filter-type="priority" data-val="prio1" style="background-color: #fce8e6; color: #d93025; border-color: #f5c6cb;">🔥 Prio 1 (Top)</button>
+            <button class="filter-chip" data-filter-type="priority" data-val="alta">Alta</button>
+            <button class="filter-chip" data-filter-type="priority" data-val="media">Media</button>
+        </div>
     </div>
 
-   <button id="btnOpenLayers" class="layer-fab interactive-element" title="Tipo de visualización">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-    <polyline points="2 12 12 17 22 12"></polyline>
-    <polyline points="2 17 12 22 22 17"></polyline>
-  </svg>
-</button>
+    <button id="btnOpenLayers" class="layer-fab interactive-element" title="Tipo de visualización">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 12 12 17 22 12"></polyline>
+        <polyline points="2 17 12 22 22 17"></polyline>
+      </svg>
+    </button>
 
-<div id="layersModalOverlay" class="layers-modal-overlay">
-  <div class="layers-modal-content interactive-element">
-    <div class="layers-modal-header">
-      <h4 style="margin:0; font-size:16px; color:#202124;">Tipo de visualización</h4>
-      <button id="btnCloseLayers" style="background:none; border:none; font-size:20px; cursor:pointer; color:#5f6368;">✕</button>
+    <div id="layersModalOverlay" class="layers-modal-overlay">
+      <div class="layers-modal-content interactive-element">
+        <div class="layers-modal-header">
+          <h4 style="margin:0; font-size:16px; color:#202124;">Tipo de visualización</h4>
+          <button id="btnCloseLayers" style="background:none; border:none; font-size:20px; cursor:pointer; color:#5f6368;">✕</button>
+        </div>
+        <div style="display:flex; gap:15px; justify-content:space-around; margin-top:20px;">
+          <button class="layer-btn layer-card active" data-mode="shaded">
+            <div class="layer-icon" style="background: linear-gradient(135deg, #e0e0e0, #bdbdbd);"></div>
+            <span>Sombreado</span>
+          </button>
+          <button class="layer-btn layer-card" data-mode="shadedEdges">
+            <div class="layer-icon" style="background: linear-gradient(135deg, #e0e0e0, #bdbdbd); border: 2px solid #5f6368;"></div>
+            <span>Aristas</span>
+          </button>
+          <button class="layer-btn layer-card" data-mode="wireframe">
+            <div class="layer-icon" style="background: #fff; border: 2px dashed #999;"></div>
+            <span>Alambre</span>
+          </button>
+        </div>
+      </div>
     </div>
-
-    <div style="display:flex; gap:15px; justify-content:space-around; margin-top:20px;">
-      <button class="layer-btn layer-card active" data-mode="shaded">
-        <div class="layer-icon" style="background: linear-gradient(135deg, #e0e0e0, #bdbdbd);"></div>
-        <span>Sombreado</span>
-      </button>
-
-      <button class="layer-btn layer-card" data-mode="shadedEdges">
-        <div class="layer-icon" style="background: linear-gradient(135deg, #e0e0e0, #bdbdbd); border: 2px solid #5f6368;"></div>
-        <span>Aristas</span>
-      </button>
-
-      <button class="layer-btn layer-card" data-mode="wireframe">
-        <div class="layer-icon" style="background: #fff; border: 2px dashed #999;"></div>
-        <span>Alambre</span>
-      </button>
-    </div>
-  </div>
-</div>
 
     <div class="side-panel interactive-element" id="functionalityPanel" style="z-index: 100;">
-      
       <div class="panel-header" style="display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 10px;">
           <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q" style="height: 26px; width: 26px; object-fit: contain; border-radius: 4px;">
           <span>Inspección 3D</span>
         </div>
-        <button class="menu-btn" style="width: 32px; height: 32px; margin: 0;" onclick="togglePanel()">✕</button>
+        <button class="menu-btn" style="width: 32px; height: 32px; margin: 0;" onclick="window.togglePanel()">✕</button>
       </div>
 
       <div class="panel-content">
@@ -110,40 +115,53 @@
             <div id="historyTimeline" class="history-timeline"></div>
           </div>
 
-          <label>Tipo:</label>
-          <select id="issueType" style="width:100%; padding:10px; margin-bottom:15px; border-radius:6px; border:1px solid #ccc;">
-            <option value="">Cargando tipos de incidencia...</option>
-          </select>
-
-          <div id="updateDivider" style="display:none; margin: 16px 0 8px 0; border-top: 1px dashed var(--border-color); padding-top: 8px;">
-            <h4 style="margin: 0; font-size: 12px; color: var(--primary-blue);">Añadir actualización:</h4>
+          <label style="margin-top: 10px;">Fase Productiva:</label>
+          <div class="chip-group" id="faseChips">
+            <button class="ui-chip active" data-val="estampacion">Estampación</button>
+            <button class="ui-chip" data-val="chapisteria">Chapistería</button>
+            <button class="ui-chip" data-val="pintura">Pintura</button>
+            <button class="ui-chip" data-val="ensamblaje">Ensamblaje final</button>
           </div>
 
-          <label>Comentario:</label>
-          <input type="text" id="issueComment" placeholder="Descripción o avance..." />
+          <label style="margin-top: 10px;">Tipo de Falla:</label>
+          <select id="issueType" style="width:100%; padding:12px; margin-bottom:15px; border-radius:6px; border:1px solid #ccc; font-size: 14px;">
+            <option value="">Cargando tipos...</option>
+          </select>
+
+          <label>Prioridad:</label>
+          <div class="chip-group" id="priorityChips" style="margin-bottom: 15px;">
+            <button class="ui-chip active" data-val="baja">Baja</button>
+            <button class="ui-chip" data-val="media">Media</button>
+            <button class="ui-chip" data-val="alta">Alta</button>
+            <button class="ui-chip" data-val="prio1" style="border-color:#d93025; color:#d93025; font-weight:bold;">🔥 Prio 1</button>
+          </div>
+
+          <label>Comentario rápido:</label>
+          <input type="text" id="issueComment" placeholder="Ej: Falta punto, poro, raya..." style="padding: 12px; font-size: 14px;" />
           
-          <label>Fotos:</label>
-          <div style="display:flex; gap:8px; margin-bottom:8px;">
-            <button class="btn-primary btn-inline" id="btnGallery">🖼️ Galería</button>
-            <button class="btn-primary btn-inline" id="btnCamera">📷 Cámara</button>
+          <label>Evidencia Visual:</label>
+          <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <button class="btn-primary btn-inline" id="btnCamera" style="flex: 1; display:flex; justify-content:center; align-items:center; gap:5px; background-color: #34a853;">📷 Tomar Foto</button>
+            <button class="btn-primary btn-inline" id="btnGallery" style="flex: 1; display:flex; justify-content:center; align-items:center; gap:5px; background-color: #5f6368;">🖼️ Subir</button>
           </div>
           <input type="file" id="inputGallery" accept="image/*" style="display:none" />
           <input type="file" id="inputCamera" accept="image/*" capture="environment" style="display:none" />
           <div id="photoGrid" class="photo-grid"></div>
 
-          <label>Estado actual:</label>
-          <select id="issueStatus">
-            <option value="open">Abierto (Rojo)</option>
-            <option value="review">En revisión (Amarillo)</option>
-            <option value="closed">Cerrado (Verde)</option>
-          </select>
-          <button class="btn-primary" id="saveIssue">Guardar</button>
+          <label>Estado Actual:</label>
+          <div class="chip-group" id="statusChips" style="margin-bottom: 20px;">
+            <button class="ui-chip active" data-val="open" style="border-bottom: 3px solid #e94335;">Abierto</button>
+            <button class="ui-chip" data-val="review" style="border-bottom: 3px solid #fbbc04;">Revisión</button>
+            <button class="ui-chip" data-val="closed" style="border-bottom: 3px solid #34a853;">Cerrado</button>
+          </div>
+
+          <button class="btn-primary" id="saveIssue" style="font-size: 16px; padding: 14px;">Guardar Incidencia</button>
         </div>
 
         <div style="display:flex; flex-wrap: wrap; gap:8px; margin-bottom:12px;">
-          <button class="btn-primary btn-inline" id="exportGlobalBtn">Exportar Sesión</button>
+          <button class="btn-primary btn-inline" id="exportGlobalBtn" onclick="window.exportIssues()">Exportar Sesión</button>
           <button class="btn-primary btn-inline" id="importBtn">Importar JSON</button>
-          <button class="btn-primary" onclick="exportToCSV()" style="background-color: #1e8e3e; margin-top: 10px;">📊 Exportar a EXCEL (CSV)</button>
+          <button class="btn-primary" onclick="window.exportToCSV()" style="background-color: #1e8e3e; margin-top: 10px;">📊 Exportar a EXCEL (CSV)</button>
           <button class="btn-primary" onclick="window.generatePDF()" style="background-color: #d93025; margin-top: 10px;">📄 Generar PDF</button>
           <input type="file" id="importInput" accept="application/json" style="display:none" />
         </div>
@@ -153,15 +171,17 @@
         
         <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; width: 100%;">
           <span style="font-size: 10px; color: #999; letter-spacing: 1px; font-weight: 500;">
-            <<div id="btnOpenInfo" style="position: sticky; bottom: 0; background: white; width: 100%; text-align: center; color: #999; font-size: 10px; padding: 15px 0; cursor: pointer; border-top: 1px solid #eee; z-index: 50;" onmouseover="this.style.color='#4285F4'" onmouseout="this.style.color='#999'" title="Ver información de la aplicación">
-  SUMATRA Q • RELEASE v1.4.0-STABLE ⓘ
-</div>
+            <div id="btnOpenInfo" style="position: sticky; bottom: 0; background: white; width: 100%; text-align: center; color: #999; font-size: 10px; padding: 15px 0; cursor: pointer; border-top: 1px solid #eee; z-index: 50;" onmouseover="this.style.color='#4285F4'" onmouseout="this.style.color='#999'" title="Ver información de la aplicación">
+              SUMATRA Q • RELEASE v1.4.0-STABLE ⓘ
+            </div>
           </span>
         </div>
 
-      </div> </div> <div class="fab-container interactive-element">
+      </div> 
+    </div>
+
+    <div class="fab-container interactive-element">
       <div class="fab-group">
-        <button class="fab" id="moveIssueBtn" title="Mover">🎯</button>
         <button class="fab" id="deleteIssueBtn" title="Borrar">🗑️</button>
         <button class="fab" data-view="fit" title="Centrar">🔲</button>
         <button class="fab" data-view="iso" title="Iso">🧊</button>
@@ -169,13 +189,48 @@
       <button class="fab primary" id="addBtn" title="Añadir">➕</button>
     </div>
 
-  </div> <div id="lightbox" class="lightbox interactive-element">
+  </div> 
+
+  <div id="lightbox" class="lightbox interactive-element">
     <div class="lightbox-close" id="lightboxClose">&times;</div>
     <img id="lightboxImg" class="lightbox-img" src="" alt="Ampliación" />
   </div>
 
+  <div id="infoModalOverlay" class="info-modal-overlay">
+    <div class="info-modal-content">
+      <div class="info-modal-header">
+        <h2 style="margin:0; color:#4285F4; font-size: 20px;">🏭 Sumatra Q - Guía Rápida</h2>
+        <button id="btnCloseInfo" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; transition: color 0.2s;" onmouseover="this.style.color='#e94335'" onmouseout="this.style.color='#999'">✕</button>
+      </div>
+      
+      <div class="info-modal-body">
+        <p><strong>Sumatra Q</strong> es una plataforma web interactiva diseñada para la inspección y el control de calidad de piezas industriales.</p>
+        
+        <h3 style="color:#333; border-bottom:1px solid #eee; padding-bottom:5px; margin-top:20px;">✨ Características</h3>
+        <ul style="padding-left: 20px; margin-bottom: 20px;">
+          <li><strong>Visualización 3D:</strong> Renderizado de archivos STL.</li>
+          <li><strong>Marcadores:</strong> Creación de incidencias táctil.</li>
+          <li><strong>Trazabilidad:</strong> Historial inmutable de actualizaciones por usuario y fecha.</li>
+          <li><strong>Filtros Ágiles:</strong> Jerarquía visual de incidencias con prioridad.</li>
+          <li><strong>Exportación:</strong> Generación de reportes PDF corporativos y listados CSV.</li>
+        </ul>
+
+        <h3 style="color:#333; border-bottom:1px solid #eee; padding-bottom:5px;">📖 ¿Cómo usar?</h3>
+        <ol style="padding-left: 20px; margin-bottom: 20px;">
+          <li><strong>Cargar pieza:</strong> Usa el botón superior o arrastra un STL a la pantalla.</li>
+          <li><strong>Crear incidencia:</strong> Pulsa el botón (+) y clica en la pieza 3D.</li>
+          <li><strong>Filtrar:</strong> Usa los botones superiores para aislar los problemas urgentes.</li>
+          <li><strong>Reporte:</strong> Filtra la vista deseada y pulsa "Generar PDF".</li>
+        </ol>
+        
+        <div style="text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #eee;">
+          <span style="font-size: 11px; color: #aaa;">Desarrollado para la mejora continua del Control de Calidad.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  
   <script type="importmap">
     {
       "imports": {
@@ -188,77 +243,30 @@
   <script type="module" src="./js/app.js"></script>
 
   <script>
-  // Control del Modal de Capas
-  const btnOpen = document.getElementById('btnOpenLayers');
-  const btnClose = document.getElementById('btnCloseLayers');
-  const modal = document.getElementById('layersModalOverlay');
+    // Modal de Capas
+    const btnOpen = document.getElementById('btnOpenLayers');
+    const btnClose = document.getElementById('btnCloseLayers');
+    const modal = document.getElementById('layersModalOverlay');
 
-  btnOpen.addEventListener('click', () => modal.classList.add('active'));
-  btnClose.addEventListener('click', () => modal.classList.remove('active'));
+    if(btnOpen && btnClose && modal) {
+      btnOpen.addEventListener('click', () => modal.classList.add('active'));
+      btnClose.addEventListener('click', () => modal.classList.remove('active'));
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+      document.querySelectorAll('.layer-card').forEach(btn => {
+        btn.addEventListener('click', () => modal.classList.remove('active'));
+      });
+    }
 
-  // Cerrar al pulsar fuera del cuadro o al seleccionar una opción
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.classList.remove('active');
-  });
-  document.querySelectorAll('.layer-card').forEach(btn => {
-    btn.addEventListener('click', () => modal.classList.remove('active'));
-  });
-</script>
-</script>
-<div id="infoModalOverlay" class="info-modal-overlay">
-  <div class="info-modal-content">
-    <div class="info-modal-header">
-      <h2 style="margin:0; color:#4285F4; font-size: 20px;">🏭 Sumatra Q - Guía Rápida</h2>
-      <button id="btnCloseInfo" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; transition: color 0.2s;" onmouseover="this.style.color='#e94335'" onmouseout="this.style.color='#999'">✕</button>
-    </div>
-    
-    <div class="info-modal-body">
-      <p><strong>Sumatra Q</strong> es una plataforma web interactiva diseñada para la inspección y el control de calidad de piezas industriales.</p>
-      
-      <h3 style="color:#333; border-bottom:1px solid #eee; padding-bottom:5px; margin-top:20px;">✨ Características</h3>
-      <ul style="padding-left: 20px; margin-bottom: 20px;">
-        <li><strong>Visualización 3D:</strong> Renderizado de archivos STL.</li>
-        <li><strong>Marcadores:</strong> Creación de incidencias con clic derecho o pulsación larga.</li>
-        <li><strong>Trazabilidad:</strong> Historial inmutable de actualizaciones por usuario y fecha.</li>
-        <li><strong>Exportación:</strong> Generación de reportes PDF corporativos y listados CSV.</li>
-      </ul>
+    // Modal de Info
+    const btnOpenInfo = document.getElementById('btnOpenInfo');
+    const btnCloseInfo = document.getElementById('btnCloseInfo');
+    const infoModal = document.getElementById('infoModalOverlay');
 
-      <h3 style="color:#333; border-bottom:1px solid #eee; padding-bottom:5px;">📖 ¿Cómo usar?</h3>
-      <ol style="padding-left: 20px; margin-bottom: 20px;">
-        <li><strong>Cargar pieza:</strong> Usa el botón superior o arrastra un STL a la pantalla.</li>
-        <li><strong>Crear incidencia:</strong> Haz un toque prolongado (móvil) o clic derecho (PC) sobre el defecto en la pieza 3D.</li>
-        <li><strong>Filtrar:</strong> Usa los botones superiores para aislar los problemas.</li>
-        <li><strong>Reporte:</strong> Filtra la vista deseada y pulsa "Generar PDF".</li>
-      </ol>
-      
-      <div style="text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #eee;">
-        <span style="font-size: 11px; color: #aaa;">Desarrollado para la mejora continua del Control de Calidad.</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-  const btnOpenInfo = document.getElementById('btnOpenInfo');
-  const btnCloseInfo = document.getElementById('btnCloseInfo');
-  const infoModal = document.getElementById('infoModalOverlay');
-
-  if (btnOpenInfo && btnCloseInfo && infoModal) {
-    // Abrir al hacer clic en el texto de versión
-    btnOpenInfo.addEventListener('click', () => {
-      infoModal.classList.add('active');
-    });
-
-    // Cerrar al hacer clic en la X
-    btnCloseInfo.addEventListener('click', () => {
-      infoModal.classList.remove('active');
-    });
-    
-    // Cerrar al pulsar fuera del cuadro blanco
-    infoModal.addEventListener('click', (e) => {
-      if (e.target === infoModal) infoModal.classList.remove('active');
-    });
-  }
-</script>
+    if (btnOpenInfo && btnCloseInfo && infoModal) {
+      btnOpenInfo.addEventListener('click', () => infoModal.classList.add('active'));
+      btnCloseInfo.addEventListener('click', () => infoModal.classList.remove('active'));
+      infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.remove('active'); });
+    }
+  </script>
 </body>
 </html>

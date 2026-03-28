@@ -6,19 +6,22 @@ export async function saveIssueToCloud(issueToUpload) {
     await fetch(CONFIG.GOOGLE_SCRIPT_URL, { 
       method: "POST", 
       mode: "no-cors", 
-      headers: { "Content-Type": "application/json" },
+      // TRUCO ANTI-BLOQUEO: Usamos text/plain para que el navegador no bloquee la petición
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(issueToUpload) 
     });
-    return true; // Éxito
+    return true; 
   } catch (error) {
-    throw error; // Propagamos el error para que incidencias.js lo atrape
+    console.error("Error subiendo a la nube:", error);
+    throw error; 
   }
 }
 
 export function saveMovementToCloud(issueToMove) {
   fetch(CONFIG.GOOGLE_SCRIPT_URL, { 
-    method: "POST", mode: "no-cors", 
-    headers: { "Content-Type": "application/json" },
+    method: "POST", 
+    mode: "no-cors", 
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(issueToMove) 
   }).catch(e => console.error("Error subiendo posición", e));
 }
@@ -48,6 +51,8 @@ export function loadIssuesForFile(fileName) {
         z: parseFloat(String(ultimaFila.COORD_Z).replace(',', '.')),
         type: ultimaFila.TIPO,
         status: ultimaFila.ESTADO,
+        priority: ultimaFila.PRIORIDAD || 'media',
+        fase: ultimaFila.FASE || 'estampacion',
         history: historial.map(h => {
           let fotosProcesadas = [];
           if (h.FOTOS_URL && typeof h.FOTOS_URL === 'string' && h.FOTOS_URL.trim() !== "") {
@@ -64,6 +69,8 @@ export function loadIssuesForFile(fileName) {
             date: h.FECHA,
             user: h.INSPECTOR || "Anónimo",
             status: h.ESTADO,
+            priority: h.PRIORIDAD || 'media',
+            fase: h.FASE || 'estampacion',
             comment: h.COMENTARIO || "",
             photos: fotosProcesadas
           };

@@ -1,11 +1,8 @@
-// app.js
+// js/app.js
 import { State } from './estado.js';
 import { fetchDatabase, processLogin, processLogout, checkAuthStatus } from './auth.js';
 import { init3D, loadSTLs, updateFileListUI, toggleMeshVisibility, removeMesh, setView, applyShadingAll } from './visor3d.js';
-import { 
-  onClick, onPointerDown, onPointerMove, onPointerUp, 
-  saveIssueFn, deleteSelectedIssue, setFilter 
-} from './incidencias.js';
+import { setAdvancedFilter, onClick, onPointerDown, onPointerMove, onPointerUp, saveIssueFn, deleteSelectedIssue } from './incidencias.js';
 import { exportIssues, exportToCSV, generatePDF } from './exportador.js';
 import { handlePhotoInput } from './fotos.js';
 import { initUI } from './ui.js';
@@ -17,14 +14,14 @@ window.toggleMeshVisibility = toggleMeshVisibility;
 window.removeMesh = removeMesh;
 window.exportIssues = exportIssues;
 window.exportToCSV = exportToCSV;
-window.setFilter = setFilter;
+window.setAdvancedFilter = setAdvancedFilter;
 window.generatePDF = generatePDF;
 
 /* --- ASIGNAR EVENTOS A LOS BOTONES --- */
 window.onload = () => {
   initUI(); // Arranca los menús y paneles (togglePanel y openLightbox ya viven aquí)
   
-  // Canvas 3D
+  // Eventos del Canvas 3D
   const canvas = State.renderer.domElement;
   canvas.addEventListener("click", onClick);
   canvas.addEventListener("mousedown", onPointerDown);
@@ -33,8 +30,12 @@ window.onload = () => {
 
   // Botones UI Principales
   document.getElementById('fileInput').onchange = loadSTLs;
-  document.getElementById('saveIssue').onclick = saveIssueFn;
-  document.getElementById('deleteIssueBtn').onclick = deleteSelectedIssue;
+  
+  const saveBtn = document.getElementById('saveIssue');
+  if(saveBtn) saveBtn.onclick = saveIssueFn;
+  
+  const deleteBtn = document.getElementById('deleteIssueBtn');
+  if(deleteBtn) deleteBtn.onclick = deleteSelectedIssue;
 
   const addBtn = document.getElementById('addBtn');
   if(addBtn) {
@@ -44,7 +45,7 @@ window.onload = () => {
     };
   }
 
-  // Conectar inputs ocultos de cámara/galería
+  // Inputs ocultos de cámara/galería
   const btnGallery = document.getElementById('btnGallery');
   const btnCamera = document.getElementById('btnCamera');
   const inputGallery = document.getElementById('inputGallery');
@@ -54,6 +55,30 @@ window.onload = () => {
   if(btnCamera && inputCamera) btnCamera.onclick = (e) => { e.preventDefault(); inputCamera.click(); };
   if(inputGallery) inputGallery.onchange = handlePhotoInput;
   if(inputCamera) inputCamera.onchange = handlePhotoInput;
+
+  // --- MAGIA UX: LÓGICA VISUAL DE CHIPS EN EL FORMULARIO ---
+  document.querySelectorAll('.chip-group .ui-chip').forEach(chip => {
+    chip.onclick = (e) => {
+      e.preventDefault();
+      const group = chip.closest('.chip-group');
+      group.querySelectorAll('.ui-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    };
+  });
+
+  // --- MAGIA UX: LÓGICA DE LA BARRA DE FILTROS SUPERIOR ---
+  document.querySelectorAll('.filter-scroll-area .filter-chip').forEach(chip => {
+    chip.onclick = (e) => {
+      e.preventDefault();
+      const container = chip.parentElement;
+      container.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+
+      const type = chip.dataset.filterType;
+      const val = chip.dataset.val;
+      window.setAdvancedFilter(type, val);
+    };
+  });
 
   // --- CONECTAR BOTONES DE VISTAS (ZOOM EXTENSIÓN, ISOMÉTRICO) ---
   document.querySelectorAll('.fab[data-view]').forEach(btn => {
@@ -75,8 +100,7 @@ window.onload = () => {
   init3D();
   animate();
   
-  // 👇 MAGIA DEL SPLASH SCREEN 👇
-  // Esperamos 1.5 segundos para que la animación se luzca y el 3D cargue por detrás
+  // Splash Screen
   setTimeout(() => {
     const splash = document.getElementById('splashScreen');
     if (splash) {
@@ -84,7 +108,6 @@ window.onload = () => {
       splash.style.visibility = 'hidden';
     }
   }, 1500); 
-  // 👆 FIN MAGIA SPLASH SCREEN 👆
 };
 
 function animate() { 

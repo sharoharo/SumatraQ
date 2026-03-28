@@ -1,551 +1,230 @@
-/* === ESTILOS BASE (Material Design) === */
-    :root {
-      --surface-color: #ffffff;
-      --background-map: #e5e3df;
-      --text-primary: #202124;
-      --text-secondary: #5f6368;
-      --border-color: #dadce0;
-      --primary-blue: #1a73e8;
-      --shadow-1: 0 1px 2px rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-      --shadow-2: 0 4px 6px rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
-    }
-    body, html {
-      margin: 0; padding: 0; height: 100%; width: 100%;
-      font-family: 'Roboto', Arial, sans-serif;
-      overflow: hidden; background-color: var(--background-map);
-    }
-    #map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-    #map-container canvas { display: block; outline: none; }
-
-    /* === INTERFAZ FLOTANTE === */
-    .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
-    .interactive-element { pointer-events: auto; }
-
-    /* === PANTALLA DE IDENTIFICACIÓN (LOGIN) === */
-    #loginOverlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6); z-index: 10000;
-      display: flex; align-items: center; justify-content: center;
-      backdrop-filter: blur(4px); pointer-events: auto;
-    }
-    .login-card {
-      background: var(--surface-color); padding: 32px; border-radius: 12px;
-      width: 320px; box-shadow: var(--shadow-2); text-align: center;
-    }
-    .login-card h2 { margin: 0 0 8px 0; color: var(--primary-blue); font-size: 22px; }
-    .login-card p { color: var(--text-secondary); font-size: 13px; margin-bottom: 24px; line-height: 1.4;}
-    .login-input {
-      width: 100%; padding: 12px; border: 1px solid var(--border-color);
-      border-radius: 6px; margin-bottom: 16px; font-size: 14px; box-sizing: border-box; font-family: inherit;
-    }
-    .login-input:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
-
-    /* === 1. BARRA SUPERIOR Y CARGA === */
-    .search-box {
-      position: absolute; top: 16px; left: 16px; width: 392px; height: 48px;
-      background: var(--surface-color); border-radius: 24px; box-shadow: var(--shadow-1); 
-      display: flex; align-items: center; padding: 0 8px; box-sizing: border-box; transition: box-shadow 0.2s;
-    }
-    .search-box:hover { box-shadow: var(--shadow-2); }
-    .menu-btn, .file-label {
-      width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent; 
-      cursor: pointer; font-size: 20px; color: var(--text-secondary); display: flex; align-items: center; justify-content: center;
-    }
-    .menu-btn:hover, .file-label:hover { background: #f1f3f4; color: var(--text-primary); }
-    .search-title {
-      flex-grow: 1; padding: 0 12px; font-size: 15px; color: var(--text-primary);
-      font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    #fileInput { display: none; }
-
-    /* === 2. SELECTOR DE CAPAS === */
-    .layers-control {
-      position: absolute; top: 16px; right: 16px; background: var(--surface-color); border-radius: 8px;
-      box-shadow: var(--shadow-1); display: flex; padding: 2px;
-    }
-    .layer-btn {
-      padding: 10px 14px; border: none; background: transparent; border-radius: 6px; 
-      cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--text-secondary); transition: 0.2s;
-    }
-    .layer-btn:hover { background: #f8f9fa; }
-    .layer-btn.active { background: #e8f0fe; color: var(--primary-blue); }
-
-    /* === 3. PANEL LATERAL / MEDIA PANTALLA === */
-    .side-panel {
-      position: absolute; background: var(--surface-color); box-shadow: var(--shadow-2); 
-      display: flex; flex-direction: column; overflow: hidden; transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-    }
-    @media (min-width: 601px) {
-      .side-panel { top: 80px; left: 16px; width: 392px; max-height: calc(100vh - 104px); border-radius: 8px; transform: translateX(-120%); }
-      .side-panel.open { transform: translateX(0); }
-    }
-    @media (max-width: 600px) {
-      .search-box { width: calc(100% - 32px); left: 16px; top: 16px; }
-      .layers-control { top: 76px; right: 16px; }
-      .side-panel { bottom: 0; left: 0; width: 100%; height: 50vh; border-radius: 16px 16px 0 0; transform: translateY(100%); }
-      .side-panel.open { transform: translateY(0); }
-      .side-panel::before { content: ''; display: block; width: 40px; height: 4px; background: var(--border-color); border-radius: 2px; margin: 12px auto 4px; }
-    }
-    .panel-header { padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-weight: 500; font-size: 16px; color: var(--text-primary); }
-    .panel-content { padding: 16px; overflow-y: auto; flex-grow: 1; }
-
-    /* === PERFIL USUARIO === */
-    .user-profile-card {
-      display: flex; align-items: center; justify-content: space-between; background: #f8f9fa; 
-      padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;
-    }
-    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-blue); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
-    
-    /* === LISTA DE PIEZAS === */
-    .files-container { margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
-    .file-item { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; }
-    .file-item-name { flex-grow: 1; font-size: 13px; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .file-item-actions { display: flex; gap: 4px; }
-    .icon-action-btn { background: transparent; border: none; cursor: pointer; color: var(--text-secondary); border-radius: 4px; padding: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background 0.2s;}
-    .icon-action-btn:hover { background: #e8eaed; color: var(--text-primary); }
-    .icon-action-btn.active-eye { color: var(--primary-blue); }
-
-    /* === FORMULARIOS, LISTAS Y TIMELINE === */
-    .form-container { display: none; background: #f8f9fa; padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px; }
-    label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px; font-weight: 500;}
-    select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; font-size: 14px; box-sizing: border-box; margin-bottom: 12px; background: #fff;}
-    .btn-primary { background: var(--primary-blue); color: white; border: none; padding: 12px; border-radius: 24px; font-weight: 500; cursor: pointer; width: 100%; font-family: inherit;}
-    .btn-inline { width: auto; padding: 8px 12px; border-radius: 20px; margin-right: 8px; font-size: 13px; }
-    .issue { padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; background: #fff; transition: background 0.2s; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .issue:hover { background: #f8f9fa; border-color: #bdc1c6; }
-    .status-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-left: 8px;}
-
-    /* Historial / Timeline */
-    .history-container { display: none; margin-bottom: 16px; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); }
-    .history-timeline { border-left: 2px solid var(--border-color); margin-left: 8px; padding-left: 12px; max-height: 200px; overflow-y: auto; }
-    .history-entry { position: relative; margin-bottom: 16px; }
-    .history-entry:last-child { margin-bottom: 0; }
-    .history-dot { position: absolute; left: -18px; top: 4px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; }
-    .history-date { font-size: 10px; color: var(--text-secondary); font-weight: 500; }
-    .history-comment { font-size: 13px; color: var(--text-primary); margin: 4px 0; }
-
-    /* === FOTOS Y LIGHTBOX === */
-    .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; margin-bottom: 12px; }
-    .photo-thumb-container { position: relative; width: 100%; padding-top: 100%; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); background: #eee;}
-    .photo-thumb { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: opacity 0.2s;}
-    .photo-thumb:hover { opacity: 0.8; }
-    .delete-photo-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .delete-photo-btn:hover { background: rgba(234, 67, 53, 0.9); }
-    
-    .lightbox { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
-    .lightbox.active { display: flex; opacity: 1; }
-    .lightbox-img { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-    .lightbox-close { position: absolute; top: 20px; right: 24px; color: white; font-size: 36px; font-weight: 300; cursor: pointer; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border-radius: 50%; }
-    .lightbox-close:hover { background: rgba(255,255,255,0.2); }
-
-    /* === 4. BOTONES FLOTANTES (FABs) === */
-    .fab-container { position: absolute; bottom: 24px; right: 16px; display: flex; flex-direction: column; gap: 12px; align-items: center; transition: transform 0.3s; }
-    @media (max-width: 600px) { body.panel-open .fab-container { transform: translateY(-50vh); } }
-    .fab { width: 48px; height: 48px; border-radius: 50%; background: var(--surface-color); border: none; box-shadow: var(--shadow-1); cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; color: var(--text-secondary); }
-    .fab:hover { background: #f8f9fa; color: var(--text-primary); }
-    .fab.active { color: var(--primary-blue); background: #e8f0fe; }
-    .fab.primary { width: 56px; height: 56px; font-size: 24px; color: var(--primary-blue); box-shadow: var(--shadow-2); }
-    .fab-group { display: flex; flex-direction: column; gap: 8px; background: var(--surface-color); padding: 4px; border-radius: 28px; box-shadow: var(--shadow-1); }
-    .fab-group .fab { box-shadow: none; width: 40px; height: 40px; }
-
-    .logout-btn {
-  background-color: #ffebee;
-  color: #c62828;
-  border: 1px solid #ffcdd2;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+/* =========================================================
+   1. VARIABLES Y RESET (Material Design)
+   ========================================================= */
+:root {
+  --surface-color: #ffffff;
+  --background-map: #e5e3df;
+  --text-primary: #202124;
+  --text-secondary: #5f6368;
+  --border-color: #dadce0;
+  --primary-blue: #1a73e8;
+  --danger-red: #e94335;
+  --warning-yellow: #fbbc04;
+  --success-green: #34a853;
+  --shadow-1: 0 1px 2px rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+  --shadow-2: 0 4px 6px rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
 }
 
-.logout-btn:hover {
-  background-color: #ffcdd2;
-  color: #b71c1c;
+body, html {
+  margin: 0; padding: 0; height: 100%; width: 100%;
+  font-family: 'Roboto', Arial, sans-serif;
+  overflow: hidden; background-color: var(--background-map);
 }
 
-/* Estilos para los Filtros de Incidencias */
-.filter-btn {
-  flex: 1;
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 6px 0;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #555;
-}
-.filter-btn.active {
-  background: #e8f0fe;
-  border-color: #4285f4;
-  color: #1a73e8;
-  font-weight: bold;
-}
-.filter-btn:hover:not(.active) {
-  background: #eef2f5;
-}
+#map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+#map-container canvas { display: block; outline: none; }
 
-/* --- ESTILOS DEL SPLASH SCREEN --- */
+.ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+.interactive-element { pointer-events: auto; }
+
+/* =========================================================
+   2. PANTALLA DE CARGA (SPLASH) Y LOGIN
+   ========================================================= */
 .splash-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #ffffff; /* Fondo blanco limpio */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 999999; /* Asegura que esté por encima de TODO */
-  transition: opacity 0.6s ease-out, visibility 0.6s ease-out; /* Desvanecimiento suave */
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: #ffffff;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  z-index: 999999; transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
 }
-
-.splash-logo {
-  width: 160px; /* Tamaño del logo */
-  margin-bottom: 30px;
-  animation: pulseLogo 2s infinite ease-in-out; /* Efecto de latido */
-}
-
-/* El circulito de carga que gira (con el color naranja de tu logo) */
+.splash-logo { width: 160px; margin-bottom: 30px; animation: pulseLogo 2s infinite ease-in-out; }
 .splash-spinner {
-  width: 36px;
-  height: 36px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #f99d1c; /* Naranja Sumatra */
-  border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 4px solid #f3f3f3; border-top: 4px solid #f99d1c;
   animation: spinLoader 1s linear infinite;
 }
 
-/* Animaciones mágicas */
-@keyframes spinLoader { 
-  0% { transform: rotate(0deg); } 
-  100% { transform: rotate(360deg); } 
+@keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes pulseLogo { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+#loginOverlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6); z-index: 10000;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); pointer-events: auto;
 }
 
-@keyframes pulseLogo { 
-  0% { transform: scale(1); } 
-  50% { transform: scale(1.05); } 
-  100% { transform: scale(1); } 
+/* =========================================================
+   3. BARRA SUPERIOR, BUSCADOR Y PERFIL
+   ========================================================= */
+.search-box {
+  position: absolute; top: 16px; left: 16px; width: 392px; height: 48px;
+  background: var(--surface-color); border-radius: 24px; box-shadow: var(--shadow-1); 
+  display: flex; align-items: center; padding: 0 8px; box-sizing: border-box; transition: box-shadow 0.2s;
 }
-
-/* ==========================================
-   FILTROS FLOTANTES SOBRE 3D (ESTILO MAPS)
-   ========================================== */
-
-/* Contenedor principal flotante */
-#floating-filter-container {
-  position: absolute;
-  top: 65px; /* Justo debajo de la top-toolbar (que mide 50px + márgenes) */
-  right: 15px; /* Pegado a la derecha como en la foto */
-  width: auto;
-  max-width: calc(100% - 30px); /* Evita que ocupe toda la pantalla en móvil */
-  z-index: 5; /* Por encima del canvas 3D, pero por debajo de menús modales */
-  background: transparent; /* Fondo transparente para integrarse en el 3D */
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
+.search-box:hover { box-shadow: var(--shadow-2); }
+.menu-btn, .file-label {
+  width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent; 
+  cursor: pointer; font-size: 20px; color: var(--text-secondary); display: flex; align-items: center; justify-content: center;
 }
+.menu-btn:hover, .file-label:hover { background: #f1f3f4; color: var(--text-primary); }
+.search-title { flex-grow: 1; padding: 0 12px; font-size: 15px; color: var(--text-primary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#fileInput { display: none; }
 
-/* Contenedor que permite deslizar horizontalmente */
-.filter-scroll-area {
-  display: flex;
-  overflow-x: auto;
-  gap: 6px; /* Un poco menos de espacio entre botones */
-  padding: 5px; /* Pequeño padding para sombras si las hubiera */
-  justify-content: flex-end; /* Alinea los botones a la derecha */
-
-  /* Ocultar la barra de scroll visualmente */
-  -ms-overflow-style: none;  /* IE y Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-
-.filter-scroll-area::-webkit-scrollbar {
-  display: none; /* Chrome, Safari y Opera */
-}
-
-/* Diseño de los botones individuales (Chips) */
-.filter-chip {
-  flex: 0 0 auto;
-  padding: 7px 15px; /* Un pelín más grandes para facilitar el clic táctil */
-  border-radius: 20px;
-  border: 1px solid #ddd;
-  background-color: rgba(255, 255, 255, 0.9); /* Blanco ligeramente transparente */
-  color: #333;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Pequeña sombra para destacar sobre el 3D */
-  transition: all 0.2s ease;
-  white-space: nowrap; /* Evita que el texto se rompa */
-}
-
-.filter-chip:hover {
-  background-color: #f1f3f4;
-  transform: translateY(-1px); /* Pequeño efecto hover */
-}
-
-/* Diseño cuando el botón está seleccionado (Azul Google) */
-.filter-chip.active {
-  border-color: #4285F4;
-  background-color: #e8f0fe;
-  color: #1967d2;
-  font-weight: 600;
-}
-
-/* ==========================================
-   PERFIL FLOTANTE (GOOGLE MAPS STYLE)
-   ========================================== */
-.user-profile-floating {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  z-index: 100;
-}
-
-/* El círculo con la inicial */
+.user-profile-floating { position: absolute; top: 15px; right: 15px; z-index: 100; }
 .user-avatar-circle {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background-color: #1a73e8; /* Azul estilo Google */
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 18px;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-  border: 2px solid white;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 42px; height: 42px; border-radius: 50%; background-color: var(--primary-blue);
+  color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px;
+  cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.3); border: 2px solid white; transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-
-.user-avatar-circle:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-
-/* La tarjeta que se despliega al pasar el ratón */
+.user-avatar-circle:hover { transform: scale(1.05); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
 .user-dropdown {
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
-  position: absolute;
-  top: 50px;
-  right: 0;
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-  min-width: 220px;
-  border: 1px solid #eaeaea;
-  transition: all 0.2s ease;
+  opacity: 0; visibility: hidden; transform: translateY(-10px); position: absolute; top: 50px; right: 0;
+  background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); min-width: 220px;
+  border: 1px solid #eaeaea; transition: all 0.2s ease;
 }
+.user-profile-floating:hover .user-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
 
-/* Efecto hover para mostrar la tarjeta */
-.user-profile-floating:hover .user-dropdown {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
+/* =========================================================
+   4. BARRA DE FILTROS SUPERIOR
+   ========================================================= */
+.filter-scroll-area {
+  display: flex; overflow-x: auto; gap: 6px; padding: 5px;
+  -ms-overflow-style: none; scrollbar-width: none;
 }
-
-/* Para que los botones de Sombreado no choquen con el perfil */
-.layers-control {
-  top: 75px !important; 
+.filter-scroll-area::-webkit-scrollbar { display: none; }
+.filter-chip {
+  flex: 0 0 auto; padding: 7px 15px; border-radius: 20px; border: 1px solid var(--border-color);
+  background-color: rgba(255, 255, 255, 0.9); color: #333; font-size: 13px; font-weight: 500;
+  cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.2s ease; white-space: nowrap;
 }
+.filter-chip:hover { background-color: #f1f3f4; transform: translateY(-1px); }
+.filter-chip.active { border-color: var(--primary-blue); background-color: #e8f0fe; color: #1967d2; font-weight: 600; }
+.filter-chip[data-filter-type="priority"] { border-style: dashed; }
 
-/* ==========================================
-   📱 RESPONSIVE DESIGN (MÓVILES Y TABLETS)
-   ========================================== */
-@media (max-width: 768px) {
-  
-  /* 1. Evitar descuadre al rotar el móvil */
-  body, html {
-    overflow-x: hidden;
-    width: 100%;
-    height: 100%;
-    position: fixed;
-  }
-
-  #map-container {
-    width: 100vw !important;
-    height: 100vh !important;
-  }
-
-  /* 2. El buscador le deja espacio al icono de usuario */
-  .search-box {
-    width: calc(100% - 75px) !important;
-    top: 15px !important;
-    left: 10px !important;
-  }
-
-  /* 3. Colocación de los filtros en móvil */
-  .filter-scroll-area {
-    top: 75px !important;
-    left: 10px !important;
-    width: calc(100% - 20px) !important;
-  }
-
-  /* 4. Bajamos los botones de Sombreado/Aristas para que no choquen */
-  .layers-control {
-    top: 130px !important; 
-    left: 10px !important;
-    right: auto !important;
-  }
-  
-  /* 5. Ajuste del menú desplegable de usuario */
-  .user-dropdown {
-    min-width: 180px;
-    right: -10px; 
-  }
+/* =========================================================
+   5. PANEL LATERAL DERECHO
+   ========================================================= */
+.side-panel {
+  position: absolute; background: var(--surface-color); box-shadow: var(--shadow-2); 
+  display: flex; flex-direction: column; overflow: hidden; transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
-
-/* ==========================================
-   BOTÓN Y MODAL DE CAPAS (GOOGLE MAPS STYLE)
-   ========================================== */
-/* El botón circular flotante */
-.layer-fab {
-  position: absolute;
-  top: 75px;
-  right: 15px; /* Lo ponemos a la derecha, debajo del avatar */
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background-color: white;
-  border: 1px solid #ddd;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  cursor: pointer;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
+@media (min-width: 769px) {
+  .side-panel { top: 80px; left: 16px; width: 392px; max-height: calc(100vh - 104px); border-radius: 8px; transform: translateX(-120%); }
+  .side-panel.open { transform: translateX(0); }
 }
+.panel-header { padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-weight: 500; font-size: 16px; color: var(--text-primary); background: #fafafa;}
+.panel-content { padding: 16px; overflow-y: auto; flex-grow: 1; }
+
+/* =========================================================
+   6. FORMULARIOS Y CHIPS TÁCTILES (AGILE UX)
+   ========================================================= */
+.form-container { display: none; background: #f8f9fa; padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px; }
+label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px; font-weight: bold; }
+select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; font-size: 14px; box-sizing: border-box; margin-bottom: 12px; background: #fff;}
+
+.btn-primary { background: var(--primary-blue); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 500; cursor: pointer; width: 100%; font-family: inherit; transition: background 0.2s;}
+.btn-primary:hover { background: #3367d6; }
+.btn-primary:disabled { background: #a0c1f9; cursor: not-allowed; }
+.btn-inline { width: auto; flex: 1; }
+
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; margin-top: 5px; }
+.ui-chip {
+  padding: 8px 12px; border-radius: 20px; border: 1px solid #ccc; background-color: white; color: #555;
+  font-size: 13px; cursor: pointer; transition: all 0.2s ease; flex: 1 1 auto; text-align: center;
+}
+.ui-chip:hover { background-color: #f1f3f4; }
+.ui-chip.active { background-color: #e8f0fe; border-color: var(--primary-blue); color: #1967d2; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.ui-chip[data-val="prio1"] { font-weight: bold; }
+.ui-chip[data-val="prio1"].active { background-color: #fce8e6; border-color: var(--danger-red) !important; color: var(--danger-red) !important; }
+
+/* =========================================================
+   7. HISTORIAL, LISTAS Y FOTOS
+   ========================================================= */
+.history-container { display: none; margin-bottom: 16px; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); }
+.history-timeline { border-left: 2px solid var(--border-color); margin-left: 8px; padding-left: 12px; max-height: 200px; overflow-y: auto; }
+.history-entry { position: relative; margin-bottom: 16px; }
+.history-entry:last-child { margin-bottom: 0; }
+.history-dot { position: absolute; left: -18px; top: 4px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; }
+.history-date { font-size: 10px; color: var(--text-secondary); font-weight: 500; }
+.history-comment { font-size: 13px; color: var(--text-primary); margin: 4px 0; }
+
+.files-container { margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
+.file-item { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; }
+.file-item-name { flex-grow: 1; font-size: 13px; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-item-actions { display: flex; gap: 4px; }
+.icon-action-btn { background: transparent; border: none; cursor: pointer; color: var(--text-secondary); border-radius: 4px; padding: 4px; font-size: 16px; transition: background 0.2s;}
+.icon-action-btn:hover { background: #e8eaed; color: var(--text-primary); }
+.icon-action-btn.active-eye { color: var(--primary-blue); }
+
+.photo-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.photo-thumb-container { position: relative; width: 64px; height: 64px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); background: #eee;}
+.photo-thumb { width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: opacity 0.2s;}
+.photo-thumb:hover { opacity: 0.8; }
+.delete-photo-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+/* =========================================================
+   8. MODALES Y LIGHTBOX
+   ========================================================= */
+.layer-fab { position: absolute; top: 75px; right: 15px; width: 42px; height: 42px; border-radius: 50%; background-color: white; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.2); cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
 .layer-fab:hover { background-color: #f1f3f4; }
 
-/* Fondo oscuro del panel */
-.layers-modal-overlay {
-  position: fixed;
-  top: 0; left: 0; width: 100vw; height: 100vh;
-  background: rgba(0,0,0,0.4);
-  z-index: 1000;
-  display: flex;
-  align-items: flex-end; /* En móvil sale desde abajo */
-  justify-content: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease;
+.layers-modal-overlay, .info-modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 2000;
+  display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease;
 }
-.layers-modal-overlay.active { opacity: 1; visibility: visible; }
+.layers-modal-overlay.active, .info-modal-overlay.active { opacity: 1; visibility: visible; }
 
-/* La tarjeta blanca con las opciones */
-.layers-modal-content {
-  background: white;
-  width: 100%;
-  max-width: 400px;
-  border-radius: 16px 16px 0 0;
-  padding: 24px;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.layers-modal-overlay.active .layers-modal-content { transform: translateY(0); }
-
+.layers-modal-content { background: white; width: 90%; max-width: 400px; border-radius: 12px; padding: 24px; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.layers-modal-overlay.active .layers-modal-content { transform: scale(1); }
 .layers-modal-header { display: flex; justify-content: space-between; align-items: center; }
 
-/* Tarjetas individuales de cada vista */
-.layer-card {
-  background: none; border: none; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding: 10px; border-radius: 12px; transition: all 0.2s;
-}
+.layer-card { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px; border-radius: 12px; transition: all 0.2s; }
 .layer-card:hover { background-color: #f8f9fa; }
+.layer-card.active .layer-icon { border-color: var(--primary-blue) !important; box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3); }
+.layer-card.active span { color: var(--primary-blue); font-weight: 600; }
+.layer-icon { width: 60px; height: 60px; border-radius: 12px; box-sizing: border-box; border: 2px solid transparent; transition: all 0.2s; }
 
-/* Diseño para cuando una capa está seleccionada */
-.layer-card.active .layer-icon {
-  border-color: #1a73e8 !important;
-  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3);
+.info-modal-content { background: white; width: 90%; max-width: 550px; max-height: 85vh; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.info-modal-overlay.active .info-modal-content { transform: translateY(0); }
+.info-modal-header { padding: 15px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background-color: #f8f9fa; border-radius: 12px 12px 0 0; }
+.info-modal-body { padding: 25px; overflow-y: auto; color: #555; font-size: 14px; line-height: 1.6; }
+
+.lightbox { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+.lightbox.active { display: flex; opacity: 1; }
+.lightbox-img { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+.lightbox-close { position: absolute; top: 20px; right: 24px; color: white; font-size: 36px; font-weight: 300; cursor: pointer; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border-radius: 50%; }
+
+/* =========================================================
+   9. BOTONES FLOTANTES DE ACCIÓN (FABs)
+   ========================================================= */
+.fab-container { position: absolute; bottom: 24px; right: 16px; display: flex; flex-direction: column; gap: 12px; align-items: center; transition: transform 0.3s; z-index: 50; }
+.fab { width: 48px; height: 48px; border-radius: 50%; background: var(--surface-color); border: none; box-shadow: var(--shadow-1); cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; color: var(--text-secondary); transition: all 0.2s;}
+.fab:hover { background: #f8f9fa; color: var(--text-primary); transform: scale(1.05); }
+.fab.primary { width: 60px; height: 60px; font-size: 24px; background: var(--primary-blue); color: white; box-shadow: var(--shadow-2); }
+.fab.primary.active { background: var(--danger-red); transform: rotate(45deg); }
+.fab-group { display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.9); padding: 6px; border-radius: 30px; box-shadow: var(--shadow-1); }
+.fab-group .fab { box-shadow: none; width: 40px; height: 40px; }
+
+/* =========================================================
+   10. RESPONSIVE (MÓVILES)
+   ========================================================= */
+@media (max-width: 768px) {
+  body, html { overflow-x: hidden; width: 100%; height: 100%; position: fixed; }
+  #map-container { width: 100vw !important; height: 100vh !important; }
+  
+  .search-box { width: calc(100% - 75px) !important; top: 15px !important; left: 10px !important; }
+  .filter-scroll-area { top: 75px !important; left: 10px !important; width: calc(100% - 20px) !important; justify-content: flex-start;}
+  
+  .layer-fab { top: 130px !important; left: auto !important; right: 15px !important; }
+  .user-dropdown { min-width: 180px; right: -10px; }
+
+  .side-panel { bottom: 0; left: 0; width: 100%; height: 60vh; border-radius: 16px 16px 0 0; transform: translateY(100%); top: auto;}
+  .side-panel.open { transform: translateY(0); }
+  .side-panel::before { content: ''; display: block; width: 40px; height: 4px; background: var(--border-color); border-radius: 2px; margin: 12px auto 4px; }
+
+  body.panel-open .fab-container { transform: translateY(-62vh); }
+  
+  .layers-modal-overlay { align-items: flex-end; }
+  .layers-modal-content { border-radius: 16px 16px 0 0; transform: translateY(100%); max-width: 100%;}
+  .layers-modal-overlay.active .layers-modal-content { transform: translateY(0); }
 }
-.layer-card.active span { color: #1a73e8; font-weight: 600; }
-
-.layer-icon {
-  width: 60px; height: 60px; border-radius: 12px;
-  box-sizing: border-box;
-  border: 2px solid transparent;
-  transition: all 0.2s;
-}
-.layer-card span { font-size: 12px; color: #3c4043; }
-
-/* Ajuste específico para PC (El panel se centra en lugar de pegarse abajo) */
-@media (min-width: 768px) {
-  .layers-modal-overlay { align-items: center; }
-  .layers-modal-content { border-radius: 12px; transform: scale(0.9); }
-  .layers-modal-overlay.active .layers-modal-content { transform: scale(1); }
-}
-
-/* ==========================================
-   ESTILOS DEL MODAL DE INFORMACIÓN
-   ========================================== */
-.info-modal-overlay {
-  position: fixed; 
-  top: 0; 
-  left: 0; 
-  width: 100vw; 
-  height: 100vh;
-  background: rgba(0,0,0,0.6); /* Fondo oscuro semitransparente */
-  z-index: 3000; /* Por encima de todo */
-  display: flex; 
-  align-items: center; 
-  justify-content: center;
-  opacity: 0; 
-  visibility: hidden; 
-  transition: opacity 0.3s ease;
-}
-
-.info-modal-overlay.active { 
-  opacity: 1; 
-  visibility: visible; 
-}
-
-.info-modal-content {
-  background: white; 
-  width: 90%; 
-  max-width: 550px; 
-  max-height: 85vh;
-  border-radius: 12px; 
-  display: flex; 
-  flex-direction: column;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  transform: translateY(20px); 
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.info-modal-overlay.active .info-modal-content { 
-  transform: translateY(0); 
-}
-
-.info-modal-header {
-  padding: 15px 25px; 
-  border-bottom: 1px solid #eee; 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center;
-  background-color: #f8f9fa;
-  border-radius: 12px 12px 0 0;
-}
-
-.info-modal-body {
-  padding: 25px; 
-  overflow-y: auto; /* Scroll si el contenido es muy largo */
-  color: #555; 
-  font-size: 14px; 
-  line-height: 1.6;
-}
-
-.info-modal-body p { margin-top: 0; }
-.info-modal-body li { margin-bottom: 8px; }
