@@ -85,21 +85,24 @@ body, html {
 .user-profile-floating:hover .user-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
 
 /* =========================================================
-   4. BARRA DE FILTROS SUPERIOR
+   4. CHIPS DE FILTRO (Actualizados para Panel Emergente)
    ========================================================= */
-.filter-scroll-area {
-  display: flex; overflow-x: auto; gap: 6px; padding: 5px;
-  -ms-overflow-style: none; scrollbar-width: none;
+.filter-chips-container {
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; margin-top: 5px;
 }
-.filter-scroll-area::-webkit-scrollbar { display: none; }
 .filter-chip {
   flex: 0 0 auto; padding: 7px 15px; border-radius: 20px; border: 1px solid var(--border-color);
-  background-color: rgba(255, 255, 255, 0.9); color: #333; font-size: 13px; font-weight: 500;
-  cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.2s ease; white-space: nowrap;
+  background-color: var(--surface-color); color: #333; font-size: 13px; font-weight: 500;
+  cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.2s ease; white-space: nowrap;
 }
 .filter-chip:hover { background-color: #f1f3f4; transform: translateY(-1px); }
-.filter-chip.active { border-color: var(--primary-blue); background-color: #e8f0fe; color: #1967d2; font-weight: 600; }
-.filter-chip[data-filter-type="priority"] { border-style: dashed; }
+.filter-chip.active { border-color: var(--primary-blue); background-color: #e8f0fe; color: var(--primary-blue); font-weight: bold; }
+
+/* Modificadores de color para los chips */
+.filter-chip.red { border-color: var(--danger-red); color: var(--danger-red); }
+.filter-chip.yellow { border-color: var(--warning-yellow); color: #d99000; } /* Amarillo más oscuro para leer bien */
+.filter-chip.green { border-color: var(--success-green); color: var(--success-green); }
+.filter-chip.dotted { border-style: dotted; border-width: 2px; }
 
 /* =========================================================
    5. PANEL LATERAL DERECHO
@@ -144,7 +147,7 @@ select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; bor
 .history-timeline { border-left: 2px solid var(--border-color); margin-left: 8px; padding-left: 12px; max-height: 200px; overflow-y: auto; }
 .history-entry { position: relative; margin-bottom: 16px; }
 .history-entry:last-child { margin-bottom: 0; }
-.history-dot { position: absolute; left: -18px; top: 4px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; }
+.history-dot { position: absolute; left: -18px; top: 4px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; background-color: var(--border-color); }
 .history-date { font-size: 10px; color: var(--text-secondary); font-weight: 500; }
 .history-comment { font-size: 13px; color: var(--text-primary); margin: 4px 0; }
 
@@ -165,7 +168,7 @@ select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; bor
 /* =========================================================
    8. MODALES Y LIGHTBOX
    ========================================================= */
-.layer-fab { position: absolute; top: 75px; right: 15px; width: 42px; height: 42px; border-radius: 50%; background-color: white; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.2); cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
+.layer-fab { position: absolute; top: 75px; right: 15px; width: 42px; height: 42px; border-radius: 50%; background-color: white; border: 1px solid var(--border-color); box-shadow: 0 2px 4px rgba(0,0,0,0.2); cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
 .layer-fab:hover { background-color: #f1f3f4; }
 
 .layers-modal-overlay, .info-modal-overlay {
@@ -206,14 +209,71 @@ select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; bor
 .fab-group .fab { box-shadow: none; width: 40px; height: 40px; }
 
 /* =========================================================
-   10. RESPONSIVE (MÓVILES)
+   10. PANEL EMERGENTE DE FILTROS Y VOZ (¡NUEVO!)
+   ========================================================= */
+/* El botón del embudo azul flotante */
+.filter-fab { 
+  position: absolute; top: 75px; left: 16px; width: 48px; height: 48px; border-radius: 50%; 
+  background-color: var(--primary-blue); border: none; box-shadow: var(--shadow-2); 
+  cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10;
+  transition: background-color 0.2s, transform 0.2s; 
+}
+.filter-fab:hover { background-color: #3367D6; transform: scale(1.05); }
+
+/* Contenedor oscuro de fondo */
+.filter-panel-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.5); z-index: 2000;
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; visibility: hidden; transition: opacity 0.3s ease;
+}
+.filter-panel-overlay.active { opacity: 1; visibility: visible; }
+
+/* Ventana blanca inferior (Bottom Sheet) */
+.filter-panel-content {
+  background: var(--surface-color); width: 100%; max-width: 600px;
+  border-radius: 20px 20px 0 0; display: flex; flex-direction: column;
+  box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+  transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.filter-panel-overlay.active .filter-panel-content { transform: translateY(0); }
+
+/* Secciones interiores del panel */
+.filter-panel-header { padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background-color: #f8f9fa; border-radius: 20px 20px 0 0; }
+.filter-panel-body { padding: 20px; overflow-y: auto; max-height: 70vh; }
+.filter-section { margin-bottom: 25px; }
+.filter-label { font-size: 13px; color: var(--text-secondary); font-weight: bold; margin: 0 0 10px 5px; text-transform: uppercase; letter-spacing: 0.5px;}
+
+/* Botón y animación de "La Magia" */
+.magic-section { border-top: 2px dashed var(--border-color); padding-top: 20px; background-color: #fbfdff; border-radius: 10px; padding: 15px; }
+.voice-search-button { 
+  background: var(--surface-color); border: 2px solid var(--border-color); border-radius: 12px; 
+  padding: 20px 30px; cursor: pointer; box-shadow: var(--shadow-1); transition: all 0.2s; 
+}
+.voice-search-button:hover { border-color: var(--primary-blue); box-shadow: var(--shadow-2); }
+.voice-search-button.listening { 
+  border-color: var(--danger-red); background-color: #fce8e6; 
+  animation: pulseMic 1.5s infinite; 
+}
+.voice-search-button.listening svg { stroke: var(--danger-red); }
+
+@keyframes pulseMic { 
+  0% { box-shadow: 0 0 0 0 rgba(233, 67, 53, 0.7); } 
+  70% { box-shadow: 0 0 0 10px rgba(233, 67, 53, 0); } 
+  100% { box-shadow: 0 0 0 0 rgba(233, 67, 53, 0); } 
+}
+
+/* =========================================================
+   11. RESPONSIVE (MÓVILES)
    ========================================================= */
 @media (max-width: 768px) {
   body, html { overflow-x: hidden; width: 100%; height: 100%; position: fixed; }
   #map-container { width: 100vw !important; height: 100vh !important; }
   
   .search-box { width: calc(100% - 75px) !important; top: 15px !important; left: 10px !important; }
-  .filter-scroll-area { top: 75px !important; left: 10px !important; width: calc(100% - 20px) !important; justify-content: flex-start;}
+  
+  /* Ajuste para el nuevo embudo en móvil */
+  .filter-fab { top: 75px !important; left: 10px !important; }
   
   .layer-fab { top: 130px !important; left: auto !important; right: 15px !important; }
   .user-dropdown { min-width: 180px; right: -10px; }
@@ -227,4 +287,6 @@ select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; bor
   .layers-modal-overlay { align-items: flex-end; }
   .layers-modal-content { border-radius: 16px 16px 0 0; transform: translateY(100%); max-width: 100%;}
   .layers-modal-overlay.active .layers-modal-content { transform: translateY(0); }
+  
+  /* El panel de filtros ya usa max-width:100% y se abre desde abajo por defecto, así que se adapta perfecto */
 }

@@ -21,11 +21,20 @@ export function setActiveChip(groupId, value) {
   });
 }
 
+// 🏆 ACTUALIZADO: Conectamos la UI antigua con el nuevo Panel de Filtros 🏆
 export function setAdvancedFilter(type, value) {
   if (type === 'status') State.currentStatusFilter = value;
   if (type === 'priority') State.currentPriorityFilter = value;
+  
+  // Actualizar visualmente los chips en el panel principal (por si acaso los usas)
+  document.querySelectorAll(`.filter-chip[data-filter-type="${type}"]`).forEach(chip => {
+      chip.classList.toggle('active', chip.dataset.val === value);
+  });
+  
   renderIssues();
 }
+// Lo colgamos en window para que el HTML (la voz) pueda llamarlo
+window.setAdvancedFilter = setAdvancedFilter;
 
 export function getColor(status) {
   const colors = { 
@@ -206,7 +215,6 @@ export async function saveIssueFn() {
     
     issueToUpload = issue;
   } else {
-    // ID seguro que no falla en ningún navegador
     const safeId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
     
     const newIssue = {
@@ -220,19 +228,6 @@ export async function saveIssueFn() {
     State.issues.push(newIssue);
     issueToUpload = newIssue;
   }
-
-// --- MAGIA UX: Resetear filtros a "Todos" para que la nueva esfera sea visible ---
- // State.currentStatusFilter = 'all';
- // State.currentPriorityFilter = 'all';
-
-// Limpiar visualmente los botones de la barra superior
-//  document.querySelectorAll('.filter-scroll-area .filter-chip').forEach(c => c.classList.remove('active'));
-//  const btnStatusAll = document.querySelector('.filter-chip[data-filter-type="status"][data-val="all"]');
-//  const btnPrioAll = document.querySelector('.filter-chip[data-filter-type="priority"][data-val="all"]');
-// if (btnStatusAll) btnStatusAll.classList.add('active');
-//  if (btnPrioAll) btnPrioAll.classList.add('active');
- // ---------------------------------------------------------------------------------
-
 
   renderIssues(); 
   deselectMarker(); 
@@ -308,3 +303,136 @@ function renderIssueListUI() {
     list.appendChild(card);
   });
 }
+
+// ==========================================
+// 📄 GENERACIÓN DE REPORTE PDF (ADAPTADO A FILTROS CRUZADOS)
+// ==========================================
+export const generatePDF = function() {
+  window.generatePDF = generatePDF;
+
+  // 1. Aplicamos el Doble Filtro a las incidencias que se van a imprimir
+  const issuesToPrint = State.issues.filter(issue => {
+    const passStatus = State.currentStatusFilter === 'all' || issue.status === State.currentStatusFilter;
+    const passPriority = State.currentPriorityFilter === 'all' || issue.priority === State.currentPriorityFilter;
+    return passStatus && passPriority;
+  });
+
+  if (issuesToPrint.length === 0) {
+    alert("⚠️ No hay incidencias en este filtro para generar el reporte.");
+    return;
+  }
+
+  const btn = document.querySelector('button[onclick="window.generatePDF()"]');
+  const originalText = btn ? btn.innerHTML : '📄 Generar PDF';
+  if (btn) btn.innerHTML = '⏳ Diseñando reporte...';
+
+  const countOpen = issuesToPrint.filter(i => i.status === 'open').length;
+  const countRev = issuesToPrint.filter(i => i.status === 'review').length;
+  const countClosed = issuesToPrint.filter(i => i.status === 'closed').length;
+
+  const fecha = new Date().toLocaleDateString('es-ES');
+  
+  // Nombres bonitos para el encabezado del PDF
+  const nameStatus = { 'all': 'Todos', 'open': 'Abiertas', 'review': 'En Revisión', 'closed': 'Cerradas' }[State.currentStatusFilter];
+  const namePrio = { 'all': 'Todas', 'prio1': 'Top 1', 'alta': 'Alta', 'media': 'Media' }[State.currentPriorityFilter];
+
+  // --- CABECERA TABULAR CON LOGO ---
+  let html = `
+    <div style="padding: 20px; font-family: Arial, sans-serif; color: #333; background-color: #fff; width: 700px; margin: 0 auto;">
+      
+      <table style="width: 100%; border-spacing: 0; margin-bottom: 25px; border-bottom: 2px solid #ddd; padding-bottom: 15px;">
+        <tr>
+          <td style="vertical-align: middle;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <img src="./img/SumatraQ_logo.jpg" alt="Logo Sumatra Q" style="width: 45px; height: 45px; border-radius: 10px; object-fit: contain; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.1);">
+              <div>
+                <h1 style="color: #4285F4; margin: 0; font-size: 24px; font-weight: bold;">Reporte de Inspección</h1>
+                <p style="margin: 2px 0 0 0; color: #666; font-size: 14px; font-weight: bold;">Sumatra Q - Control de Calidad</p>
+              </div>
+            </div>
+          </td>
+          <td style="vertical-align: bottom; text-align: right; width: 220px;">
+            <p style="margin: 0; color: #666; font-size: 12px;"><strong>Generado:</strong> ${fecha}</p>
+            <p style="margin: 4px 0 0 0; color: #666; font-size: 11px;"><strong>Estado:</strong> ${nameStatus} | <strong>Prio:</strong> ${namePrio}</p>
+          </td>
+        </tr>
+      </table>
+
+      <table style="width: 100%; border-spacing: 10px; margin-bottom: 25px;">
+        <tr>
+          <td style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; text-align: center; background: #fafafa; width: 33%;">
+            <div style="font-size: 24px; font-weight: bold; color: #e94335;">${countOpen}</div>
+            <div style="font-size: 10px; color: #666; font-weight: bold;">ABIERTAS</div>
+          </td>
+          <td style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; text-align: center; background: #fafafa; width: 33%;">
+            <div style="font-size: 24px; font-weight: bold; color: #fbbc04;">${countRev}</div>
+            <div style="font-size: 10px; color: #666; font-weight: bold;">EN REVISIÓN</div>
+          </td>
+          <td style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; text-align: center; background: #fafafa; width: 33%;">
+            <div style="font-size: 24px; font-weight: bold; color: #34a853;">${countClosed}</div>
+            <div style="font-size: 10px; color: #666; font-weight: bold;">CERRADAS</div>
+          </td>
+        </tr>
+      </table>
+      
+      <h3 style="border-bottom: 2px solid #4285F4; padding-bottom: 5px; margin-bottom: 15px; font-size: 18px;">Detalle de Incidencias (${issuesToPrint.length})</h3>
+  `;
+
+  issuesToPrint.forEach((issue, index) => {
+    const estadoHTML = issue.status === 'open' ? '<span style="color:#e94335; font-weight:bold;">🔴 Abierto</span>' : 
+                       (issue.status === 'review' ? '<span style="color:#fbbc04; font-weight:bold;">🟡 Revisión</span>' : '<span style="color:#34a853; font-weight:bold;">🟢 Cerrado</span>');
+    
+    const prioHTML = issue.priority === 'prio1' ? '<span style="color:#d93025; font-weight:bold; font-size: 12px; margin-left: 10px;">🔥 PRIO 1</span>' : '';
+
+    html += `
+      <div style="page-break-inside: avoid; border: 1px solid #eee; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <table style="width: 100%; margin-bottom: 10px;">
+          <tr>
+            <td style="text-align: left; vertical-align: middle;">
+              <h4 style="margin: 0; font-size: 15px;">#${index + 1} - ${issue.type || 'Falla no especificada'} ${prioHTML}</h4>
+            </td>
+            <td style="text-align: right; vertical-align: middle; width: 100px; white-space: nowrap;">
+              ${estadoHTML}
+            </td>
+          </tr>
+        </table>
+        
+        <p style="margin: 0 0 5px 0; font-size: 13px;"><strong>Comentario:</strong> ${issue.comment || 'N/A'}</p>
+        <p style="margin: 0 0 8px 0; font-size: 11px; color: #555;"><strong>Fase:</strong> ${issue.fase || 'N/A'} | <strong>Inspector inicial:</strong> 👤 ${issue.user || 'Desconocido'}</p>
+        <p style="margin: 0 0 12px 0; font-size: 10px; color: #888; border-bottom: 1px solid #f5f5f5; padding-bottom: 5px;">
+           Pieza: ${issue.fileName || '---'} | 📍 XYZ: ${(issue.x || 0).toFixed(1)}, ${(issue.y || 0).toFixed(1)}, ${(issue.z || 0).toFixed(1)}
+        </p>
+    `;
+
+    if (issue.history && issue.history.length > 0) {
+      html += `<div style="background: #f8f9fa; padding: 10px; border-left: 3px solid #4285F4; margin-bottom: 5px;">
+                 <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: bold; color: #333;">Trazabilidad de cambios:</p>
+                 <ul style="margin: 0; padding-left: 15px; font-size: 11px; color: #555; list-style-type: none;">`;
+      issue.history.forEach(h => {
+        const hDate = new Date(h.date).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+        html += `<li style="margin-bottom: 3px;">• <strong>${hDate}</strong> - 👤 ${h.user || 'Anónimo'} - <em>${h.comment || 'Actualización'}</em></li>`;
+      });
+      html += `</ul></div>`;
+    }
+
+    html += `</div>`;
+  });
+  
+  html += `</div>`;
+
+  const opt = {
+    margin:       10,
+    filename:     `SumatraQ_${nameStatus}_${namePrio}.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(html).save().then(() => {
+    if (btn) btn.innerHTML = originalText;
+  }).catch(err => {
+    console.error("Error PDF:", err);
+    if (btn) btn.innerHTML = originalText;
+    alert("Error generando el PDF.");
+  });
+};

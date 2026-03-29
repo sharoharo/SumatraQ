@@ -47,20 +47,11 @@
       <input type="file" id="fileInput" accept=".stl,.STL" multiple />
     </div>
 
-    <div class="filter-scroll-area interactive-element" style="position: absolute; top: 75px; left: 20px; z-index: 1; display: flex; flex-direction: column; gap: 8px;">
-        <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;" id="filterStatusContainer">
-            <button class="filter-chip active" data-filter-type="status" data-val="all">Todos los Estados</button>
-            <button class="filter-chip" data-filter-type="status" data-val="open" style="border-bottom: 3px solid #e94335;">Abiertos</button>
-            <button class="filter-chip" data-filter-type="status" data-val="review" style="border-bottom: 3px solid #fbbc04;">Revisión</button>
-            <button class="filter-chip" data-filter-type="status" data-val="closed" style="border-bottom: 3px solid #34a853;">Cerrados</button>
-        </div>
-        <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;" id="filterPriorityContainer">
-            <button class="filter-chip active" data-filter-type="priority" data-val="all">Todas las Prioridades</button>
-            <button class="filter-chip" data-filter-type="priority" data-val="prio1" style="background-color: #fce8e6; color: #d93025; border-color: #f5c6cb;">🔥 Prio 1 (Top)</button>
-            <button class="filter-chip" data-filter-type="priority" data-val="alta">Alta</button>
-            <button class="filter-chip" data-filter-type="priority" data-val="media">Media</button>
-        </div>
-    </div>
+    <button id="btnOpenFilterPanel" class="filter-fab interactive-element" title="Filtrar Incidencias" style="position: absolute; top: 75px; left: 20px; z-index: 10;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+      </svg>
+    </button>
 
     <button id="btnOpenLayers" class="layer-fab interactive-element" title="Tipo de visualización">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -196,6 +187,52 @@
     <img id="lightboxImg" class="lightbox-img" src="" alt="Ampliación" />
   </div>
 
+  <div id="filterPanelOverlay" class="filter-panel-overlay">
+    <div class="filter-panel-content interactive-element">
+        <div class="filter-panel-header">
+            <h3 style="margin:0; color:#333; font-size: 18px;">Filtrar y Buscar</h3>
+            <button id="btnCloseFilterPanel" style="background:none; border:none; font-size:20px; cursor:pointer; color:#888;">✕</button>
+        </div>
+        <div class="filter-panel-body">
+            <div class="filter-section">
+                <p class="filter-label">Estado de la Incidencia</p>
+                <div class="filter-chips-container" id="filterStatusContainer">
+                    <button class="filter-chip status-chip active" data-filter-type="status" data-val="all">Todos los Estados</button>
+                    <button class="filter-chip status-chip red" data-filter-type="status" data-val="open">Abiertos</button>
+                    <button class="filter-chip status-chip yellow" data-filter-type="status" data-val="review">Revisión</button>
+                    <button class="filter-chip status-chip green" data-filter-type="status" data-val="closed">Cerrados</button>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <p class="filter-label">Prioridad (Gravedad)</p>
+                <div class="filter-chips-container" id="filterPriorityContainer">
+                    <button class="filter-chip prio-chip dotted active" data-filter-type="priority" data-val="all">Todas las Prioridades</button>
+                    <button class="filter-chip prio-chip dotted red" data-filter-type="priority" data-val="prio1">🔥 Prio 1 (Top)</button>
+                    <button class="filter-chip prio-chip dotted" data-filter-type="priority" data-val="alta">Alta</button>
+                    <button class="filter-chip prio-chip dotted" data-filter-type="priority" data-val="media">Media</button>
+                </div>
+            </div>
+
+            <div class="filter-section magic-section">
+                <p class="filter-label" style="color: #4285F4;">Búsqueda por Voz (La Magia) 🪄</p>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button id="btnMagicVoice" class="voice-search-button interactive-element">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4285F4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                        <span style="display:block; margin-top:8px; font-size:12px; color:#555;">Pulsa y habla...</span>
+                    </button>
+                    <p id="voiceStatus" style="font-size: 11px; color: #888; margin-top: 10px; font-style: italic;">Prueba a decir: "Muéstrame solo las abiertas Prio 1"</p>
+                </div>
+            </div>
+        </div> 
+    </div> 
+  </div>
+
   <div id="infoModalOverlay" class="info-modal-overlay">
     <div class="info-modal-content">
       <div class="info-modal-header">
@@ -267,6 +304,104 @@
       btnCloseInfo.addEventListener('click', () => infoModal.classList.remove('active'));
       infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.remove('active'); });
     }
+
+    // --- NUEVO: MODAL DE FILTROS ---
+    const btnOpenFilter = document.getElementById('btnOpenFilterPanel');
+    const btnCloseFilter = document.getElementById('btnCloseFilterPanel');
+    const filterPanel = document.getElementById('filterPanelOverlay');
+
+    if (btnOpenFilter && btnCloseFilter && filterPanel) {
+        btnOpenFilter.addEventListener('click', () => filterPanel.classList.add('active'));
+        btnCloseFilter.addEventListener('click', () => filterPanel.classList.remove('active'));
+        filterPanel.addEventListener('click', (e) => { if (e.target === filterPanel) filterPanel.classList.remove('active'); });
+    }
+
+    // --- NUEVO: LA MAGIA DE LA VOZ ---
+    const btnVoice = document.getElementById('btnMagicVoice');
+    const voiceStatusText = document.getElementById('voiceStatus');
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition && btnVoice) {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'es-ES';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        btnVoice.addEventListener('click', () => recognition.start());
+
+        recognition.onstart = () => {
+            btnVoice.classList.add('listening');
+            voiceStatusText.textContent = "Escuchando... Di un comando.";
+            voiceStatusText.style.color = "#e94335";
+        };
+
+        recognition.onend = () => btnVoice.classList.remove('listening');
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            voiceStatusText.textContent = `Dijiste: "${transcript}"`;
+            voiceStatusText.style.color = "#333";
+
+            let newStatus = null;
+            let newPrio = null;
+
+            // Motor NLP básico
+            if (transcript.includes('abierta') || transcript.includes('abierto')) newStatus = 'open';
+            else if (transcript.includes('revisión')) newStatus = 'review';
+            else if (transcript.includes('cerrada') || transcript.includes('cerrado')) newStatus = 'closed';
+            else if (transcript.includes('estado') || transcript.includes('todos')) newStatus = 'all';
+
+            if (transcript.includes('prio 1') || transcript.includes('prioridad 1') || transcript.includes('top')) newPrio = 'prio1';
+            else if (transcript.includes('alta')) newPrio = 'alta';
+            else if (transcript.includes('media')) newPrio = 'media';
+            else if (transcript.includes('prioridades') || transcript.includes('todas')) newPrio = 'all';
+
+            // Truco Senior: Disparamos un Click virtual en el HTML original para no romper tu app.js
+            if (newStatus) {
+                const chip = document.querySelector(`.filter-chip[data-filter-type="status"][data-val="${newStatus}"]`);
+                if(chip) chip.click();
+            }
+            if (newPrio) {
+                const chip = document.querySelector(`.filter-chip[data-filter-type="priority"][data-val="${newPrio}"]`);
+                if(chip) chip.click();
+            }
+
+            if (newStatus || newPrio) {
+                setTimeout(() => {
+                    filterPanel.classList.remove('active');
+                    voiceStatusText.textContent = 'Prueba a decir: "Muéstrame solo las abiertas Prio 1"';
+                    voiceStatusText.style.color = "#888";
+                }, 1200);
+            } else {
+                voiceStatusText.textContent = "No entendí el filtro. Prueba de nuevo.";
+                voiceStatusText.style.color = "#e94335";
+            }
+        };
+
+        recognition.onerror = (event) => {
+            btnVoice.classList.remove('listening');
+            voiceStatusText.textContent = "Error con el micrófono.";
+            voiceStatusText.style.color = "#e94335";
+        };
+    } else if (btnVoice) {
+        btnVoice.style.display = 'none';
+        voiceStatusText.textContent = "Navegador no compatible con voz.";
+    }
+
+    // --- NUEVO: ACTIVAR CLICKS EN LOS BOTONES DE FILTRO ---
+    document.querySelectorAll('.filter-panel-body .filter-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+            // Leemos el tipo (status o priority) y el valor (open, prio1, etc.)
+            const type = this.getAttribute('data-filter-type');
+            const val = this.getAttribute('data-val');
+            
+            // Llamamos a la función de incidencias.js para aplicar el filtro
+            if(window.setAdvancedFilter) {
+                window.setAdvancedFilter(type, val);
+            }
+        });
+    });
+
   </script>
 </body>
 </html>
