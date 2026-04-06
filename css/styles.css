@@ -168,8 +168,7 @@ select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; bor
 /* =========================================================
    8. MODALES Y LIGHTBOX
    ========================================================= */
-.layer-fab { position: absolute; top: 75px; right: 15px; width: 42px; height: 42px; border-radius: 50%; background-color: white; border: 1px solid var(--border-color); box-shadow: 0 2px 4px rgba(0,0,0,0.2); cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
-.layer-fab:hover { background-color: #f1f3f4; }
+
 
 .layers-modal-overlay, .info-modal-overlay {
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 2000;
@@ -197,27 +196,11 @@ select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; bor
 .lightbox-img { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 .lightbox-close { position: absolute; top: 20px; right: 24px; color: white; font-size: 36px; font-weight: 300; cursor: pointer; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border-radius: 50%; }
 
-/* =========================================================
-   9. BOTONES FLOTANTES DE ACCIÓN (FABs)
-   ========================================================= */
-.fab-container { position: absolute; bottom: 24px; right: 16px; display: flex; flex-direction: column; gap: 12px; align-items: center; transition: transform 0.3s; z-index: 50; }
-.fab { width: 48px; height: 48px; border-radius: 50%; background: var(--surface-color); border: none; box-shadow: var(--shadow-1); cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; color: var(--text-secondary); transition: all 0.2s;}
-.fab:hover { background: #f8f9fa; color: var(--text-primary); transform: scale(1.05); }
-.fab.primary { width: 60px; height: 60px; font-size: 24px; background: var(--primary-blue); color: white; box-shadow: var(--shadow-2); }
-.fab.primary.active { background: var(--danger-red); transform: rotate(45deg); }
-.fab-group { display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.9); padding: 6px; border-radius: 30px; box-shadow: var(--shadow-1); }
-.fab-group .fab { box-shadow: none; width: 40px; height: 40px; }
 
 /* =========================================================
    10. PANEL EMERGENTE DE FILTROS Y VOZ (¡NUEVO!)
    ========================================================= */
 /* El botón del embudo azul flotante */
-.filter-fab { 
-  position: absolute; top: 75px; left: 16px; width: 48px; height: 48px; border-radius: 50%; 
-  background-color: var(--primary-blue); border: none; box-shadow: var(--shadow-2); 
-  cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10;
-  transition: background-color 0.2s, transform 0.2s; 
-}
 .filter-fab:hover { background-color: #3367D6; transform: scale(1.05); }
 
 /* Contenedor oscuro de fondo */
@@ -282,11 +265,68 @@ select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; bor
   .side-panel.open { transform: translateY(0); }
   .side-panel::before { content: ''; display: block; width: 40px; height: 4px; background: var(--border-color); border-radius: 2px; margin: 12px auto 4px; }
 
-  body.panel-open .fab-container { transform: translateY(-62vh); }
   
   .layers-modal-overlay { align-items: flex-end; }
   .layers-modal-content { border-radius: 16px 16px 0 0; transform: translateY(100%); max-width: 100%;}
   .layers-modal-overlay.active .layers-modal-content { transform: translateY(0); }
   
   /* El panel de filtros ya usa max-width:100% y se abre desde abajo por defecto, así que se adapta perfecto */
+}
+
+/* =========================================================
+   NUEVA BARRA DE HERRAMIENTAS (TOOLBAR)
+   ========================================================= */
+.top-toolbar {
+  position: absolute;
+  top: 75px; /* Justo debajo del buscador */
+  left: 16px;
+  right: 16px;
+  display: flex;
+  gap: 12px;
+  z-index: 10;
+  overflow-x: auto; /* Permite hacer scroll si hay muchos iconos en móvil */
+  padding-bottom: 5px; 
+}
+
+.toolbar-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: var(--primary-blue);
+  color: white; /* Esto hace que los iconos SVG se vean blancos */
+  border: none;
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toolbar-btn:hover {
+  background-color: #3367D6;
+  transform: translateY(-2px) scale(1.05); /* Pequeño salto al pasar el ratón */
+  box-shadow: var(--shadow-2);
+}
+
+/* Animación cuando pulsamos el botón de Añadir (+) */
+.toolbar-btn.active {
+  background-color: var(--danger-red);
+  transform: rotate(45deg); 
+  box-shadow: 0 4px 12px rgba(233, 67, 53, 0.4);
+}
+
+/* Ajustes para móviles */
+@media (max-width: 768px) {
+  .top-toolbar {
+    top: 75px; 
+    left: 10px;
+    right: 10px;
+    gap: 8px;
+  }
+  .toolbar-btn {
+    width: 42px;
+    height: 42px;
+  }
 }

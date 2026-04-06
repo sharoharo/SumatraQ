@@ -30,7 +30,16 @@
   <div id="map-container"></div>
 
   <div class="ui-layer">
-    
+    <div class="search-box interactive-element">
+      <button class="menu-btn">☰</button>
+      <div class="search-title" id="fileNameDisplay">Añade STLs (soporta múltiples)...</div>
+      <label class="file-label" title="Añadir STLs">
+        📌
+        <input type="file" id="fileInput" multiple accept=".stl" style="display: none;" />
+      </label>
+    </div>
+
+
     <div class="user-profile-floating interactive-element">
       <div class="user-avatar-circle" id="userAvatarLetter" title="Tu cuenta">U</div>
       <div class="user-dropdown">
@@ -40,48 +49,32 @@
       </div>
     </div>
     
-    <div class="search-box interactive-element">
-      <button class="menu-btn" onclick="window.togglePanel()" title="Menú">☰</button>
-      <div class="search-title" id="fileNameDisplay">Añade STLs (soporta múltiples)...</div>
-      <label for="fileInput" class="file-label" title="Cargar Archivo">🔩</label>
-      <input type="file" id="fileInput" accept=".stl,.STL" multiple />
-    </div>
+   <div class="top-toolbar interactive-element">
+      
+      <button id="btnOpenFilterPanel" class="toolbar-btn" title="Filtrar Incidencias">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+      </button>
 
-    <button id="btnOpenFilterPanel" class="filter-fab interactive-element" title="Filtrar Incidencias" style="position: absolute; top: 75px; left: 20px; z-index: 10;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-      </svg>
-    </button>
+      <button id="btnOpenLayers" class="toolbar-btn" title="Tipo de visualización">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 12 12 17 22 12"></polyline><polyline points="2 17 12 22 22 17"></polyline></svg>
+      </button>
 
-    <button id="btnOpenLayers" class="layer-fab interactive-element" title="Tipo de visualización">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-        <polyline points="2 12 12 17 22 12"></polyline>
-        <polyline points="2 17 12 22 22 17"></polyline>
-      </svg>
-    </button>
+      <button class="toolbar-btn fab" data-view="fit" title="Centrar">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>
+      </button>
 
-    <div id="layersModalOverlay" class="layers-modal-overlay">
-      <div class="layers-modal-content interactive-element">
-        <div class="layers-modal-header">
-          <h4 style="margin:0; font-size:16px; color:#202124;">Tipo de visualización</h4>
-          <button id="btnCloseLayers" style="background:none; border:none; font-size:20px; cursor:pointer; color:#5f6368;">✕</button>
-        </div>
-        <div style="display:flex; gap:15px; justify-content:space-around; margin-top:20px;">
-          <button class="layer-btn layer-card active" data-mode="shaded">
-            <div class="layer-icon" style="background: linear-gradient(135deg, #e0e0e0, #bdbdbd);"></div>
-            <span>Sombreado</span>
-          </button>
-          <button class="layer-btn layer-card" data-mode="shadedEdges">
-            <div class="layer-icon" style="background: linear-gradient(135deg, #e0e0e0, #bdbdbd); border: 2px solid #5f6368;"></div>
-            <span>Aristas</span>
-          </button>
-          <button class="layer-btn layer-card" data-mode="wireframe">
-            <div class="layer-icon" style="background: #fff; border: 2px dashed #999;"></div>
-            <span>Alambre</span>
-          </button>
-        </div>
-      </div>
+      <button class="toolbar-btn fab" data-view="iso" title="Vista Isométrica">
+         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+      </button>
+
+      <button id="deleteIssueBtn" class="toolbar-btn" title="Borrar">
+         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      </button>
+
+      <button id="addBtn" class="toolbar-btn" title="Añadir Incidencia">
+         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
+      
     </div>
 
     <div class="side-panel interactive-element" id="functionalityPanel" style="z-index: 100;">
@@ -171,15 +164,7 @@
       </div> 
     </div>
 
-    <div class="fab-container interactive-element">
-      <div class="fab-group">
-        <button class="fab" id="deleteIssueBtn" title="Borrar">🗑️</button>
-        <button class="fab" data-view="fit" title="Centrar">🔲</button>
-        <button class="fab" data-view="iso" title="Iso">🧊</button>
-      </div>
-      <button class="fab primary" id="addBtn" title="Añadir">➕</button>
-    </div>
-
+    
   </div> 
 
   <div id="lightbox" class="lightbox interactive-element">
@@ -232,6 +217,34 @@
         </div> 
     </div> 
   </div>
+
+<div id="layersModalOverlay" class="layers-modal-overlay">
+    <div class="layers-modal-content interactive-element">
+      <div class="layers-modal-header">
+        <h3 style="margin:0; color:#333; font-size: 18px;">Estilo de Visualización</h3>
+        <button id="btnCloseLayers" style="background:none; border:none; font-size:20px; cursor:pointer; color:#888;">✕</button>
+      </div>
+      
+      <div style="display: flex; justify-content: space-around; margin-top: 20px; gap: 10px;">
+        <button class="layer-card layer-btn active" data-mode="shaded">
+          <div class="layer-icon" style="background: #e0e0e0; border: 2px solid #ccc; border-radius: 8px;"></div>
+          <span style="font-size: 13px; margin-top: 5px;">Sólido</span>
+        </button>
+        
+        <button class="layer-card layer-btn" data-mode="shadedEdges">
+          <div class="layer-icon" style="background: #e0e0e0; border: 2px solid #555; border-radius: 8px;"></div>
+          <span style="font-size: 13px; margin-top: 5px;">Aristas</span>
+        </button>
+        
+        <button class="layer-card layer-btn" data-mode="wireframe">
+          <div class="layer-icon" style="background: transparent; border: 2px dashed #888; border-radius: 8px;"></div>
+          <span style="font-size: 13px; margin-top: 5px;">Malla</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
 
   <div id="infoModalOverlay" class="info-modal-overlay">
     <div class="info-modal-content">
