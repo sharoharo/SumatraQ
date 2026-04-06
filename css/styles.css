@@ -370,3 +370,42 @@ select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; bor
 
 /* Para que el footer del panel se quede siempre abajo */
 .panel-content { padding: 0 !important; display: flex; flex-direction: column; }
+
+/* =========================================================
+   13. CORRECCIÓN MÓVIL: MODAL INCIDENCIAS (BOTTOM SHEET)
+   ========================================================= */
+@media (max-width: 768px) {
+  /* 1. Pegamos la ventana a la parte inferior de la pantalla */
+  .info-modal-overlay {
+    align-items: flex-end !important;
+  }
+  
+  /* 2. Ajustamos la forma para que parezca un menú nativo de móvil */
+  .info-modal-content {
+    max-width: 100% !important;
+    width: 100%;
+    max-height: 82vh !important; /* 82vh esquiva la barra del navegador */
+    border-radius: 16px 16px 0 0 !important; /* Redondeamos solo arriba */
+    margin: 0 !important;
+    transform: translateY(100%) !important;
+  }
+  
+  .info-modal-overlay.active .info-modal-content {
+    transform: translateY(0) !important;
+  }
+
+  /* 3. Aseguramos que el contenido fluya bien al hacer scroll */
+  .info-modal-body {
+    padding-bottom: 40px !important; /* Espacio de seguridad al final */
+    position: relative;
+  }
+
+  /* 4. LA MAGIA: El botón de guardar siempre visible flotando abajo */
+  #saveIssue {
+    position: sticky;
+    bottom: -15px; /* Compensa el padding inferior */
+    z-index: 100;
+    box-shadow: 0 -15px 20px 5px #f4f7f6; /* Difumina el texto que queda detrás del botón */
+    margin-top: 20px;
+  }
+}
