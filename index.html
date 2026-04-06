@@ -30,15 +30,15 @@
   <div id="map-container"></div>
 
   <div class="ui-layer">
+    
     <div class="search-box interactive-element">
-      <button class="menu-btn">☰</button>
+      <button class="menu-btn" onclick="window.togglePanel()">☰</button>
       <div class="search-title" id="fileNameDisplay">Añade STLs (soporta múltiples)...</div>
       <label class="file-label" title="Añadir STLs">
         📌
         <input type="file" id="fileInput" multiple accept=".stl" style="display: none;" />
       </label>
     </div>
-
 
     <div class="user-profile-floating interactive-element">
       <div class="user-avatar-circle" id="userAvatarLetter" title="Tu cuenta">U</div>
@@ -49,8 +49,7 @@
       </div>
     </div>
     
-   <div class="top-toolbar interactive-element">
-      
+    <div class="top-toolbar interactive-element">
       <button id="btnOpenFilterPanel" class="toolbar-btn" title="Filtrar Incidencias">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
       </button>
@@ -74,7 +73,6 @@
       <button id="addBtn" class="toolbar-btn" title="Añadir Incidencia">
          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
       </button>
-      
     </div>
 
     <div class="side-panel interactive-element" id="functionalityPanel" style="z-index: 100;">
@@ -87,10 +85,53 @@
       </div>
 
       <div class="panel-content">
-        <h3 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-secondary);">MIS PIEZAS</h3>
-        <div id="fileListUI" class="files-container"></div>
+        
+        <div class="tabs-header">
+          <button class="tab-btn active" onclick="window.switchTab(event, 'tabIncidencias')">📋 Lista</button>
+          <button class="tab-btn" onclick="window.switchTab(event, 'tabPiezas')">🧩 Piezas y Datos</button>
+        </div>
 
-        <div id="form" class="form-container">
+        <div id="tabIncidencias" class="tab-content active">
+          <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-secondary);">INCIDENCIAS REGISTRADAS</h3>
+          <div id="list"></div>
+        </div>
+
+        <div id="tabPiezas" class="tab-content">
+          <h3 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-secondary);">MIS PIEZAS</h3>
+          <div id="fileListUI" class="files-container"></div>
+
+          <h3 style="margin: 20px 0 10px 0; font-size: 14px; color: var(--text-secondary);">EXPORTACIÓN / IMPORTACIÓN</h3>
+          <div style="display:flex; flex-wrap: wrap; gap:8px; margin-bottom:12px;">
+            <button class="btn-primary btn-inline" id="exportGlobalBtn" onclick="window.exportIssues()">Exportar Sesión</button>
+            <button class="btn-primary btn-inline" id="importBtn">Importar JSON</button>
+            <button class="btn-primary" onclick="window.exportToCSV()" style="background-color: #1e8e3e; margin-top: 10px;">📊 Exportar a EXCEL (CSV)</button>
+            <button class="btn-primary" onclick="window.generatePDF()" style="background-color: #d93025; margin-top: 10px;">📄 Generar PDF</button>
+            <input type="file" id="importInput" accept="application/json" style="display:none" />
+          </div>
+        </div>
+        
+        <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid #eee; text-align: center; width: 100%; background: #fff;">
+          <span style="font-size: 10px; color: #999; letter-spacing: 1px; font-weight: 500;">
+            <div id="btnOpenInfo" style="padding: 15px 0; cursor: pointer; color: #999; font-size: 10px;" onmouseover="this.style.color='#4285F4'" onmouseout="this.style.color='#999'" title="Ver información de la aplicación">
+              SUMATRA Q • RELEASE v1.6.0-STABLE ⓘ
+            </div>
+          </span>
+        </div>
+
+      </div> </div> </div> <div id="lightbox" class="lightbox interactive-element">
+    <div class="lightbox-close" id="lightboxClose">&times;</div>
+    <img id="lightboxImg" class="lightbox-img" src="" alt="Ampliación" />
+  </div>
+
+  <div id="issueModalOverlay" class="layers-modal-overlay">
+    <div class="info-modal-content interactive-element" style="max-width: 500px; max-height: 90vh;">
+      <div class="info-modal-header">
+        <h2 id="modalMainTitle" style="margin:0; color:#4285F4; font-size: 18px;">📍 Detalle del Punto</h2>
+        <button id="btnCloseIssueModal" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; transition: color 0.2s;" onmouseover="this.style.color='#e94335'" onmouseout="this.style.color='#999'">✕</button>
+      </div>
+      <div class="info-modal-body" style="padding: 20px; background: #f4f7f6;">
+
+        <div id="form" class="form-container" style="display:block; margin:0; border:none; background:transparent; padding:0;">
           <h3 id="formMainTitle" style="margin: 0 0 4px 0; font-size: 15px; color: var(--primary-blue);">Nueva Incidencia</h3>
           <p id="issueTargetFile" style="font-size: 11px; color: var(--text-secondary);"></p>
           
@@ -142,34 +183,8 @@
           <button class="btn-primary" id="saveIssue" style="font-size: 16px; padding: 14px;">Guardar Incidencia</button>
         </div>
 
-        <div style="display:flex; flex-wrap: wrap; gap:8px; margin-bottom:12px;">
-          <button class="btn-primary btn-inline" id="exportGlobalBtn" onclick="window.exportIssues()">Exportar Sesión</button>
-          <button class="btn-primary btn-inline" id="importBtn">Importar JSON</button>
-          <button class="btn-primary" onclick="window.exportToCSV()" style="background-color: #1e8e3e; margin-top: 10px;">📊 Exportar a EXCEL (CSV)</button>
-          <button class="btn-primary" onclick="window.generatePDF()" style="background-color: #d93025; margin-top: 10px;">📄 Generar PDF</button>
-          <input type="file" id="importInput" accept="application/json" style="display:none" />
-        </div>
-
-        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-secondary);">LISTA DE INCIDENCIAS</h3>
-        <div id="list"></div>
-        
-        <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; width: 100%;">
-          <span style="font-size: 10px; color: #999; letter-spacing: 1px; font-weight: 500;">
-            <div id="btnOpenInfo" style="position: sticky; bottom: 0; background: white; width: 100%; text-align: center; color: #999; font-size: 10px; padding: 15px 0; cursor: pointer; border-top: 1px solid #eee; z-index: 50;" onmouseover="this.style.color='#4285F4'" onmouseout="this.style.color='#999'" title="Ver información de la aplicación">
-              SUMATRA Q • RELEASE v1.4.0-STABLE ⓘ
-            </div>
-          </span>
-        </div>
-
-      </div> 
+      </div>
     </div>
-
-    
-  </div> 
-
-  <div id="lightbox" class="lightbox interactive-element">
-    <div class="lightbox-close" id="lightboxClose">&times;</div>
-    <img id="lightboxImg" class="lightbox-img" src="" alt="Ampliación" />
   </div>
 
   <div id="filterPanelOverlay" class="filter-panel-overlay">
@@ -218,7 +233,7 @@
     </div> 
   </div>
 
-<div id="layersModalOverlay" class="layers-modal-overlay">
+  <div id="layersModalOverlay" class="layers-modal-overlay">
     <div class="layers-modal-content interactive-element">
       <div class="layers-modal-header">
         <h3 style="margin:0; color:#333; font-size: 18px;">Estilo de Visualización</h3>
@@ -243,8 +258,6 @@
       </div>
     </div>
   </div>
-
-
 
   <div id="infoModalOverlay" class="info-modal-overlay">
     <div class="info-modal-content">
@@ -318,7 +331,7 @@
       infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.remove('active'); });
     }
 
-    // --- NUEVO: MODAL DE FILTROS ---
+    // Modal de Filtros
     const btnOpenFilter = document.getElementById('btnOpenFilterPanel');
     const btnCloseFilter = document.getElementById('btnCloseFilterPanel');
     const filterPanel = document.getElementById('filterPanelOverlay');
@@ -329,7 +342,7 @@
         filterPanel.addEventListener('click', (e) => { if (e.target === filterPanel) filterPanel.classList.remove('active'); });
     }
 
-    // --- NUEVO: LA MAGIA DE LA VOZ ---
+    // La Magia de la Voz
     const btnVoice = document.getElementById('btnMagicVoice');
     const voiceStatusText = document.getElementById('voiceStatus');
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -358,7 +371,6 @@
             let newStatus = null;
             let newPrio = null;
 
-            // Motor NLP básico
             if (transcript.includes('abierta') || transcript.includes('abierto')) newStatus = 'open';
             else if (transcript.includes('revisión')) newStatus = 'review';
             else if (transcript.includes('cerrada') || transcript.includes('cerrado')) newStatus = 'closed';
@@ -369,7 +381,6 @@
             else if (transcript.includes('media')) newPrio = 'media';
             else if (transcript.includes('prioridades') || transcript.includes('todas')) newPrio = 'all';
 
-            // Truco Senior: Disparamos un Click virtual en el HTML original para no romper tu app.js
             if (newStatus) {
                 const chip = document.querySelector(`.filter-chip[data-filter-type="status"][data-val="${newStatus}"]`);
                 if(chip) chip.click();
@@ -401,19 +412,45 @@
         voiceStatusText.textContent = "Navegador no compatible con voz.";
     }
 
-    // --- NUEVO: ACTIVAR CLICKS EN LOS BOTONES DE FILTRO ---
+    // Clicks en Filtros
     document.querySelectorAll('.filter-panel-body .filter-chip').forEach(chip => {
         chip.addEventListener('click', function() {
-            // Leemos el tipo (status o priority) y el valor (open, prio1, etc.)
             const type = this.getAttribute('data-filter-type');
             const val = this.getAttribute('data-val');
-            
-            // Llamamos a la función de incidencias.js para aplicar el filtro
             if(window.setAdvancedFilter) {
                 window.setAdvancedFilter(type, val);
             }
         });
     });
+
+    // Cerrar Modal de Incidencias
+    const btnCloseIssue = document.getElementById('btnCloseIssueModal');
+    const issueModal = document.getElementById('issueModalOverlay');
+
+    if (btnCloseIssue && issueModal) {
+        btnCloseIssue.addEventListener('click', () => {
+            issueModal.classList.remove('active');
+            if(window.deselectMarker) window.deselectMarker(); 
+        });
+    }
+
+ // --- NUEVO: LÓGICA DE PESTAÑAS (TABS) ---
+    window.switchTab = function(event, tabId) {
+        // Ocultamos todos los contenidos de las pestañas
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Quitamos el color activo de todos los botones
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Mostramos el contenido que nos piden y marcamos el botón pulsado
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    };   
+
 
   </script>
 </body>

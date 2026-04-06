@@ -119,9 +119,13 @@ export function openNewIssueForm() {
   setActiveChip('statusChips', 'open');
   setActiveChip('priorityChips', 'media');
   setActiveChip('faseChips', 'estampacion');
+
+  // 🔹 NUEVO: Ocultamos el historial porque es una incidencia nueva
+  const historyContainer = document.getElementById('historyContainer');
+  if(historyContainer) historyContainer.style.display = 'none';
   
-  document.getElementById('form').style.display = "block"; 
-  window.togglePanel(true);
+  // Abrimos el nuevo modal en lugar del panel lateral
+  document.getElementById('issueModalOverlay').classList.add('active');
   
   State.mode = false; 
   const addBtn = document.getElementById('addBtn');
@@ -131,11 +135,13 @@ export function openNewIssueForm() {
 export function selectMarker(marker){
   deselectMarker(); 
   State.selectedMarker = marker; 
-  marker.scale.set(1.5, 1.5, 1.5);
+  marker.scale.set(1.5, 1.5, 1.5); 
+  
   const issue = State.issues.find(i => i.id === marker.userData.issueId);
+  
   if(issue){
-    document.getElementById('formMainTitle').innerText = "Detalle";
-    document.getElementById('saveIssue').innerText = "Actualizar";
+    document.getElementById('formMainTitle').innerText = `Detalle de Incidencia`;
+    document.getElementById('saveIssue').innerText = "Actualizar y Guardar";
     document.getElementById('issueComment').value = ""; 
     
     const typeSelect = document.getElementById('issueType');
@@ -148,15 +154,65 @@ export function selectMarker(marker){
     setActiveChip('priorityChips', issue.priority || 'media');
     setActiveChip('faseChips', issue.fase || 'estampacion');
 
-    document.getElementById('form').style.display = "block"; 
-    window.togglePanel(true);
+    // --- RENDERIZADO DEL HISTORIAL DE TRAZABILIDAD (CON FOTOS) ---
+    const historyContainer = document.getElementById('historyContainer');
+    const historyTimeline = document.getElementById('historyTimeline');
+
+    if (historyContainer && historyTimeline) {
+        historyContainer.style.display = 'block'; 
+        historyTimeline.innerHTML = ''; 
+
+        if (issue.history && issue.history.length > 0) {
+            const reversedHistory = [...issue.history].reverse();
+
+            reversedHistory.forEach(h => {
+                const dateObj = new Date(h.date);
+                const dateStr = isNaN(dateObj.getTime()) ? h.date : dateObj.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+
+                let dotColor = '#4285F4'; 
+                if(h.status === 'open') dotColor = '#e94335';
+                if(h.status === 'review') dotColor = '#fbbc04';
+                if(h.status === 'closed') dotColor = '#34a853';
+
+                // 🔹 NUEVO: PREPARAMOS LAS MINIATURAS DE LAS FOTOS 🔹
+                let photosHtml = '';
+                if (h.photos && h.photos.length > 0) {
+                    photosHtml = `<div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">`;
+                    h.photos.forEach(photo => {
+                        // Creamos una miniatura que al hacer click abre tu Lightbox actual
+                        photosHtml += `<img src="${photo.dataUrl}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onclick="window.openLightbox('${photo.dataUrl}')" title="Ver imagen ampliada">`;
+                    });
+                    photosHtml += `</div>`;
+                }
+
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'history-entry';
+                entryDiv.innerHTML = `
+                    <div class="history-dot" style="background-color: ${dotColor}; border-color: ${dotColor}"></div>
+                    <div class="history-date">${dateStr} - 👤 ${h.user || 'Anónimo'}</div>
+                    <div class="history-comment" style="font-weight: bold; font-size: 11px; text-transform: uppercase;">
+                        Estado: ${h.status} | Fase: ${h.fase || 'N/A'}
+                    </div>
+                    ${h.comment ? `<div class="history-comment" style="color: #444; font-style: italic;">💬 "${h.comment}"</div>` : ''}
+                    ${photosHtml} `;
+                historyTimeline.appendChild(entryDiv);
+            });
+        } else {
+            historyTimeline.innerHTML = '<p style="font-size: 12px; color: #888;">No hay historial registrado.</p>';
+        }
+    }
+
+    document.getElementById('issueModalOverlay').classList.add('active');
   }
 }
 
 export function deselectMarker() { 
   if(State.selectedMarker) State.selectedMarker.scale.set(1,1,1);
   State.selectedMarker = null; 
-  document.getElementById('form').style.display = "none"; 
+  
+  // En lugar de ocultar el 'form', quitamos la clase active al modal
+  const modal = document.getElementById('issueModalOverlay');
+  if (modal) modal.classList.remove('active');
 }
 
 export function deleteSelectedIssue() {

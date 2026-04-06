@@ -330,3 +330,43 @@ select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; bor
     height: 42px;
   }
 }
+
+/* =========================================================
+   12. PESTAÑAS (TABS) DEL PANEL LATERAL
+   ========================================================= */
+.tabs-header {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  background-color: #f8f9fa;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 14px 10px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover { 
+  background-color: #f1f3f4; 
+  color: var(--text-primary); 
+}
+
+.tab-btn.active {
+  color: var(--primary-blue);
+  border-bottom-color: var(--primary-blue);
+  background-color: #fff;
+}
+
+/* Ocultar/Mostrar contenido de pestañas */
+.tab-content { display: none; padding: 16px; overflow-y: auto; flex-grow: 1; }
+.tab-content.active { display: block; }
+
+/* Para que el footer del panel se quede siempre abajo */
+.panel-content { padding: 0 !important; display: flex; flex-direction: column; }
