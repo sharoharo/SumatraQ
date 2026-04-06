@@ -375,37 +375,38 @@ select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; bor
    13. CORRECCIÓN MÓVIL: MODAL INCIDENCIAS (BOTTOM SHEET)
    ========================================================= */
 @media (max-width: 768px) {
-  /* 1. Pegamos la ventana a la parte inferior de la pantalla */
-  .info-modal-overlay {
+  /* 1. Forzamos que este modal en concreto se pegue abajo */
+  #issueModalOverlay {
     align-items: flex-end !important;
   }
   
-  /* 2. Ajustamos la forma para que parezca un menú nativo de móvil */
-  .info-modal-content {
+  /* 2. Sobrescribimos los estilos en línea (max-width: 500px) para que ocupe el 100% del móvil */
+  #issueModalOverlay .info-modal-content {
     max-width: 100% !important;
-    width: 100%;
-    max-height: 82vh !important; /* 82vh esquiva la barra del navegador */
-    border-radius: 16px 16px 0 0 !important; /* Redondeamos solo arriba */
+    width: 100% !important;
+    max-height: 85vh !important; 
+    border-radius: 16px 16px 0 0 !important; 
     margin: 0 !important;
     transform: translateY(100%) !important;
   }
   
-  .info-modal-overlay.active .info-modal-content {
+  /* Cuando el modal tiene la clase active, lo subimos a la pantalla */
+  #issueModalOverlay.active .info-modal-content {
     transform: translateY(0) !important;
   }
 
-  /* 3. Aseguramos que el contenido fluya bien al hacer scroll */
-  .info-modal-body {
-    padding-bottom: 40px !important; /* Espacio de seguridad al final */
-    position: relative;
+  /* 3. Damos espacio al final de la lista para que el botón no tape texto */
+  #issueModalOverlay .info-modal-body {
+    padding-bottom: 30px !important; 
   }
 
-  /* 4. LA MAGIA: El botón de guardar siempre visible flotando abajo */
+  /* 4. El botón de guardar pegajoso (Sticky) para que siempre esté a mano */
   #saveIssue {
-    position: sticky;
-    bottom: -15px; /* Compensa el padding inferior */
+    position: sticky !important;
+    bottom: -20px !important; /* Lo pegamos a la base */
     z-index: 100;
-    box-shadow: 0 -15px 20px 5px #f4f7f6; /* Difumina el texto que queda detrás del botón */
+    box-shadow: 0 -15px 20px 10px #f4f7f6; /* Sombra invertida para que se lea bien el texto detrás */
+    width: 100% !important;
     margin-top: 20px;
   }
 }
