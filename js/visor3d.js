@@ -6,6 +6,8 @@ import { State } from './estado.js';
 import { renderIssues } from './incidencias.js';
 import { loadIssuesForFile } from './nube.js'; 
 
+let logoModel = null;
+
 export function init3D() {
   State.scene.background = new THREE.Color(0xe5e3df);
   State.camera.position.set(200, 200, 200);
@@ -21,6 +23,27 @@ export function init3D() {
   const fill = new THREE.DirectionalLight(0xffffff, 0.4); fill.position.set(-200, 100, -300); State.scene.add(fill);
   const back = new THREE.DirectionalLight(0xffffff, 0.3); back.position.set(0, -300, 300); State.scene.add(back);
 
+  // Carga del Logo 3D
+  const loader = new STLLoader();
+  loader.load('./SUMATRAQ_LITE.stl', (geometry) => {
+    const material = new THREE.MeshPhongMaterial({
+      color: 0x4285F4, 
+      specular: 0x222222,
+      shininess: 100
+    });
+
+    logoModel = new THREE.Mesh(geometry, material);
+    
+    logoModel.scale.set(0.5, 0.5, 0.5); 
+    logoModel.rotation.x = -Math.PI / 2;
+    logoModel.position.set(0, 0, 0);
+
+    State.scene.add(logoModel);
+
+    // Encuadre automático e inteligente al arrancar
+    focusOnLogo(0);
+  });
+
   window.addEventListener("resize", () => {
     State.camera.aspect = window.innerWidth / window.innerHeight;
     State.camera.updateProjectionMatrix();
@@ -31,6 +54,10 @@ export function init3D() {
 export function loadSTLs(e) {
   const files = Array.from(e.target.files);
   if(files.length === 0) return;
+
+  if (logoModel && Object.keys(State.loadedMeshes).length === 0) {
+    logoModel.visible = false;
+  }
 
   files.forEach(file => {
     if(State.loadedMeshes[file.name]) return;
@@ -142,7 +169,16 @@ export function removeMesh(name) {
     State.issues = State.issues.filter(i => i.fileName !== name);
     updateFileListUI(); 
     renderIssues(); 
-    fitCameraGlobal(false);
+    
+    if (Object.keys(State.loadedMeshes).length === 0) {
+      if (logoModel) {
+        logoModel.visible = true;
+        // Encuadre automático con animación al borrar todo
+        focusOnLogo(800); 
+      }
+    } else {
+      fitCameraGlobal(false);
+    }
   }
 }
 
@@ -185,4 +221,35 @@ export function setView(kind, immediate = false) {
     State.controls.target.copy(State.bounds.center); 
     State.controls.update(); 
   } else animateCamera(toPos, State.bounds.center);
+}
+
+// 🔹 NUEVO: Función inteligente para encuadrar el logo perfectamente 🔹
+function focusOnLogo(ms = 0) {
+  if (!logoModel) return;
+
+  // Creamos una caja invisible alrededor del logo para saber cuánto mide
+  const box = new THREE.Box3().setFromObject(logoModel);
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+
+  // Calculamos el tamaño del logo
+  const sphere = box.getBoundingSphere(new THREE.Sphere());
+  const radius = Math.max(sphere.radius, 5); // Evitamos valores muy locos
+
+  // Calculamos la distancia ideal basada en la apertura de la lente (FOV)
+  const vFov = THREE.MathUtils.degToRad(State.camera.fov);
+  const dist = (radius / Math.tan(vFov / 2)) * 1.5; // El 1.5 le da un pequeño margen de respiro
+
+  // Ángulo de la cámara: Levemente desde arriba y de frente
+  const dir = new THREE.Vector3(0, 0.4, 1).normalize();
+  const toPos = center.clone().addScaledVector(dir, dist);
+
+  // Ejecutamos el movimiento (de golpe al cargar, o animado al borrar piezas)
+  if (ms > 0) {
+    animateCamera(toPos, center, ms);
+  } else {
+    State.camera.position.copy(toPos);
+    State.controls.target.copy(center);
+    State.controls.update();
+  }
 }

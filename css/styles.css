@@ -410,3 +410,40 @@ select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; bor
     margin-top: 20px;
   }
 }
+
+/* =========================================================
+   14. AJUSTES CRÍTICOS PARA IPHONE SE Y PANTALLAS ESTRECHAS (< 380px)
+   ========================================================= */
+@media (max-width: 380px) {
+  /* 1. Encoger ligeramente la barra de herramientas para que no se salga */
+  .toolbar-btn { width: 36px !important; height: 36px !important; }
+  .top-toolbar { gap: 6px !important; top: 70px !important; }
+
+  /* 2. Buscador y Avatar más compactos */
+  .search-box { height: 42px !important; width: calc(100% - 65px) !important; }
+  .search-title { font-size: 13px !important; padding: 0 8px !important; }
+  .user-avatar-circle { width: 36px !important; height: 36px !important; font-size: 15px !important; }
+
+  /* 3. Modales: Recuperar espacio vital reduciendo márgenes (Paddings) */
+  .info-modal-body, #issueModalOverlay .info-modal-body { 
+    padding: 15px !important; 
+    padding-bottom: 45px !important; /* Espacio extra para el botón de guardar */
+  }
+  .info-modal-header { padding: 12px 15px !important; }
+  #modalMainTitle, #formMainTitle { font-size: 15px !important; }
+
+  /* 4. Chips (Botones de opciones): Más pequeños para que quepan en la pantalla */
+  .ui-chip, .filter-chip { 
+    padding: 6px 8px !important; 
+    font-size: 11px !important; 
+    flex: 1 1 45% !important; /* Fuerza a que quepan 2 por fila si hay poco espacio */
+  }
+  .chip-group { gap: 5px !important; }
+
+  /* 5. Botones generales e Inputs más esbeltos */
+  .btn-primary { padding: 10px !important; font-size: 14px !important; }
+  select, input[type="text"] { padding: 8px !important; font-size: 13px !important; margin-bottom: 8px !important;}
+  
+  /* 6. Evitar que el botón de guardar se corte */
+  #saveIssue { bottom: -15px !important; padding: 12px !important; }
+}
