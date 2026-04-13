@@ -63,7 +63,7 @@ export function processLogin() {
 
   const userMatch = State.db.usuarios.find(u => {
     const uEmail = String(u.Email || u.email || "").trim().toLowerCase();
-    const uPass = String(u.Password || u.password || "").trim();
+    const uPass = String(u.Password || u.password || u.Pasword || "").trim();
     return uEmail === emailInput && uPass === passInput;
   });
 
