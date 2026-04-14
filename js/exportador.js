@@ -43,7 +43,7 @@ export function exportToCSV() {
 function getThumbUrl(url) {
     if (!url) return '';
     if (url.startsWith('data:')) return url; 
-    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=200&output=jpeg`;
+    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=300&output=jpeg`;
 }
 
 function preloadImage(url) {
@@ -76,7 +76,11 @@ export const generatePDF = async function() {
 
   const btn = document.querySelector('button[onclick*="generatePDF"]');
   const originalText = btn ? btn.innerHTML : 'Exportar PDF';
-  if (btn) btn.innerHTML = '⏳ Preparando reporte...';
+  if (btn) btn.innerHTML = '⏳ Preparando reporte corporativo...';
+
+  const userInDb = State.db.usuarios.find(u => (u.Nombre || u.nombre) === State.userName) || {};
+  const userEmail = userInDb.Email || userInDb.email || 'No disponible';
+  const userRole = userInDb.Rol || userInDb.rol || 'Operador';
 
   let globalSnapshot = '';
   try {
@@ -110,11 +114,12 @@ export const generatePDF = async function() {
   const countClosed = issuesToPrint.filter(i => i.status === 'closed').length;
   const fecha = new Date().toLocaleDateString('es-ES');
 
-  // 🔹 REGLA ESTRICTA DE "NO CORTAR" Y ESTILOS LIMPIOS SIN FLEXBOX 🔹
   let html = `
     <style>
-      .no-cortar { page-break-inside: avoid !important; break-inside: avoid !important; display: block; width: 100%; clear: both; }
+      .no-cortar { page-break-inside: avoid !important; break-inside: avoid !important; display: block; width: 100%; clear: both; margin-bottom: 15px; box-sizing: border-box; }
+      .salto-pagina { page-break-before: always !important; break-before: page !important; } 
       .pdf-wrapper { padding: 5px; font-family: Arial, sans-serif; color: #111; background-color: #fff; width: 100%; box-sizing: border-box; }
+      .user-info-table { width: 100%; font-size: 11px; color: #444; margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px; box-sizing: border-box; }
     </style>
     <div class="pdf-wrapper">
       
@@ -125,23 +130,29 @@ export const generatePDF = async function() {
             <td style="vertical-align: middle; padding-left: 15px;">
               <h1 style="color: #1a73e8; margin: 0; font-size: 22px; font-weight: bold;">REPORTE DE INSPECCIÓN</h1>
               <p style="margin: 2px 0 0 0; color: #555; font-size: 12px; font-weight: bold;">Sumatra Q - Control de Calidad | Fecha: ${fecha}</p>
+              
+              <div class="user-info-table">
+                <strong>Inspector:</strong> ${State.userName} | 
+                <strong>Email:</strong> ${userEmail} | 
+                <strong>Rol:</strong> ${userRole.toUpperCase()}
+              </div>
             </td>
           </tr>
         </table>
       </div>
 
-      <div class="no-cortar" style="margin-bottom: 25px;">
+      <div class="no-cortar">
         <table style="width: 100%; border-collapse: separate; border-spacing: 10px 0; margin-left: -10px;">
           <tr>
-            <td style="background: #fce8e6; border: 1px solid #d93025; padding: 12px; text-align: center; border-radius: 6px; width: 33%;">
+            <td style="background: #fce8e6; border: 1px solid #d93025; padding: 12px; text-align: center; border-radius: 6px; width: 33%; box-sizing: border-box;">
               <div style="font-size: 22px; font-weight: bold; color: #d93025;">${countOpen}</div>
               <div style="font-size: 10px; font-weight: bold; color: #d93025;">ABIERTAS</div>
             </td>
-            <td style="background: #fef7e0; border: 1px solid #f29900; padding: 12px; text-align: center; border-radius: 6px; width: 33%;">
+            <td style="background: #fef7e0; border: 1px solid #f29900; padding: 12px; text-align: center; border-radius: 6px; width: 33%; box-sizing: border-box;">
               <div style="font-size: 22px; font-weight: bold; color: #f29900;">${countRev}</div>
               <div style="font-size: 10px; font-weight: bold; color: #f29900;">EN REVISIÓN</div>
             </td>
-            <td style="background: #e6f4ea; border: 1px solid #188038; padding: 12px; text-align: center; border-radius: 6px; width: 33%;">
+            <td style="background: #e6f4ea; border: 1px solid #188038; padding: 12px; text-align: center; border-radius: 6px; width: 33%; box-sizing: border-box;">
               <div style="font-size: 22px; font-weight: bold; color: #188038;">${countClosed}</div>
               <div style="font-size: 10px; font-weight: bold; color: #188038;">CERRADAS</div>
             </td>
@@ -150,13 +161,17 @@ export const generatePDF = async function() {
       </div>
 
       ${globalSnapshot ? `
-      <div class="no-cortar" style="border: 1px solid #ccc; padding: 10px; background: #f8f9fa; border-radius: 6px; margin-bottom: 25px;">
-        <h3 style="margin: 0 0 8px 0; font-size: 13px; color: #1a73e8;">MAPA GLOBAL DE INSPECCIÓN</h3>
-        <img src="${globalSnapshot}" style="width: 100%; max-height: 350px; object-fit: contain; border: 1px solid #ddd; border-radius: 4px;" />
+      <div class="no-cortar" style="padding: 0; margin-bottom: 0;">
+        <h3 style="margin: 0 0 8px 0; font-size: 13px; color: #1a73e8; text-transform: uppercase;">MAPA GLOBAL DE INSPECCIÓN</h3>
+        <div style="height: 170mm; width: 100%; background: #eaeaec; border: 2px solid #8ab4f8; border-radius: 4px; overflow: hidden; display: block; position: relative; box-sizing: border-box;">
+            <img src="${globalSnapshot}" style="width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0;" />
+        </div>
       </div>
       ` : ''}
 
-      <h2 class="no-cortar" style="border-bottom: 2px solid #1a73e8; padding-bottom: 5px; margin: 0 0 15px 0; font-size: 18px; color: #1a73e8;">DETALLE DE INCIDENCIAS</h2>
+      <div class="salto-pagina"></div>
+
+      <h2 class="no-cortar" style="border-bottom: 2px solid #1a73e8; padding-bottom: 5px; margin: 0 0 15px 0; font-size: 18px; color: #1a73e8; padding-top: 15px; box-sizing: border-box;">DETALLE DE INCIDENCIAS</h2>
   `;
 
   issuesToPrint.forEach((issue, index) => {
@@ -164,29 +179,30 @@ export const generatePDF = async function() {
     let estadoTexto = issue.status === 'open' ? 'ABIERTO' : (issue.status === 'review' ? 'EN REVISIÓN' : 'CERRADO');
     let prioText = issue.priority === 'prio1' ? 'PRIO 1' : (issue.priority === 'alta' ? 'ALTA' : (issue.priority === 'media' ? 'MEDIA' : 'BAJA'));
 
+    // --- CORRECCIÓN APLICADA: box-sizing: border-box en las cajas de información de la pieza ---
     html += `
-      <div style="margin-bottom: 25px; border: 1px solid #bbb; border-radius: 8px; background: #fff; width: 100%; box-sizing: border-box; padding: 2px;">
+      <div style="margin-bottom: 25px; border: 1px solid #bbb; border-radius: 8px; background: #fff; width: 100%; box-sizing: border-box; padding: 0; overflow: hidden;">
         
-        <div class="no-cortar" style="background: #f1f3f4; padding: 12px; border-bottom: 1px solid #ccc; border-radius: 6px 6px 0 0;">
+        <div class="no-cortar" style="background: #f1f3f4; padding: 12px; border-bottom: 1px solid #ccc; border-radius: 6px 6px 0 0; width: 100%; box-sizing: border-box; margin-bottom: 0;">
            <h3 style="margin: 0 0 8px 0; font-size: 16px; color: #000;">#${index + 1} - ${issue.type || 'Falla no especificada'}</h3>
            <div style="margin-bottom: 8px;">
-              <span style="display: inline-block; padding: 3px 8px; background: #fff; border: 1px solid #ccc; font-size: 11px; font-weight: bold; margin-right: 8px; border-radius: 4px;">PRIORIDAD: ${prioText}</span>
-              <span style="display: inline-block; padding: 3px 8px; color: ${estadoColor}; background: ${estadoColor}15; border: 1px solid ${estadoColor}; font-size: 11px; font-weight: bold; border-radius: 4px;">ESTADO: ${estadoTexto}</span>
+              <span style="display: inline-block; padding: 3px 8px; background: #fff; border: 1px solid #ccc; font-size: 11px; font-weight: bold; margin-right: 8px; border-radius: 4px; box-sizing: border-box;">PRIORIDAD: ${prioText}</span>
+              <span style="display: inline-block; padding: 3px 8px; color: ${estadoColor}; background: ${estadoColor}15; border: 1px solid ${estadoColor}; font-size: 11px; font-weight: bold; border-radius: 4px; box-sizing: border-box;">ESTADO: ${estadoTexto}</span>
            </div>
-           <div style="font-size: 12px; background: #e8f0fe; color: #1a73e8; padding: 8px; border: 1px solid #8ab4f8; border-radius: 4px;">
+           <div style="font-size: 12px; background: #e8f0fe; color: #1a73e8; padding: 8px; border: 1px solid #8ab4f8; border-radius: 4px; width: 100%; box-sizing: border-box;">
               <strong>PIEZA:</strong> ${issue.fileName || 'N/A'}
            </div>
         </div>
 
         ${issue.snapshot3D ? `
-        <div class="no-cortar" style="padding: 12px; border-bottom: 1px solid #eee;">
+        <div class="no-cortar" style="padding: 12px; border-bottom: 1px solid #eee; width: 100%; box-sizing: border-box; margin-bottom: 0;">
           <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: bold; color: #555;">UBICACIÓN 3D:</p>
-          <img src="${issue.snapshot3D}" style="width: 100%; max-height: 250px; object-fit: contain; border: 1px solid #1a73e8; border-radius: 4px;" />
+          <img src="${issue.snapshot3D}" style="width: 100%; max-height: 250px; object-fit: contain; border: 1px solid #1a73e8; border-radius: 4px; box-sizing: border-box;" />
         </div>
         ` : ''}
 
-        <div style="padding: 12px;">
-          <p class="no-cortar" style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; color: #000;">HISTORIAL DE TRAZABILIDAD:</p>
+        <div style="padding: 12px; width: 100%; box-sizing: border-box;">
+          <p class="no-cortar" style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; color: #000; box-sizing: border-box;">HISTORIAL DE TRAZABILIDAD:</p>
     `;
 
     if (issue.history) {
@@ -196,34 +212,30 @@ export const generatePDF = async function() {
         const borderBottom = idx === reversedHistory.length - 1 ? 'none' : '1px dashed #ccc';
         let hColor = h.status === 'open' ? '#d93025' : (h.status === 'review' ? '#e37400' : '#188038');
 
-        // Cada comentario y sus fotos son un bloque IRROMPIBLE (no-cortar)
         html += `
-        <div class="no-cortar" style="padding-bottom: 15px; margin-top: 10px; border-bottom: ${borderBottom};">
+        <div class="no-cortar" style="padding-bottom: 15px; margin-top: 10px; border-bottom: ${borderBottom}; width: 100%; box-sizing: border-box;">
            <p style="margin: 0; font-size: 12px; color: #000;"><strong>📅 ${hDate}</strong> | 👤 ${h.user || 'Anónimo'}</p>
            <p style="margin: 4px 0; font-size: 11px; color: #555; font-weight: bold;">ESTADO: <span style="color: ${hColor};">${h.status.toUpperCase()}</span> | FASE: ${h.fase ? h.fase.toUpperCase() : 'N/A'}</p>
-           ${h.comment ? `<div style="font-size: 12px; font-style: italic; color: #222; background: #f9f9f9; padding: 8px; border-left: 3px solid #ccc; border-radius: 4px; margin-bottom: 10px;">"${h.comment}"</div>` : ''}
+           ${h.comment ? `<div style="font-size: 12px; font-style: italic; color: #222; background: #f9f9f9; padding: 8px; border-left: 3px solid #ccc; border-radius: 4px; margin-bottom: 10px; width: 100%; box-sizing: border-box;">"${h.comment}"</div>` : ''}
         `;
 
         if (h.photos && h.photos.length > 0) {
-            // 🔹 REEMPLAZO DE FLEXBOX POR UNA TABLA CLÁSICA 🔹
-            // Esto asegura 100% que las fotos queden alineadas y los links en su sitio perfecto.
-            html += `<table style="width: 100%; border-collapse: collapse;">`;
+            html += `<table style="width: 100%; border-collapse: collapse; box-sizing: border-box;">`;
             
             for (let i = 0; i < h.photos.length; i += 2) {
                 html += `<tr>`;
                 
-                // --- FOTO IZQUIERDA ---
                 let url1 = typeof h.photos[i] === 'string' ? h.photos[i] : (h.photos[i].url || h.photos[i].dataUrl || '');
                 let thumb1 = url1.startsWith('data:') ? url1 : getThumbUrl(url1);
                 
                 html += `
-                <td style="width: 50%; padding-bottom: 10px; vertical-align: top;">
-                  <table style="border-collapse: collapse;">
+                <td style="width: 50%; padding-bottom: 10px; vertical-align: top; box-sizing: border-box;">
+                  <table style="border-collapse: collapse; box-sizing: border-box;">
                     <tr>
-                      <td style="padding-right: 10px;">
-                        <img src="${thumb1}" onerror="this.src='${fallbackImg}'" style="width: 110px; height: 80px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px; display: block;">
+                      <td style="padding-right: 10px; box-sizing: border-box;">
+                        <img src="${thumb1}" onerror="this.src='${fallbackImg}'" style="width: 110px; height: 80px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px; display: block; box-sizing: border-box;">
                       </td>
-                      <td style="vertical-align: middle;">
+                      <td style="vertical-align: middle; box-sizing: border-box;">
                         <a href="${url1}" target="_blank" style="color: #00bcd4; text-decoration: none; font-size: 15px; font-weight: bold; display: block; padding: 5px 0;">ampliar ↗</a>
                         <span style="font-size: 9px; color: #888;">(Ctrl+Clic)</span>
                       </td>
@@ -231,19 +243,18 @@ export const generatePDF = async function() {
                   </table>
                 </td>`;
 
-                // --- FOTO DERECHA (Si existe) ---
                 if (i + 1 < h.photos.length) {
                     let url2 = typeof h.photos[i+1] === 'string' ? h.photos[i+1] : (h.photos[i+1].url || h.photos[i+1].dataUrl || '');
                     let thumb2 = url2.startsWith('data:') ? url2 : getThumbUrl(url2);
                     
                     html += `
-                    <td style="width: 50%; padding-bottom: 10px; vertical-align: top;">
-                      <table style="border-collapse: collapse;">
+                    <td style="width: 50%; padding-bottom: 10px; vertical-align: top; box-sizing: border-box;">
+                      <table style="border-collapse: collapse; box-sizing: border-box;">
                         <tr>
-                          <td style="padding-right: 10px;">
-                            <img src="${thumb2}" onerror="this.src='${fallbackImg}'" style="width: 110px; height: 80px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px; display: block;">
+                          <td style="padding-right: 10px; box-sizing: border-box;">
+                            <img src="${thumb2}" onerror="this.src='${fallbackImg}'" style="width: 110px; height: 80px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px; display: block; box-sizing: border-box;">
                           </td>
-                          <td style="vertical-align: middle;">
+                          <td style="vertical-align: middle; box-sizing: border-box;">
                             <a href="${url2}" target="_blank" style="color: #00bcd4; text-decoration: none; font-size: 15px; font-weight: bold; display: block; padding: 5px 0;">ampliar ↗</a>
                             <span style="font-size: 9px; color: #888;">(Ctrl+Clic)</span>
                           </td>
@@ -251,7 +262,7 @@ export const generatePDF = async function() {
                       </table>
                     </td>`;
                 } else {
-                    html += `<td style="width: 50%;"></td>`; 
+                    html += `<td style="width: 50%; box-sizing: border-box;"></td>`; 
                 }
                 html += `</tr>`;
             }
@@ -262,16 +273,15 @@ export const generatePDF = async function() {
     }
     html += `</div></div>`;
   });
-  html += `</div>`;
+  html += `</div></div>`;
 
-  // 🔹 GENERACIÓN DESDE STRING (El método que SÍ nos funcionó)
   const opt = {
-    margin:       [15, 10, 15, 10], // Arriba, Derecha, Abajo, Izquierda (Márgenes perfectos para A4)
+    margin:       [15, 10, 15, 10],
     filename:     `Reporte_Sumatra_${new Date().getTime()}.pdf`,
     image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true, letterRendering: true }, // scale: 2 le da mucha nitidez a los textos y enlaces
+    html2canvas:  { scale: 2, useCORS: true, logging: false },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: ['css', 'legacy'] } // Lee automáticamente nuestras clases .no-cortar
+    pagebreak:    { mode: ['css', 'legacy'], avoid: '.no-cortar', before: '.salto-pagina' } 
   };
 
   html2pdf().set(opt).from(html).save().then(() => { 
