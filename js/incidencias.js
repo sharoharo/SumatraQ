@@ -126,7 +126,12 @@ export function openNewIssueForm() {
   
   // Abrimos el nuevo modal en lugar del panel lateral
   document.getElementById('issueModalOverlay').classList.add('active');
-  
+
+  // 👇 NUEVO: Aviso de captura de punto
+  if (window.asistenteVoz) {
+      window.asistenteVoz("Punto de inspección capturado. Por favor, clasifique la falla.");
+  }
+
   State.mode = false; 
   const addBtn = document.getElementById('addBtn');
   if(addBtn) addBtn.classList.remove('active');
@@ -135,7 +140,7 @@ export function openNewIssueForm() {
 export function selectMarker(marker){
   deselectMarker(); 
   State.selectedMarker = marker; 
-  marker.scale.set(1.5, 1.5, 1.5); 
+  marker.scale.set(2, 2, 2); 
   
   const issue = State.issues.find(i => i.id === marker.userData.issueId);
   
@@ -291,10 +296,14 @@ export async function saveIssueFn() {
   try {
     if (btn) { btn.innerText = "⏳ Subiendo..."; btn.disabled = true; }
     await saveIssueToCloud(issueToUpload);
+    if (window.asistenteVoz) window.asistenteVoz("Incidencia guardada correctamente en el servidor.");
     alert("✅ Guardado correctamente");
+  
   } catch (error) {
     console.error("Fallo al guardar en la nube:", error);
+    if (window.asistenteVoz) window.asistenteVoz("Alerta. Ha ocurrido un error al guardar en la nube.");
     alert("❌ Error de conexión al guardar."); 
+  
   } finally {
     if (btn) { btn.innerText = originalText; btn.disabled = false; }
   }
@@ -316,7 +325,7 @@ export function renderIssues() {
     const size = (issue.priority === 'prio1') ? 5.0 : 3.0;
 
     const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(size, 16, 16), 
+      new THREE.SphereGeometry(size, 30, 30), 
       new THREE.MeshPhongMaterial({ color: color })
     ); 
     sphere.position.set(issue.x, issue.y, issue.z); 

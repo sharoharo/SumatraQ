@@ -320,7 +320,10 @@
     </div>
   </div>
 
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
+  <script src="js/voz.js"></script>
+  
   <script type="importmap">
     {
       "imports": {
@@ -429,9 +432,16 @@
                     voiceStatusText.textContent = 'Prueba a decir: "Muéstrame solo las abiertas Prio 1"';
                     voiceStatusText.style.color = "#888";
                 }, 1200);
-            } else {
+                
+                window.asistenteVoz("Aplicando filtros solicitados."); // <---
+                setTimeout(() => {
+                filterPanel.classList.remove('active');
+                }, 1200);
+            
+              } else {
                 voiceStatusText.textContent = "No entendí el filtro. Prueba de nuevo.";
                 voiceStatusText.style.color = "#e94335";
+                window.asistenteVoz("No he entendido el comando. Inténtalo de nuevo."); // <---
             }
         };
 
