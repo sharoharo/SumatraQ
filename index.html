@@ -189,36 +189,70 @@
     </div>
   </div>
 
-  <div id="filterPanelOverlay" class="filter-panel-overlay">
+ <div id="filterPanelOverlay" class="filter-panel-overlay">
     <div class="filter-panel-content interactive-element">
         <div class="filter-panel-header">
             <h3 style="margin:0; color:#333; font-size: 18px;">Filtrar y Buscar</h3>
             <button id="btnCloseFilterPanel" style="background:none; border:none; font-size:20px; cursor:pointer; color:#888;">✕</button>
         </div>
-        <div class="filter-panel-body">
+        <div class="filter-panel-body" style="padding-bottom: 20px;">
+            
             <div class="filter-section">
                 <p class="filter-label">Estado de la Incidencia</p>
                 <div class="filter-chips-container" id="filterStatusContainer">
-                    <button class="filter-chip status-chip active" data-filter-type="status" data-val="all">Todos</button>
-                    <button class="filter-chip status-chip red" data-filter-type="status" data-val="open">Abiertos</button>
-                    <button class="filter-chip status-chip yellow" data-filter-type="status" data-val="review">Revisión</button>
-                    <button class="filter-chip status-chip green" data-filter-type="status" data-val="closed">Cerrados</button>
+                    <button class="filter-chip status-chip active" data-filter-type="status" data-val="all" onclick="window.updateFilters('status', 'all', this)">Todos</button>
+                    <button class="filter-chip status-chip red" data-filter-type="status" data-val="open" onclick="window.updateFilters('status', 'open', this)">Abiertos</button>
+                    <button class="filter-chip status-chip yellow" data-filter-type="status" data-val="review" onclick="window.updateFilters('status', 'review', this)">Revisión</button>
+                    <button class="filter-chip status-chip green" data-filter-type="status" data-val="closed" onclick="window.updateFilters('status', 'closed', this)">Cerrados</button>
                 </div>
             </div>
 
             <div class="filter-section">
                 <p class="filter-label">Prioridad (Gravedad)</p>
                 <div class="filter-chips-container" id="filterPriorityContainer">
-                    <button class="filter-chip prio-chip dotted active" data-filter-type="priority" data-val="all">Todas</button>
-                    <button class="filter-chip prio-chip dotted red" data-filter-type="priority" data-val="prio1">🔥 Prio 1</button>
-                    <button class="filter-chip prio-chip dotted" data-filter-type="priority" data-val="alta">Alta</button>
-                    <button class="filter-chip prio-chip dotted" data-filter-type="priority" data-val="media">Media</button>
+                    <button class="filter-chip prio-chip dotted active" data-filter-type="priority" data-val="all" onclick="window.updateFilters('priority', 'all', this)">Todas</button>
+                    <button class="filter-chip prio-chip dotted red" data-filter-type="priority" data-val="prio1" onclick="window.updateFilters('priority', 'prio1', this)">🔥 Prio 1</button>
+                    <button class="filter-chip prio-chip dotted" data-filter-type="priority" data-val="alta" onclick="window.updateFilters('priority', 'alta', this)">Alta</button>
+                    <button class="filter-chip prio-chip dotted" data-filter-type="priority" data-val="media" onclick="window.updateFilters('priority', 'media', this)">Media</button>
                 </div>
             </div>
 
-            <div class="filter-section magic-section">
-                <p class="filter-label" style="color: #4285F4;">Búsqueda por Voz (La Magia) 🪄</p>
-                <div style="text-align: center; margin-top: 15px;">
+            <div class="filter-section" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <p class="filter-label" style="font-size: 11px;">Usuario Inspector</p>
+                    <select id="filterUser" onchange="window.updateFilters('user', this.value)" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 13px;">
+                        <option value="all">Todos los usuarios</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <p class="filter-label" style="font-size: 11px;">Tipo de Falla</p>
+                    <select id="filterType" onchange="window.updateFilters('type', this.value)" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 13px;">
+                        <option value="all">Todos los tipos</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <p class="filter-label" style="font-size: 11px;">Rango de Fechas</p>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="flex: 1;">
+                        <span style="font-size: 10px; color:#888;">Desde:</span>
+                        <input type="date" id="filterDateFrom" onchange="window.updateFilters('dateFrom', this.value)" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="font-size: 10px; color:#888;">Hasta:</span>
+                        <input type="date" id="filterDateTo" onchange="window.updateFilters('dateTo', this.value)" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px;">
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; margin-bottom: 20px;">
+                <button onclick="window.clearAllFilters()" class="btn-primary" style="width: 100%; background-color: #f1f3f4; color: #333; border: 1px solid #ccc; padding: 10px;">🔄 Limpiar Todos los Filtros</button>
+            </div>
+
+            <div class="filter-section magic-section" style="border-top: 1px dashed #ccc; padding-top: 15px;">
+                <p class="filter-label" style="color: #4285F4; text-align: center;">Búsqueda por Voz (La Magia) 🪄</p>
+                <div style="text-align: center; margin-top: 10px;">
                     <button id="btnMagicVoice" class="voice-search-button interactive-element">
                         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4285F4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -228,9 +262,10 @@
                         </svg>
                         <span style="display:block; margin-top:8px; font-size:12px; color:#555;">Pulsa y habla...</span>
                     </button>
-                    <p id="voiceStatus" style="font-size: 11px; color: #888; margin-top: 10px; font-style: italic;">Prueba a decir: "Muéstrame solo las abiertas Prio 1"</p>
+                    <p id="voiceStatus" style="font-size: 11px; color: #888; margin-top: 10px; font-style: italic;">Ej: "Muéstrame solo las abiertas Prio 1"</p>
                 </div>
             </div>
+
         </div> 
     </div> 
   </div>
@@ -333,11 +368,12 @@
     }
   </script>
   
-  <script type="module" src="./js/app.js"></script>
   <script src="js/exportador.js" type="module"></script>
   <script src="js/cargador.js" type="module"></script>
-  
+  <script src="js/filtros.js" type="module"></script>
+  <script src="js/incidencias.js" type="module"></script>
   <script src="js/app.js" type="module"></script>
+
 </body>
 
 
@@ -378,105 +414,7 @@
         filterPanel.addEventListener('click', (e) => { if (e.target === filterPanel) filterPanel.classList.remove('active'); });
     }
 
-    // La Magia de la Voz
-    const btnVoice = document.getElementById('btnMagicVoice');
-    const voiceStatusText = document.getElementById('voiceStatus');
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (SpeechRecognition && btnVoice) {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'es-ES';
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        btnVoice.addEventListener('click', () => recognition.start());
-
-        recognition.onstart = () => {
-            btnVoice.classList.add('listening');
-            voiceStatusText.textContent = "Escuchando... Di un comando.";
-            voiceStatusText.style.color = "#e94335";
-        };
-
-        recognition.onend = () => btnVoice.classList.remove('listening');
-
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript.toLowerCase();
-            voiceStatusText.textContent = `Dijiste: "${transcript}"`;
-            voiceStatusText.style.color = "#333";
-
-            let newStatus = null;
-            let newPrio = null;
-
-            if (transcript.includes('abierta') || transcript.includes('abierto')) newStatus = 'open';
-            else if (transcript.includes('revisión')) newStatus = 'review';
-            else if (transcript.includes('cerrada') || transcript.includes('cerrado')) newStatus = 'closed';
-            else if (transcript.includes('estado') || transcript.includes('todos')) newStatus = 'all';
-
-            if (transcript.includes('prio 1') || transcript.includes('prioridad 1') || transcript.includes('top')) newPrio = 'prio1';
-            else if (transcript.includes('alta')) newPrio = 'alta';
-            else if (transcript.includes('media')) newPrio = 'media';
-            else if (transcript.includes('prioridades') || transcript.includes('todas')) newPrio = 'all';
-
-            if (newStatus) {
-                const chip = document.querySelector(`.filter-chip[data-filter-type="status"][data-val="${newStatus}"]`);
-                if(chip) chip.click();
-            }
-            if (newPrio) {
-                const chip = document.querySelector(`.filter-chip[data-filter-type="priority"][data-val="${newPrio}"]`);
-                if(chip) chip.click();
-            }
-
-            if (newStatus || newPrio) {
-                setTimeout(() => {
-                    filterPanel.classList.remove('active');
-                    voiceStatusText.textContent = 'Prueba a decir: "Muéstrame solo las abiertas Prio 1"';
-                    voiceStatusText.style.color = "#888";
-                }, 1200);
-                
-                window.asistenteVoz("Aplicando filtros solicitados."); // <---
-                setTimeout(() => {
-                filterPanel.classList.remove('active');
-                }, 1200);
-            
-              } else {
-                voiceStatusText.textContent = "No entendí el filtro. Prueba de nuevo.";
-                voiceStatusText.style.color = "#e94335";
-                window.asistenteVoz("No he entendido el comando. Inténtalo de nuevo."); // <---
-            }
-        };
-
-        recognition.onerror = (event) => {
-            btnVoice.classList.remove('listening');
-            voiceStatusText.textContent = "Error con el micrófono.";
-            voiceStatusText.style.color = "#e94335";
-        };
-    } else if (btnVoice) {
-        btnVoice.style.display = 'none';
-        voiceStatusText.textContent = "Navegador no compatible con voz.";
-    }
-
-    // Clicks en Filtros
-    document.querySelectorAll('.filter-panel-body .filter-chip').forEach(chip => {
-        chip.addEventListener('click', function() {
-            const type = this.getAttribute('data-filter-type');
-            const val = this.getAttribute('data-val');
-            if(window.setAdvancedFilter) {
-                window.setAdvancedFilter(type, val);
-            }
-        });
-    });
-
-    // Cerrar Modal de Incidencias
-    const btnCloseIssue = document.getElementById('btnCloseIssueModal');
-    const issueModal = document.getElementById('issueModalOverlay');
-
-    if (btnCloseIssue && issueModal) {
-        btnCloseIssue.addEventListener('click', () => {
-            issueModal.classList.remove('active');
-            if(window.deselectMarker) window.deselectMarker(); 
-        });
-    }
-
+    
  // --- NUEVO: LÓGICA DE PESTAÑAS (TABS) ---
     window.switchTab = function(event, tabId) {
         // Ocultamos todos los contenidos de las pestañas

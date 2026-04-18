@@ -4,10 +4,8 @@ import { State, CONFIG } from './estado.js';
 import { animateCamera } from './visor3d.js';
 import { saveIssueToCloud } from './nube.js';
 import { renderPhotoGrid } from './fotos.js';
-
-// Inicialización de filtros avanzados
-State.currentStatusFilter = 'all';
-State.currentPriorityFilter = 'all';
+// 👇 IMPORTAMOS LAS FUNCIONES DEL NUEVO CEREBRO DE FILTROS
+import { passesFilters, populateFilterSelects } from './filtros.js';
 
 // --- AYUDANTES PARA CHIPS TÁCTILES ---
 export function getActiveChip(groupId) {
@@ -20,21 +18,6 @@ export function setActiveChip(groupId, value) {
     chip.classList.toggle('active', chip.dataset.val === value);
   });
 }
-
-// 🏆 ACTUALIZADO: Conectamos la UI antigua con el nuevo Panel de Filtros 🏆
-export function setAdvancedFilter(type, value) {
-  if (type === 'status') State.currentStatusFilter = value;
-  if (type === 'priority') State.currentPriorityFilter = value;
-  
-  // Actualizar visualmente los chips en el panel principal (por si acaso los usas)
-  document.querySelectorAll(`.filter-chip[data-filter-type="${type}"]`).forEach(chip => {
-      chip.classList.toggle('active', chip.dataset.val === value);
-  });
-  
-  renderIssues();
-}
-// Lo colgamos en window para que el HTML (la voz) pueda llamarlo
-window.setAdvancedFilter = setAdvancedFilter;
 
 export function getColor(status) {
   const colors = { 
@@ -115,19 +98,15 @@ export function openNewIssueForm() {
   State.currentPhotos = [];
   renderPhotoGrid();
 
-  // Valores por defecto ágiles (Chips)
   setActiveChip('statusChips', 'open');
   setActiveChip('priorityChips', 'media');
   setActiveChip('faseChips', 'estampacion');
 
-  // 🔹 NUEVO: Ocultamos el historial porque es una incidencia nueva
   const historyContainer = document.getElementById('historyContainer');
   if(historyContainer) historyContainer.style.display = 'none';
   
-  // Abrimos el nuevo modal en lugar del panel lateral
   document.getElementById('issueModalOverlay').classList.add('active');
 
-  // 👇 NUEVO: Aviso de captura de punto
   if (window.asistenteVoz) {
       window.asistenteVoz("Punto de inspección capturado. Por favor, clasifique la falla.");
   }
@@ -159,7 +138,6 @@ export function selectMarker(marker){
     setActiveChip('priorityChips', issue.priority || 'media');
     setActiveChip('faseChips', issue.fase || 'estampacion');
 
-    // --- RENDERIZADO DEL HISTORIAL DE TRAZABILIDAD (CON FOTOS) ---
     const historyContainer = document.getElementById('historyContainer');
     const historyTimeline = document.getElementById('historyTimeline');
 
@@ -179,12 +157,10 @@ export function selectMarker(marker){
                 if(h.status === 'review') dotColor = '#fbbc04';
                 if(h.status === 'closed') dotColor = '#34a853';
 
-                // 🔹 NUEVO: PREPARAMOS LAS MINIATURAS DE LAS FOTOS 🔹
                 let photosHtml = '';
                 if (h.photos && h.photos.length > 0) {
                     photosHtml = `<div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">`;
                     h.photos.forEach(photo => {
-                        // Creamos una miniatura que al hacer click abre tu Lightbox actual
                         photosHtml += `<img src="${photo.dataUrl}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onclick="window.openLightbox('${photo.dataUrl}')" title="Ver imagen ampliada">`;
                     });
                     photosHtml += `</div>`;
@@ -214,8 +190,6 @@ export function selectMarker(marker){
 export function deselectMarker() { 
   if(State.selectedMarker) State.selectedMarker.scale.set(1,1,1);
   State.selectedMarker = null; 
-  
-  // En lugar de ocultar el 'form', quitamos la clase active al modal
   const modal = document.getElementById('issueModalOverlay');
   if (modal) modal.classList.remove('active');
 }
@@ -237,13 +211,12 @@ export function deleteSelectedIssue() {
 }
 
 /* ==========================================
-   3. GUARDADO Y RENDERIZADO (FILTRO CRUZADO)
+   3. GUARDADO Y RENDERIZADO (CONECTADO A FILTROS.JS)
    ========================================== */
 export async function saveIssueFn() {
   const btn = document.getElementById('saveIssue');
   const originalText = btn?.innerText;
   
-  // Captura ágil desde los Chips
   const currentStatus = getActiveChip('statusChips');
   const currentPriority = getActiveChip('priorityChips');
   const currentFase = getActiveChip('faseChips');
@@ -315,13 +288,11 @@ export function renderIssues() {
   toRemove.forEach(obj => State.scene.remove(obj));
 
   State.issues.forEach(issue => {
-    // FILTRO CRUZADO: Estado + Prioridad
-    if (State.currentStatusFilter !== 'all' && issue.status !== State.currentStatusFilter) return;
-    if (State.currentPriorityFilter !== 'all' && issue.priority !== State.currentPriorityFilter) return;
+    // 🧠 ESTA LÍNEA ES LA CLAVE DE TODO:
+    if (!window.passesFilters && passesFilters && !passesFilters(issue)) return; 
+    if (window.passesFilters && !window.passesFilters(issue)) return;
     
     const color = getColor(issue.status);
-    
-    // Jerarquía Visual: Prio 1 es más grande
     const size = (issue.priority === 'prio1') ? 5.0 : 3.0;
 
     const sphere = new THREE.Mesh(
@@ -335,13 +306,19 @@ export function renderIssues() {
   renderIssueListUI();
 }
 
-function renderIssueListUI() {
+window.renderIssues = renderIssues;
+
+export function renderIssueListUI() {
   const list = document.getElementById('list');
   if(!list) return;
   list.innerHTML = "";
+  
+  // 🧠 Actualiza los desplegables de filtros leyendo las incidencias activas
+  populateFilterSelects();
+
   State.issues.forEach(issue => {
-    if (State.currentStatusFilter !== 'all' && issue.status !== State.currentStatusFilter) return;
-    if (State.currentPriorityFilter !== 'all' && issue.priority !== State.currentPriorityFilter) return;
+    // 🧠 MAGIA: Le preguntamos al juez universal de filtros.js
+    if (!passesFilters(issue)) return;
 
     const card = document.createElement('div');
     card.className = 'issue-card';
@@ -370,17 +347,13 @@ function renderIssueListUI() {
 }
 
 // ==========================================
-// 📄 GENERACIÓN DE REPORTE PDF (ADAPTADO A FILTROS CRUZADOS)
+// 📄 GENERACIÓN DE REPORTE PDF (ADAPTADO AL JUEZ)
 // ==========================================
 export const generatePDF = function() {
   window.generatePDF = generatePDF;
 
   // 1. Aplicamos el Doble Filtro a las incidencias que se van a imprimir
-  const issuesToPrint = State.issues.filter(issue => {
-    const passStatus = State.currentStatusFilter === 'all' || issue.status === State.currentStatusFilter;
-    const passPriority = State.currentPriorityFilter === 'all' || issue.priority === State.currentPriorityFilter;
-    return passStatus && passPriority;
-  });
+  const issuesToPrint = State.issues.filter(issue => passesFilters(issue));
 
   if (issuesToPrint.length === 0) {
     alert("⚠️ No hay incidencias en este filtro para generar el reporte.");
@@ -397,9 +370,11 @@ export const generatePDF = function() {
 
   const fecha = new Date().toLocaleDateString('es-ES');
   
-  // Nombres bonitos para el encabezado del PDF
-  const nameStatus = { 'all': 'Todos', 'open': 'Abiertas', 'review': 'En Revisión', 'closed': 'Cerradas' }[State.currentStatusFilter];
-  const namePrio = { 'all': 'Todas', 'prio1': 'Top 1', 'alta': 'Alta', 'media': 'Media' }[State.currentPriorityFilter];
+  // Título dinámico para saber qué se está imprimiendo
+  let filtroTexto = "Reporte Filtrado";
+  if (State.filters.status === 'all' && State.filters.priority === 'all' && State.filters.user === 'all' && State.filters.type === 'all' && !State.filters.dateFrom && !State.filters.dateTo) {
+      filtroTexto = "Reporte Global";
+  }
 
   // --- CABECERA TABULAR CON LOGO ---
   let html = `
@@ -418,7 +393,7 @@ export const generatePDF = function() {
           </td>
           <td style="vertical-align: bottom; text-align: right; width: 220px;">
             <p style="margin: 0; color: #666; font-size: 12px;"><strong>Generado:</strong> ${fecha}</p>
-            <p style="margin: 4px 0 0 0; color: #666; font-size: 11px;"><strong>Estado:</strong> ${nameStatus} | <strong>Prio:</strong> ${namePrio}</p>
+            <p style="margin: 4px 0 0 0; color: #666; font-size: 11px;"><strong>Contexto:</strong> ${filtroTexto}</p>
           </td>
         </tr>
       </table>
@@ -487,7 +462,7 @@ export const generatePDF = function() {
 
   const opt = {
     margin:       10,
-    filename:     `SumatraQ_${nameStatus}_${namePrio}.pdf`,
+    filename:     `SumatraQ_Reporte_Inspect.pdf`,
     image:        { type: 'jpeg', quality: 0.98 },
     html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -501,3 +476,5 @@ export const generatePDF = function() {
     alert("Error generando el PDF.");
   });
 };
+
+ deselectMarker();

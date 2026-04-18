@@ -2,10 +2,13 @@
 import { State } from './estado.js';
 import { fetchDatabase, processLogin, processLogout, checkAuthStatus } from './auth.js';
 import { init3D, loadSTLs, updateFileListUI, toggleMeshVisibility, removeMesh, setView, applyShadingAll } from './visor3d.js';
-import { setAdvancedFilter, onClick, onPointerDown, onPointerMove, onPointerUp, saveIssueFn, deleteSelectedIssue } from './incidencias.js';
+import { onClick, onPointerDown, onPointerMove, onPointerUp, saveIssueFn, deleteSelectedIssue } from './incidencias.js';
 import { exportIssues, exportToCSV, generatePDF } from './exportador.js';
 import { handlePhotoInput } from './fotos.js';
 import { initUI } from './ui.js';
+import { initMagiaVoz } from './magiaVoz.js';
+import { deselectMarker } from './incidencias.js';  
+
 
 /* --- EXPONER FUNCIONES AL HTML (PÚBLICAS) --- */
 window.processLogin = processLogin;
@@ -14,13 +17,14 @@ window.toggleMeshVisibility = toggleMeshVisibility;
 window.removeMesh = removeMesh;
 window.exportIssues = exportIssues;
 window.exportToCSV = exportToCSV;
-window.setAdvancedFilter = setAdvancedFilter;
+window.setAdvancedFilter = 'all';
 window.generatePDF = generatePDF;
 
 /* --- ASIGNAR EVENTOS A LOS BOTONES --- */
 window.onload = () => {
   initUI(); // Arranca los menús y paneles (togglePanel y openLightbox ya viven aquí)
-  
+  initMagiaVoz(); // Encendemos el micro
+
   // Eventos del Canvas 3D
   const canvas = State.renderer.domElement;
   canvas.addEventListener("click", onClick);

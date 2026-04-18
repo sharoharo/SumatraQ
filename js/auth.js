@@ -17,7 +17,7 @@ export async function fetchDatabase() {
       State.db.repositorioPiezas = data.repositorioPiezas || [];
       State.db.incidenciasRegistradas = data.incidenciasRegistradas || [];
       
-      // Llenamos el desplegable de incidencias
+      // Llenamos el desplegable de incidencias del FORMULARIO NUEVO
       const elIssueType = document.getElementById('issueType');
       if (elIssueType && State.db.tiposIncidencias.length > 0) {
         elIssueType.innerHTML = "";
@@ -31,6 +31,11 @@ export async function fetchDatabase() {
       
       if (btn) { btn.innerText = "Entrar al Sistema"; btn.disabled = false; }
       console.log("✅ Base de Datos Sincronizada Correctamente");
+
+      // 👇 LA MAGIA: AVISAMOS A FILTROS.JS PARA QUE RELLENE LOS COMBOS DEL BUSCADOR
+      import('./filtros.js').then(m => {
+        if(m.populateFilterSelects) m.populateFilterSelects();
+      }).catch(err => console.log("Módulo de filtros en espera..."));
       
     } catch (parseError) {
       console.error("❌ Google bloqueó la petición. Recibimos HTML en vez de datos.");
@@ -71,13 +76,11 @@ export function processLogin() {
     State.userName = userMatch.Nombre || userMatch.nombre || "Usuario";
     localStorage.setItem('userName', State.userName);
     checkAuthStatus();
-    window.asistenteVoz(`Bienvenido al sistema de inspección Sumatra Q, ${State.userName.split(' ')[0]}. Base de datos sincronizada.`);
+    if (window.asistenteVoz) window.asistenteVoz(`Bienvenido al sistema de inspección Sumatra Q, ${State.userName.split(' ')[0]}. Base de datos sincronizada.`);
   } else {
     alert("❌ Credenciales incorrectas. Revisa tu Excel.");
   }
 }
-
-
 
 export function processLogout() {
   localStorage.removeItem('userName');
