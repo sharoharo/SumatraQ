@@ -17,7 +17,6 @@ window.toggleMeshVisibility = toggleMeshVisibility;
 window.removeMesh = removeMesh;
 window.exportIssues = exportIssues;
 window.exportToCSV = exportToCSV;
-window.setAdvancedFilter = 'all';
 window.generatePDF = generatePDF;
 
 /* --- ASIGNAR EVENTOS A LOS BOTONES --- */
@@ -33,7 +32,12 @@ window.onload = () => {
   canvas.addEventListener("mouseup", onPointerUp);
 
   // Botones UI Principales
-  document.getElementById('fileInput').onchange = loadSTLs;
+ document.getElementById('fileInput').onchange = (e) => {
+    loadSTLs(e); // 1. Cargamos el 3D
+    // 2. Ocultamos el menú de carga automáticamente
+    const modalCarga = document.getElementById('modalCargaModelos');
+    if (modalCarga) modalCarga.style.display = 'none';
+  };
   
   const saveBtn = document.getElementById('saveIssue');
   if(saveBtn) saveBtn.onclick = saveIssueFn;
@@ -70,20 +74,6 @@ window.onload = () => {
     };
   });
 
-  // --- MAGIA UX: LÓGICA DE LA BARRA DE FILTROS SUPERIOR ---
-  document.querySelectorAll('.filter-scroll-area .filter-chip').forEach(chip => {
-    chip.onclick = (e) => {
-      e.preventDefault();
-      const container = chip.parentElement;
-      container.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-
-      const type = chip.dataset.filterType;
-      const val = chip.dataset.val;
-      window.setAdvancedFilter(type, val);
-    };
-  });
-
   // --- CONECTAR BOTONES DE VISTAS (ZOOM EXTENSIÓN, ISOMÉTRICO) ---
   document.querySelectorAll('.fab[data-view]').forEach(btn => {
     btn.addEventListener('click', () => setView(btn.dataset.view));
@@ -97,6 +87,25 @@ window.onload = () => {
       applyShadingAll(btn.dataset.mode);
     });
   });
+
+  // --- CIERRE DE MODALES DE INCIDENCIAS (LAS "X") ---
+  const btnCloseIssueModal = document.getElementById('btnCloseIssueModal');
+  const issueModal = document.getElementById('issueModalOverlay');
+  if (btnCloseIssueModal && issueModal) {
+      btnCloseIssueModal.addEventListener('click', () => {
+          issueModal.classList.remove('active');
+          deselectMarker(); 
+      });
+  }
+
+  const btnCloseHistoryModal = document.getElementById('btnCloseHistoryModal');
+  const historyModal = document.getElementById('historyModalOverlay');
+  if (btnCloseHistoryModal && historyModal) {
+      btnCloseHistoryModal.addEventListener('click', () => {
+          historyModal.classList.remove('active');
+          deselectMarker(); 
+      });
+  }
 
   // INICIAR APLICACIÓN
   checkAuthStatus();
@@ -119,3 +128,22 @@ function animate() {
   if(State.controls) State.controls.update(); 
   if(State.renderer) State.renderer.render(State.scene, State.camera); 
 }
+
+// --- VIGILANTE DEL ESTADO VACÍO (UX MAGIC) ---
+// Observa si el nombre del archivo cambia en la barra superior. Si cambia, oculta el cartel central.
+document.addEventListener("DOMContentLoaded", () => {
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const emptyState = document.getElementById('emptyState');
+    
+    if (fileNameDisplay && emptyState) {
+        const observer = new MutationObserver(() => {
+            // Si el texto ya no contiene la palabra "cargar", asumimos que hay un archivo cargado
+            if (!fileNameDisplay.innerText.toLowerCase().includes('cargar')) {
+                emptyState.style.opacity = '0';
+                setTimeout(() => emptyState.style.display = 'none', 500); // Lo borramos tras el fade-out
+                observer.disconnect(); // Apagamos el vigilante para ahorrar memoria
+            }
+        });
+        observer.observe(fileNameDisplay, { childList: true, characterData: true, subtree: true });
+    }
+});

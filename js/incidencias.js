@@ -4,7 +4,6 @@ import { State, CONFIG } from './estado.js';
 import { animateCamera } from './visor3d.js';
 import { saveIssueToCloud } from './nube.js';
 import { renderPhotoGrid } from './fotos.js';
-// 👇 IMPORTAMOS LAS FUNCIONES DEL NUEVO CEREBRO DE FILTROS
 import { passesFilters, populateFilterSelects } from './filtros.js';
 
 // --- AYUDANTES PARA CHIPS TÁCTILES ---
@@ -20,11 +19,7 @@ export function setActiveChip(groupId, value) {
 }
 
 export function getColor(status) {
-  const colors = { 
-    'open': 0xe94335,    // Rojo
-    'review': 0xfbbc04,  // Amarillo
-    'closed': 0x34a853   // Verde
-  };
+  const colors = { 'open': 0xe94335, 'review': 0xfbbc04, 'closed': 0x34a853 };
   return colors[status] || 0x4285f4; 
 }
 
@@ -84,38 +79,40 @@ export function onClick(event){
 }
 
 /* ==========================================
-   2. FORMULARIOS E HISTORIAL
+   2. NAVEGACIÓN ENTRE MODALES: HISTORIAL Y EDICIÓN
    ========================================== */
+
+// 🟢 Caso 1: Punto Nuevo -> Abre directo el Formulario
 export function openNewIssueForm() {
   deselectMarker();
-  document.getElementById('formMainTitle').innerText = "Nueva Incidencia";
-  document.getElementById('saveIssue').innerText = "Crear Incidencia";
+  document.getElementById('modalMainTitle').innerText = "Creación de incidencia";
+  document.getElementById('saveIssue').innerText = "Guardar Incidencia nueva";
   document.getElementById('issueComment').value = ""; 
   
   const typeSelect = document.getElementById('issueType');
   if(typeSelect) typeSelect.selectedIndex = 0;
   
   State.currentPhotos = [];
-  renderPhotoGrid();
+  if (typeof renderPhotoGrid === 'function') renderPhotoGrid();
 
   setActiveChip('statusChips', 'open');
   setActiveChip('priorityChips', 'media');
   setActiveChip('faseChips', 'estampacion');
 
-  const historyContainer = document.getElementById('historyContainer');
-  if(historyContainer) historyContainer.style.display = 'none';
+  // Aseguramos que historial está cerrado y abrimos formulario
+  const historyModal = document.getElementById('historyModalOverlay');
+  if (historyModal) historyModal.classList.remove('active');
   
   document.getElementById('issueModalOverlay').classList.add('active');
 
-  if (window.asistenteVoz) {
-      window.asistenteVoz("Punto de inspección capturado. Por favor, clasifique la falla.");
-  }
+  if (window.asistenteVoz) window.asistenteVoz("Punto de inspección capturado. Por favor, clasifique la falla.");
 
   State.mode = false; 
   const addBtn = document.getElementById('addBtn');
   if(addBtn) addBtn.classList.remove('active');
 }
 
+// 🟢 Caso 2: Clic en Punto Existente -> Abre SOLO el Historial (Lectura)
 export function selectMarker(marker){
   deselectMarker(); 
   State.selectedMarker = marker; 
@@ -124,30 +121,17 @@ export function selectMarker(marker){
   const issue = State.issues.find(i => i.id === marker.userData.issueId);
   
   if(issue){
-    document.getElementById('formMainTitle').innerText = `Detalle de Incidencia`;
-    document.getElementById('saveIssue').innerText = "Actualizar y Guardar";
-    document.getElementById('issueComment').value = ""; 
-    
-    const typeSelect = document.getElementById('issueType');
-    if(typeSelect && issue.type) typeSelect.value = issue.type;
-    
-    State.currentPhotos = [];
-    renderPhotoGrid();
-    
-    setActiveChip('statusChips', issue.status || 'open');
-    setActiveChip('priorityChips', issue.priority || 'media');
-    setActiveChip('faseChips', issue.fase || 'estampacion');
-
-    const historyContainer = document.getElementById('historyContainer');
+    const historyIssueId = document.getElementById('historyIssueId');
     const historyTimeline = document.getElementById('historyTimeline');
 
-    if (historyContainer && historyTimeline) {
-        historyContainer.style.display = 'block'; 
-        historyTimeline.innerHTML = ''; 
+    if (historyIssueId) {
+        historyIssueId.innerText = `# ID: ${issue.id} - ${issue.type || 'Sin tipo'}`;
+    }
 
+    if (historyTimeline) {
+        historyTimeline.innerHTML = ''; 
         if (issue.history && issue.history.length > 0) {
             const reversedHistory = [...issue.history].reverse();
-
             reversedHistory.forEach(h => {
                 const dateObj = new Date(h.date);
                 const dateStr = isNaN(dateObj.getTime()) ? h.date : dateObj.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
@@ -183,17 +167,58 @@ export function selectMarker(marker){
         }
     }
 
-    document.getElementById('issueModalOverlay').classList.add('active');
+    // 🏆 ¡MAGIA UX! ABRIMOS SOLO EL MODAL DE HISTORIAL
+    const issueModal = document.getElementById('issueModalOverlay');
+    if (issueModal) issueModal.classList.remove('active');
+    
+    document.getElementById('historyModalOverlay').classList.add('active');
   }
 }
 
+// 🟢 Caso 3: Clic en botón "Actualizar" desde el historial
+export function editExistingIssue() {
+  if(!State.selectedMarker) return;
+  const issue = State.issues.find(i => i.id === State.selectedMarker.userData.issueId);
+  if(!issue) return;
+
+  // 1. Ocultar Modal de Historial
+  document.getElementById('historyModalOverlay').classList.remove('active');
+
+  // 2. Rellenar Formulario con datos actuales
+  document.getElementById('modalMainTitle').innerText = `Actualización de incidencia`;
+  document.getElementById('saveIssue').innerText = "Actualizar y Guardar";
+  document.getElementById('issueComment').value = ""; 
+  
+  const typeSelect = document.getElementById('issueType');
+  if(typeSelect && issue.type) typeSelect.value = issue.type;
+  
+  State.currentPhotos = [];
+  if (typeof renderPhotoGrid === 'function') renderPhotoGrid();
+  
+  setActiveChip('statusChips', issue.status || 'open');
+  setActiveChip('priorityChips', issue.priority || 'media');
+  setActiveChip('faseChips', issue.fase || 'estampacion');
+
+  // 3. Mostrar Modal de Edición
+  document.getElementById('issueModalOverlay').classList.add('active');
+}
+// Lo exponemos al window para el HTML
+window.editExistingIssue = editExistingIssue;
+
+// 🟢 Cierre general
 export function deselectMarker() { 
   if(State.selectedMarker) State.selectedMarker.scale.set(1,1,1);
   State.selectedMarker = null; 
-  const modal = document.getElementById('issueModalOverlay');
-  if (modal) modal.classList.remove('active');
+  const modalForm = document.getElementById('issueModalOverlay');
+  const modalHistory = document.getElementById('historyModalOverlay');
+  if (modalForm) modalForm.classList.remove('active');
+  if (modalHistory) modalHistory.classList.remove('active');
 }
+window.deselectMarker = deselectMarker;
 
+/* ==========================================
+   3. GUARDADO, ELIMINACIÓN Y RENDERIZADO
+   ========================================== */
 export function deleteSelectedIssue() {
   if(!State.selectedMarker) return;
   const seguro = confirm("⚠️ ¿Estás seguro de que deseas eliminar esta incidencia?");
@@ -210,9 +235,6 @@ export function deleteSelectedIssue() {
   renderIssues();
 }
 
-/* ==========================================
-   3. GUARDADO Y RENDERIZADO (CONECTADO A FILTROS.JS)
-   ========================================== */
 export async function saveIssueFn() {
   const btn = document.getElementById('saveIssue');
   const originalText = btn?.innerText;
@@ -224,40 +246,28 @@ export async function saveIssueFn() {
   const currentType = document.getElementById('issueType').value;
 
   let issueUpdateData = {
-    status: currentStatus,
-    priority: currentPriority,
-    fase: currentFase,
-    comment: currentComment,
-    date: new Date().toISOString(),
-    user: State.userName || "Anónimo",
-    photos: JSON.parse(JSON.stringify(State.currentPhotos))
+    status: currentStatus, priority: currentPriority, fase: currentFase,
+    comment: currentComment, date: new Date().toISOString(),
+    user: State.userName || "Anónimo", photos: JSON.parse(JSON.stringify(State.currentPhotos))
   };
 
   let issueToUpload = null;
 
-  if (State.selectedMarker) {
+  if (State.selectedMarker && State.issues.find(i => i.id === State.selectedMarker.userData.issueId)) {
     const issue = State.issues.find(i => i.id === State.selectedMarker.userData.issueId);
-    
-    issue.status = currentStatus;
-    issue.priority = currentPriority;
-    issue.fase = currentFase;
-    issue.comment = currentComment;
+    issue.status = currentStatus; issue.priority = currentPriority;
+    issue.fase = currentFase; issue.comment = currentComment;
     if(currentType) issue.type = currentType;
     
     if (!issue.history) issue.history = [];
     issue.history.push({ ...issueUpdateData });
-    
     issueToUpload = issue;
   } else {
     const safeId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
-    
     const newIssue = {
-      id: safeId,
-      fileName: State.targetFileName,
+      id: safeId, fileName: State.targetFileName,
       x: State.currentPoint.x, y: State.currentPoint.y, z: State.currentPoint.z,
-      type: currentType,
-      ...issueUpdateData,
-      history: [{ ...issueUpdateData }]
+      type: currentType, ...issueUpdateData, history: [{ ...issueUpdateData }]
     };
     State.issues.push(newIssue);
     issueToUpload = newIssue;
@@ -269,14 +279,11 @@ export async function saveIssueFn() {
   try {
     if (btn) { btn.innerText = "⏳ Subiendo..."; btn.disabled = true; }
     await saveIssueToCloud(issueToUpload);
-    if (window.asistenteVoz) window.asistenteVoz("Incidencia guardada correctamente en el servidor.");
+    if (window.asistenteVoz) window.asistenteVoz("Incidencia guardada correctamente.");
     alert("✅ Guardado correctamente");
-  
   } catch (error) {
-    console.error("Fallo al guardar en la nube:", error);
-    if (window.asistenteVoz) window.asistenteVoz("Alerta. Ha ocurrido un error al guardar en la nube.");
+    if (window.asistenteVoz) window.asistenteVoz("Error al guardar en la nube.");
     alert("❌ Error de conexión al guardar."); 
-  
   } finally {
     if (btn) { btn.innerText = originalText; btn.disabled = false; }
   }
@@ -288,9 +295,8 @@ export function renderIssues() {
   toRemove.forEach(obj => State.scene.remove(obj));
 
   State.issues.forEach(issue => {
-    // 🧠 ESTA LÍNEA ES LA CLAVE DE TODO:
-    if (!window.passesFilters && passesFilters && !passesFilters(issue)) return; 
-    if (window.passesFilters && !window.passesFilters(issue)) return;
+    // 🧠 El Juez Universal (filtros.js)
+    if (!passesFilters(issue)) return;
     
     const color = getColor(issue.status);
     const size = (issue.priority === 'prio1') ? 5.0 : 3.0;
@@ -313,11 +319,10 @@ export function renderIssueListUI() {
   if(!list) return;
   list.innerHTML = "";
   
-  // 🧠 Actualiza los desplegables de filtros leyendo las incidencias activas
-  populateFilterSelects();
+  if (typeof populateFilterSelects === 'function') populateFilterSelects();
 
   State.issues.forEach(issue => {
-    // 🧠 MAGIA: Le preguntamos al juez universal de filtros.js
+    // 🧠 El Juez Universal (filtros.js)
     if (!passesFilters(issue)) return;
 
     const card = document.createElement('div');
@@ -345,7 +350,6 @@ export function renderIssueListUI() {
     list.appendChild(card);
   });
 }
-
 // ==========================================
 // 📄 GENERACIÓN DE REPORTE PDF (ADAPTADO AL JUEZ)
 // ==========================================

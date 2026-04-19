@@ -30,18 +30,30 @@
   <div id="map-container"></div>
 
   <div class="ui-layer">
-    
-    <div class="search-box interactive-element">
-  <button class="menu-btn" onclick="window.togglePanel()">☰</button>
-  <div class="search-title" id="fileNameDisplay">Cargar modelo 3D...</div>
-  
-  <button class="file-label" onclick="document.getElementById('modalCargaModelos').style.display = 'flex';" title="Opciones de carga" style="background:none; border:none; cursor:pointer; font-size:20px; padding: 0 10px;">
-        📌
+  <div class="search-box interactive-element" onclick="document.getElementById('modalCargaModelos').style.display = 'flex';" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.boxShadow='var(--shadow-2)'" onmouseout="this.style.boxShadow='var(--shadow-1)'">
+      <button class="menu-btn" onclick="event.stopPropagation(); window.togglePanel()" title="Abrir Menú Lateral">☰</button>
+      
+      <div class="search-title" id="fileNameDisplay" style="color: #1a73e8; font-weight: 600;">📂 Toca aquí para cargar pieza...</div>
+      
+      <button class="file-label" title="Opciones de carga" style="background:none; border:none; cursor:pointer; font-size:18px; padding: 0 10px; color: #1a73e8;">
+        ▼
       </button>
       
       <input type="file" id="fileInput" multiple accept=".stl" style="display: none;" />
-</div>
+    </div>  
 
+    <div id="emptyState" class="interactive-element" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 5; background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(229,227,223,0.9) 100%); backdrop-filter: blur(2px); transition: opacity 0.5s ease;">
+        <div style="background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; max-width: 420px; width: 90%; border: 1px solid #e0e0e0;">
+            <div style="font-size: 55px; margin-bottom: 15px; animation: bounce 2s infinite ease-in-out;">📥</div>
+            <h2 style="margin: 0 0 10px 0; color: #1a73e8; font-size: 22px;">El visor 3D está vacío</h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 25px; line-height: 1.6;">Para empezar la inspección de calidad, debes cargar un modelo STL desde tu dispositivo o seleccionar una pieza de prueba.</p>
+            <button onclick="document.getElementById('modalCargaModelos').style.display = 'flex';" class="btn-primary" style="font-size: 16px; padding: 14px 28px; border-radius: 30px; box-shadow: 0 4px 12px rgba(26,115,232,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                📂 Abrir Menú de Carga
+            </button>
+        </div>
+    </div>
+    <style>@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }</style>  
+  
     <div class="user-profile-floating interactive-element">
       <div class="user-avatar-circle" id="userAvatarLetter" title="Tu cuenta">U</div>
       <div class="user-dropdown">
@@ -125,24 +137,36 @@
     <img id="lightboxImg" class="lightbox-img" src="" alt="Ampliación" />
   </div>
 
+ <div id="historyModalOverlay" class="layers-modal-overlay">
+    <div class="info-modal-content interactive-element" style="max-width: 550px; max-height: 90vh;">
+      <div class="info-modal-header" style="background-color: #fff; padding: 15px 20px;">
+        <h2 style="margin:0; color:#1a73e8; font-size: 16px;">Historial de cambios incidencia</h2>
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <button onclick="window.editExistingIssue()" class="btn-primary" style="margin: 0; padding: 8px 16px; font-size: 14px; width: auto; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Actualizar</button>
+          <button id="btnCloseHistoryModal" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; transition: color 0.2s;" onmouseover="this.style.color='#e94335'" onmouseout="this.style.color='#999'">✕</button>
+        </div>
+      </div>
+      <div class="info-modal-body" style="padding: 25px; background: #f4f7f6;">
+        <h3 id="historyIssueId" style="margin: 0 0 20px 0; font-size: 18px; color: #1a73e8; text-transform: uppercase;"></h3>
+        <div class="history-container" style="display:block; margin:0; padding:0; border:none; background:transparent;">
+          <div id="historyTimeline" class="history-timeline" style="margin-left: 5px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="issueModalOverlay" class="layers-modal-overlay">
     <div class="info-modal-content interactive-element" style="max-width: 500px; max-height: 90vh;">
-      <div class="info-modal-header">
-        <h2 id="modalMainTitle" style="margin:0; color:#4285F4; font-size: 18px;">📍 Detalle del Punto</h2>
+      <div class="info-modal-header" style="background-color: #fff; padding: 15px 20px;">
+        <h2 id="modalMainTitle" style="margin:0; color:#1a73e8; font-size: 16px;">Creación/Actualización incidencia</h2>
         <button id="btnCloseIssueModal" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; transition: color 0.2s;" onmouseover="this.style.color='#e94335'" onmouseout="this.style.color='#999'">✕</button>
       </div>
       <div class="info-modal-body" style="padding: 20px; background: #f4f7f6;">
 
         <div id="form" class="form-container" style="display:block; margin:0; border:none; background:transparent; padding:0;">
-          <h3 id="formMainTitle" style="margin: 0 0 4px 0; font-size: 15px; color: var(--primary-blue);">Nueva Incidencia</h3>
-          <p id="issueTargetFile" style="font-size: 11px; color: var(--text-secondary);"></p>
+          <p id="issueTargetFile" style="display: none;"></p>
           
-          <div id="historyContainer" class="history-container">
-            <h4 style="margin: 0 0 8px 0; font-size: 11px; color: var(--text-secondary);">HISTORIAL DE CAMBIOS</h4>
-            <div id="historyTimeline" class="history-timeline"></div>
-          </div>
-
-          <label style="margin-top: 10px;">Fase Productiva:</label>
+          <label style="margin-top: 0;">Fase Productiva:</label>
           <div class="chip-group" id="faseChips">
             <button class="ui-chip active" data-val="estampacion">Estampación</button>
             <button class="ui-chip" data-val="chapisteria">Chapistería</button>
@@ -182,7 +206,7 @@
             <button class="ui-chip" data-val="closed" style="border-bottom: 3px solid #34a853;">Cerrado</button>
           </div>
 
-          <button class="btn-primary" id="saveIssue" style="font-size: 16px; padding: 14px;">Guardar Incidencia</button>
+          <button class="btn-primary" id="saveIssue" style="font-size: 16px; padding: 14px; background-color: #1a73e8;">Guardar Incidencia</button>
         </div>
 
       </div>
