@@ -46,13 +46,18 @@
         <div style="background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; max-width: 420px; width: 90%; border: 1px solid #e0e0e0;">
             <div style="font-size: 55px; margin-bottom: 15px; animation: bounce 2s infinite ease-in-out;">📥</div>
             <h2 style="margin: 0 0 10px 0; color: #1a73e8; font-size: 22px;">El visor 3D está vacío</h2>
-            <p style="color: #666; font-size: 14px; margin-bottom: 25px; line-height: 1.6;">Para empezar la inspección de calidad, debes cargar un modelo STL desde tu dispositivo o seleccionar una pieza de prueba.</p>
+            <p style="color: #666; font-size: 14px; margin-bottom: 20px; line-height: 1.6;">Para empezar la inspección de calidad, debes cargar un modelo STL desde tu dispositivo o seleccionar una pieza de prueba.</p>
+            
+            <img src="./img/LogoEmpresa.png" alt="Logo Empresa" style="height: 85px; object-fit: contain; margin-bottom: 25px; display: block; margin-left: auto; margin-right: auto; opacity: 0.9;">
+
             <button onclick="document.getElementById('modalCargaModelos').style.display = 'flex';" class="btn-primary" style="font-size: 16px; padding: 14px 28px; border-radius: 30px; box-shadow: 0 4px 12px rgba(26,115,232,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                 📂 Abrir Menú de Carga
             </button>
         </div>
     </div>
-    <style>@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }</style>  
+    <style>@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }</style>
+    
+    
   
     <div class="user-profile-floating interactive-element">
       <div class="user-avatar-circle" id="userAvatarLetter" title="Tu cuenta">U</div>
@@ -87,6 +92,12 @@
       <button id="addBtn" class="toolbar-btn" title="Añadir Incidencia">
          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
       </button>
+    
+      <button id="btnOpenTools" class="toolbar-btn" title="Herramientas">
+         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      </button>
+    
+    
     </div>
 
     <div class="side-panel interactive-element" id="functionalityPanel" style="z-index: 100;">
@@ -98,44 +109,57 @@
         <button class="menu-btn" style="width: 32px; height: 32px; margin: 0;" onclick="window.togglePanel()">✕</button>
       </div>
 
-      <div class="panel-content">
-        
-        <div class="tabs-header">
-          <button class="tab-btn active" onclick="window.switchTab(event, 'tabIncidencias')">📋 Lista</button>
-          <button class="tab-btn" onclick="window.switchTab(event, 'tabPiezas')">🧩 Piezas y Datos</button>
-        </div>
-
-        <div id="tabIncidencias" class="tab-content active">
-          <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-secondary);">INCIDENCIAS REGISTRADAS</h3>
+      <div class="panel-content" style="display: flex; flex-direction: column; height: 100%;">
+        <div style="padding: 16px; flex-grow: 1; overflow-y: auto;">
+          <h3 style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;">
+            INCIDENCIAS REGISTRADAS
+            <span style="font-size: 10px; background: #e8f0fe; color: #1a73e8; padding: 4px 8px; border-radius: 12px; font-weight: bold;">Lista Activa</span>
+          </h3>
           <div id="list"></div>
         </div>
-
-        <div id="tabPiezas" class="tab-content">
-          <h3 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-secondary);">MIS PIEZAS</h3>
-          <div id="fileListUI" class="files-container"></div>
-
-          <h3 style="margin: 20px 0 10px 0; font-size: 14px; color: var(--text-secondary);">EXPORTACIÓN / IMPORTACIÓN</h3>
-          <div style="display:flex; flex-wrap: wrap; gap:8px; margin-bottom:12px;">
-            <button class="btn-primary btn-inline" id="exportGlobalBtn" onclick="window.exportIssues()">Exportar Sesión</button>
-            <button class="btn-primary btn-inline" id="importBtn">Importar JSON</button>
-            <button class="btn-primary" onclick="window.exportToCSV()" style="background-color: #1e8e3e; margin-top: 10px;">📊 Exportar a EXCEL (CSV)</button>
-            <button class="btn-primary" onclick="window.generatePDF()" style="background-color: #d93025; margin-top: 10px;">📄 Generar PDF</button>
-            <input type="file" id="importInput" accept="application/json" style="display:none" />
-          </div>
-        </div>
         
-        <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid #eee; text-align: center; width: 100%; background: #fff;">
+        <div style="margin-top: auto; padding: 15px; border-top: 1px solid #eee; text-align: center; background: #fff;">
           <span style="font-size: 10px; color: #999; letter-spacing: 1px; font-weight: 500;">
-            <div id="btnOpenInfo" style="padding: 15px 0; cursor: pointer; color: #999; font-size: 10px;" onmouseover="this.style.color='#4285F4'" onmouseout="this.style.color='#999'" title="Ver información de la aplicación">
-              SUMATRA Q • RELEASE v1.7.0-STABLE ⓘ
+            <div id="btnOpenInfo" style="cursor: pointer; color: #999;" onmouseover="this.style.color='#4285F4'" onmouseout="this.style.color='#999'" title="Ver información de la aplicación">
+              SUMATRA Q • RELEASE v1.7.1-STABLE ⓘ
             </div>
           </span>
         </div>
+      </div> 
+    </div>
 
-      </div> </div> </div> <div id="lightbox" class="lightbox interactive-element">
-    <div class="lightbox-close" id="lightboxClose">&times;</div>
-    <img id="lightboxImg" class="lightbox-img" src="" alt="Ampliación" />
-  </div>
+    <div id="toolsModalOverlay" class="layers-modal-overlay">
+      <div class="info-modal-content interactive-element" style="max-width: 400px;">
+        <div class="info-modal-header" style="background-color: #fff; padding: 15px 20px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q" style="height: 26px; width: 26px; object-fit: contain; border-radius: 4px;">
+            <h2 style="margin:0; color:#333; font-size: 18px; font-weight: bold;">HERRAMIENTAS</h2>
+          </div>
+          <button id="btnCloseTools" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; transition: color 0.2s;" onmouseover="this.style.color='#e94335'" onmouseout="this.style.color='#999'">✕</button>
+        </div>
+        
+        <div class="info-modal-body" style="padding: 25px; background: #f8f9fa; display: flex; flex-direction: column; gap: 12px;">
+          <button class="btn-primary" onclick="window.generatePDF()" style="background-color: #d93025; font-size: 15px; padding: 14px; font-weight: bold; border-radius: 8px; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(217, 48, 37, 0.2); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+            📄 Generar PDF
+          </button>
+          
+          <button class="btn-primary" onclick="window.exportToCSV()" style="background-color: #1e8e3e; font-size: 15px; padding: 14px; font-weight: bold; border-radius: 8px; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(30, 142, 62, 0.2); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+            📊 Exportar a EXCEL (CSV)
+          </button>
+          
+          <button class="btn-primary" id="exportGlobalBtn" onclick="window.exportIssues()" style="background-color: #1a73e8; font-size: 15px; padding: 14px; font-weight: bold; border-radius: 8px; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(26, 115, 232, 0.2); margin-top: 10px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+            💾 Exportar Sesión
+          </button>
+          
+          <button class="btn-primary" onclick="document.getElementById('importInput').click()" style="background-color: #1a73e8; font-size: 15px; padding: 14px; font-weight: bold; border-radius: 8px; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(26, 115, 232, 0.2); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+            📂 Importar JSON
+          </button>
+          
+          <button id="importBtn" style="display:none;"></button>
+          <input type="file" id="importInput" accept="application/json" style="display:none" />
+        </div>
+      </div>
+    </div>
 
  <div id="historyModalOverlay" class="layers-modal-overlay">
     <div class="info-modal-content interactive-element" style="max-width: 550px; max-height: 90vh;">
@@ -354,32 +378,7 @@
     </div>
   </div>
 
-  <div id="modalCargaModelos" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
-    <div style="background: white; width: 320px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; font-family: 'Roboto', sans-serif;">
-      <div style="background: #1a73e8; color: white; padding: 15px; text-align: center;">
-        <h3 style="margin: 0; font-size: 16px;">Cargar Modelo 3D</h3>
-      </div>
-      <div style="padding: 20px; text-align: center;">
-        <button onclick="window.cargarDesdePC()" style="width: 100%; background: #fff; border: 2px solid #1a73e8; color: #1a73e8; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-bottom: 15px;">
-          📂 Explorar Dispositivo
-        </button>
-
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
-        <p style="margin: 0 0 10px 0; font-size: 11px; color: #666; font-weight: bold; text-transform: uppercase;">Piezas de Prueba (Demos)</p>
-
-        <div style="display: flex; flex-direction: column; gap: 5px;">
-          <button onclick="window.inyectarDemo('./demos/demo1.stl', 'demo1.stl')" style="width: 100%; background: #f1f3f4; border: none; padding: 10px; border-radius: 4px; cursor: pointer; color: #333; margin-bottom: 5px;">📦 Pieza Demo 1</button>
-          <button onclick="window.inyectarDemo('./demos/demo2.stl', 'demo2.stl')" style="width: 100%; background: #f1f3f4; border: none; padding: 10px; border-radius: 4px; cursor: pointer; color: #333; margin-bottom: 5px;">📦 Pieza Demo 2</button>
-          <button onclick="window.inyectarDemo('./demos/demo3.stl', 'demo3.stl')" style="width: 100%; background: #f1f3f4; border: none; padding: 10px; border-radius: 4px; cursor: pointer; color: #333;">📦 Pieza Demo 3</button>
-        </div>
-      </div>
-      <div style="background: #f8f9fa; padding: 10px; text-align: center; border-top: 1px solid #eee;">
-        <button onclick="window.cerrarMenuCarga()" style="background: none; border: none; color: #d93025; font-weight: bold; cursor: pointer; font-size: 14px;">Cerrar</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   
   <script src="js/voz.js"></script>
   
@@ -438,50 +437,47 @@
         filterPanel.addEventListener('click', (e) => { if (e.target === filterPanel) filterPanel.classList.remove('active'); });
     }
 
-    
- // --- NUEVO: LÓGICA DE PESTAÑAS (TABS) ---
-    window.switchTab = function(event, tabId) {
-        // Ocultamos todos los contenidos de las pestañas
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        
-        // Quitamos el color activo de todos los botones
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        
-        // Mostramos el contenido que nos piden y marcamos el botón pulsado
-        document.getElementById(tabId).classList.add('active');
-        event.currentTarget.classList.add('active');
-    };   
+    // Modal de Herramientas
+    const btnOpenTools = document.getElementById('btnOpenTools');
+    const btnCloseTools = document.getElementById('btnCloseTools');
+    const toolsModal = document.getElementById('toolsModalOverlay');
+
+    if (btnOpenTools && btnCloseTools && toolsModal) {
+        btnOpenTools.addEventListener('click', () => toolsModal.classList.add('active'));
+        btnCloseTools.addEventListener('click', () => toolsModal.classList.remove('active'));
+        toolsModal.addEventListener('click', (e) => { if (e.target === toolsModal) toolsModal.classList.remove('active'); });
+    }
   </script>
 
-  
-  <div id="modalCargaModelos" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
-    <div style="background: white; width: 320px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; font-family: Arial, sans-serif;">
+  <div id="modalCargaModelos" class="interactive-element" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
+    <div style="background: white; width: 340px; max-height: 90vh; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; font-family: 'Roboto', Arial, sans-serif;">
       
-      <div style="background: #1a73e8; color: white; padding: 15px; text-align: center;">
-        <h3 style="margin: 0; font-size: 16px;">Cargar Modelo 3D</h3>
+      <div style="background: #1a73e8; color: white; padding: 15px; text-align: center; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; font-size: 16px; flex-grow: 1;">Gestor de Modelos 3D</h3>
+        <button onclick="document.getElementById('modalCargaModelos').style.display='none'" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;" title="Cerrar">✕</button>
       </div>
 
-      <div style="padding: 20px; text-align: center;">
-        <button onclick="window.cargarDesdePC()" style="width: 100%; background: #fff; border: 2px solid #1a73e8; color: #1a73e8; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-bottom: 15px;">
+      <div style="padding: 20px; overflow-y: auto; flex-grow: 1;">
+        
+        <button onclick="document.getElementById('fileInput').click(); document.getElementById('modalCargaModelos').style.display='none';" style="width: 100%; background: #fff; border: 2px solid #1a73e8; color: #1a73e8; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 15px; transition: background 0.2s; font-size: 14px;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='#fff'">
           📂 Explorar Dispositivo
         </button>
 
         <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
-        <p style="margin: 0 0 10px 0; font-size: 12px; color: #666; font-weight: bold;">ARCHIVOS DEMO (PRUEBAS)</p>
+        <p style="margin: 0 0 10px 0; font-size: 11px; color: #888; font-weight: bold; text-transform: uppercase; text-align: center;">Piezas de Prueba (Demos)</p>
 
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          <button onclick="window.inyectarDemo('./demos/DEMO_SUMATRAQ_1_STL_3D.stl', 'Demo_1.stl')" class="demo-btn">📦 Pieza Demo 1</button>
-          <button onclick="window.inyectarDemo('./demos/DEMO_SUMATRAQ_2_STL_3D.stl', 'Demo_2.stl')" class="demo-btn">📦 Pieza Demo 2</button>
-          <button onclick="window.inyectarDemo('./demos/DEMO_SUMATRAQ_3_STL_3D.stl', 'Demo_3.stl')" class="demo-btn">📦 Pieza Demo 3</button>
+          <button onclick="if(window.inyectarDemo){ window.inyectarDemo('./demos/DEMO_SUMATRAQ_1_STL_3D.stl', 'Demo_1.stl'); document.getElementById('modalCargaModelos').style.display='none'; }" style="width: 100%; background: #f1f3f4; border: none; padding: 12px; border-radius: 6px; cursor: pointer; color: #333; font-size: 13px; font-weight: 500;">📦 Pieza Demo 1</button>
+          <button onclick="if(window.inyectarDemo){ window.inyectarDemo('./demos/DEMO_SUMATRAQ_2_STL_3D.stl', 'Demo_2.stl'); document.getElementById('modalCargaModelos').style.display='none'; }" style="width: 100%; background: #f1f3f4; border: none; padding: 12px; border-radius: 6px; cursor: pointer; color: #333; font-size: 13px; font-weight: 500;">📦 Pieza Demo 2</button>
+          <button onclick="if(window.inyectarDemo){ window.inyectarDemo('./demos/DEMO_SUMATRAQ_3_STL_3D.stl', 'Demo_3.stl'); document.getElementById('modalCargaModelos').style.display='none'; }" style="width: 100%; background: #f1f3f4; border: none; padding: 12px; border-radius: 6px; cursor: pointer; color: #333; font-size: 13px; font-weight: 500;">📦 Pieza Demo 3</button>
         </div>
-      </div>
 
-      <div style="background: #f8f9fa; padding: 10px; text-align: center; border-top: 1px solid #eee;">
-        <button onclick="window.cerrarMenuCarga()" style="background: none; border: none; color: #d93025; font-weight: bold; cursor: pointer;">Cancelar</button>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0 15px 0;">
+        <p style="margin: 0 0 10px 0; font-size: 11px; color: #888; font-weight: bold; text-transform: uppercase; text-align: center;">Piezas Cargadas en Escena</p>
+        
+        <div id="fileListUI" class="files-container" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">
+            </div>
+
       </div>
     </div>
   </div>

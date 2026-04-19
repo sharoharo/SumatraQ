@@ -1,44 +1,45 @@
-# 🏭 Sumatra Q - Visor CAD & Control de Calidad 3D
+# 🏭 Sumatra Q - Plataforma CAD de Inspección y Control de Calidad 3D
 
 ![Versión](https://img.shields.io/badge/version-1.7.0--STABLE-blue.svg)
 ![Three.js](https://img.shields.io/badge/Three.js-r169-black?logo=three.js)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES6%20Modules-f7df1e?logo=javascript&logoColor=black)
+![Google Workspace](https://img.shields.io/badge/Backend-Google_Apps_Script-34A853?logo=google)
 
-**Sumatra Q** es una plataforma web interactiva diseñada para la inspección, trazabilidad y control de calidad de piezas industriales. Permite a los operarios e inspectores cargar modelos 3D (STL), marcar defectos directamente sobre la geometría y sincronizar los datos en tiempo real con una base de datos en la nube (Google Workspace).
+**Sumatra Q** es una solución de software industrial web diseñada para la inspección visual, trazabilidad y control de calidad sobre geometría 3D. Permite a los operarios cargar modelos CAD (STL), geolocalizar defectos directamente sobre la malla tridimensional y mantener un registro inmutable sincronizado en la nube mediante un backend Serverless.
 
-## ✨ Novedades en la versión v1.7.0 (The Industrial & J.A.R.V.I.S Update)
-Esta versión marca la madurez de la aplicación hacia un estándar corporativo, introduciendo herramientas avanzadas de auditoría y asistencia:
-* **Asistente de Voz Integrado:** Feedback auditivo nativo que informa al operario del estado del sistema ("Incidencia guardada", "Filtros aplicados"), ideal para entornos industriales ruidosos o uso con guantes.
-* **Filtro Universal Cruzado:** Un nuevo motor centralizado permite cruzar Estados, Prioridades, Rangos de Fechas, Usuarios y Tipos de Falla de forma instantánea.
-* **PDFs Dinámicos con Autodiagnóstico:** El generador de reportes ahora mueve la cámara 3D de forma autónoma, tomando capturas exactas de cada defecto y dibujando etiquetas estilo CAD en tiempo real. Además, firma el documento leyendo el Rol y Email del inspector desde Drive.
-* **Editor de Recortes Fotográficos:** Integración de herramienta de "cropping" in-app para aislar visualmente el defecto en las fotos de evidencia, optimizando el tamaño en la nube.
-* **Modo Demo Integrado:** Nuevo selector para cargar piezas de prueba preconcebidas y evaluar la herramienta rápidamente.
+---
 
-## 🚀 Características Principales
+## 🚀 Novedades en la versión v1.7.1 (The Enterprise Update)
 
-- 🧊 **Visualización 3D Multi-Pieza:** Carga dinámica de múltiples archivos `.stl` simultáneos con controles de cámara, isométricas y vistas (Sombreado, Aristas, Alambre).
-- 📍 **Marcadores Interactivos (Raycasting):** Creación de chinchetas 3D ancladas a las coordenadas exactas de la malla con detección de colisiones.
-- 🎙️ **Zero-Typing & Audio Feedback:** Búsqueda por lenguaje natural y respuesta de voz del sistema para operar la app sin distracciones visuales.
-- 📸 **Evidencia Visual & Cropping:** Captura de fotos, recorte (crop) en el cliente y guardado optimizado en Base64.
-- 🗄️ **Backend Serverless (Google Apps Script):** Conexión directa con Google Sheets (Base de Datos) y Google Drive (Almacenamiento de imágenes).
-- 📊 **Trazabilidad Inmutable:** Historial de cambios por usuario y fecha sin sobreescribir datos anteriores.
+Esta versión marca la transición de Sumatra Q hacia un estándar corporativo, priorizando la ergonomía de trabajo (UX), la arquitectura escalable y la Inteligencia Artificial:
+
+* **Arquitectura de Interfaz Desacoplada (Lectura vs. Escritura):** Implementación del patrón UX corporativo. Las incidencias existentes se abren en modo "Solo Lectura" (Historial inmutable), previniendo ediciones accidentales. La modificación requiere acceso explícito mediante un panel de actualización aislado.
+* **Gestor de Modelos 3D Centralizado:** Nuevo hub unificado para cargar archivos locales, gestionar modelos en escena y lanzar piezas de demostración, eliminando la saturación visual del panel principal.
+* **J.A.R.V.I.S (Inteligencia de Voz y NLP):** El sistema integra ahora un motor de reconocimiento de voz que cruza comandos naturales con la base de datos (Ej: *"Muéstrame las grietas urgentes de ayer"*), aplicando filtros multidimensionales de forma autónoma con feedback auditivo.
+* **Filtro Universal Cruzado (El Juez):** Nuevo motor centralizado (`filtros.js`) capaz de cruzar Estados, Prioridades, Usuarios, Fechas y Tipos de Falla leyendo directamente desde el origen de datos.
+* **Centro de Herramientas (⚙️):** Extracción de la lógica de reportes (PDF interactivos y CSV) a un modal de herramientas dedicado, limpiando el espacio de trabajo del operario.
+* **Marca Blanca (White-labeling):** Soporte dinámico para inyección de logotipo corporativo en el "Empty State" de la aplicación.
+
+---
 
 ## 📂 Arquitectura del Proyecto
 
-El Frontend está estructurado en Módulos ES6 para garantizar un mantenimiento limpio y escalable:
+El Frontend está estructurado mediante **Módulos ES6**, garantizando un mantenimiento ágil y separación de responsabilidades (SoC):
 
 ```text
 📁 / (Raíz)
- ├── index.html       # Interfaz principal (UI), Modales y Bottom Sheets
- ├── css/styles.css   # Estilos Material Design y Agile UX
+ ├── index.html       # UI Principal, Canvas 3D, Modales y Bottom Sheets
+ ├── css/styles.css   # Diseño Material, Responsive UI y animaciones
  └── js/
-     ├── app.js          # Orquestador principal y eventos DOM
-     ├── estado.js       # Almacenamiento global de variables (State Management)
-     ├── auth.js         # Lógica de Login y descarga de base de datos
-     ├── visor3d.js      # Motor Three.js (Cámaras, Luces, Renderizado)
-     ├── incidencias.js  # Lógica de Raycaster, Formularios y Filtros cruzados
-     ├── fotos.js        # Procesamiento, Cropper.js y galería de imágenes
-     ├── nube.js         # Comunicación Fetch (CORS bypass) con Backend
-     ├── exportador.js   # Generación de reportes PDF dinámicos y CSV
-     ├── cargador.js     # Lógica de importación de STLs locales y demos
-     └── voz.js          # Motor global de asistencia y síntesis de voz (Script síncrono)
+     ├── app.js          # Orquestador principal y enrutador de eventos DOM
+     ├── estado.js       # Store centralizado de la aplicación (State Management)
+     ├── auth.js         # Autenticación y puente de datos con Google Sheets
+     ├── visor3d.js      # Motor Gráfico (Cámaras, Luces, Renderizado Three.js)
+     ├── incidencias.js  # Raycaster, marcadores 3D y lógica de Modales (Read/Write)
+     ├── filtros.js      # Cerebro del Juez Universal de Filtrado Cruzado
+     ├── magiaVoz.js     # Motor NLP para procesamiento de comandos de voz
+     ├── fotos.js        # Procesamiento Base64 y galería de evidencias
+     ├── nube.js         # API Fetch (CORS bypass) para sincronización con Backend
+     ├── exportador.js   # Generador dinámico de reportes PDF y hojas CSV
+     ├── cargador.js     # Gestor de Modelos 3D e inyección de STLs
+     └── voz.js          # Módulo síncrono para síntesis de voz (Text-to-Speech)
