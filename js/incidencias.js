@@ -112,17 +112,26 @@ export function openNewIssueForm() {
   if(addBtn) addBtn.classList.remove('active');
 }
 
-// 🟢 Caso 2: Clic en Punto Existente -> Abre SOLO el Historial (Lectura)
+// 🟢 Caso 2: Clic en Punto Existente -> Abre Historial a PANTALLA COMPLETA
 export function selectMarker(marker){
   deselectMarker(); 
   State.selectedMarker = marker; 
-  marker.scale.set(2, 2, 2); 
+  
+  // 🔴 AUMENTAMOS LA ESFERA x4 PARA QUE DESTAQUE EN LA FOTO MÓVIL
+  marker.scale.set(8, 8, 8); 
   
   const issue = State.issues.find(i => i.id === marker.userData.issueId);
   
   if(issue){
     const historyIssueId = document.getElementById('historyIssueId');
     const historyTimeline = document.getElementById('historyTimeline');
+    const historyScreenshot = document.getElementById('historyScreenshot');
+
+    // 📸 MAGIA: Capturar foto 3D de la pieza en tiempo real
+    if(historyScreenshot && State.renderer) {
+        State.renderer.render(State.scene, State.camera); 
+        historyScreenshot.src = State.renderer.domElement.toDataURL('image/jpeg', 0.8);
+    }
 
     if (historyIssueId) {
         historyIssueId.innerText = `# ID: ${issue.id} - ${issue.type || 'Sin tipo'}`;
@@ -143,39 +152,44 @@ export function selectMarker(marker){
 
                 let photosHtml = '';
                 if (h.photos && h.photos.length > 0) {
-                    photosHtml = `<div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">`;
+                    // SE MANTIENE TU LÓGICA DE FOTOS, pero aumentamos tamaño a 80px y el gap a 10px
+                    photosHtml = `<div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">`;
                     h.photos.forEach(photo => {
-                        photosHtml += `<img src="${photo.dataUrl}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onclick="window.openLightbox('${photo.dataUrl}')" title="Ver imagen ampliada">`;
+                        photosHtml += `<img src="${photo.dataUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="window.openLightbox('${photo.dataUrl}')" title="Ver imagen ampliada">`;
                     });
                     photosHtml += `</div>`;
                 }
 
                 const entryDiv = document.createElement('div');
                 entryDiv.className = 'history-entry';
+                entryDiv.style.marginBottom = '30px'; // Más separación entre eventos para lectura fácil
+                
+                // Mantenemos tu estructura HTML pero con fuentes más grandes (13px y 14px) y diseño de Dashboard
                 entryDiv.innerHTML = `
-                    <div class="history-dot" style="background-color: ${dotColor}; border-color: ${dotColor}"></div>
-                    <div class="history-date">${dateStr} - 👤 ${h.user || 'Anónimo'}</div>
-                    <div class="history-comment" style="font-weight: bold; font-size: 11px; text-transform: uppercase;">
+                    <div class="history-dot" style="background-color: ${dotColor}; border-color: ${dotColor}; width: 14px; height: 14px; left: -24px; top: 2px;"></div>
+                    <div class="history-date" style="font-size: 13px;">${dateStr} - 👤 ${h.user || 'Anónimo'}</div>
+                    <div class="history-comment" style="font-weight: bold; font-size: 14px; text-transform: uppercase; margin-top: 6px;">
                         Estado: ${h.status} | Fase: ${h.fase || 'N/A'}
                     </div>
-                    ${h.comment ? `<div class="history-comment" style="color: #444; font-style: italic;">💬 "${h.comment}"</div>` : ''}
+                    ${h.comment ? `<div class="history-comment" style="color: #444; font-style: italic; background: #f4f7f6; padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 14px;">💬 "${h.comment}"</div>` : ''}
                     ${photosHtml} `;
                 historyTimeline.appendChild(entryDiv);
             });
         } else {
-            historyTimeline.innerHTML = '<p style="font-size: 12px; color: #888;">No hay historial registrado.</p>';
+            historyTimeline.innerHTML = '<p style="font-size: 14px; color: #888;">No hay historial registrado.</p>';
         }
     }
 
-    // 🏆 ¡MAGIA UX! ABRIMOS SOLO EL MODAL DE HISTORIAL
+    // 🏆 ABRIMOS SOLO EL MODAL DE HISTORIAL A PANTALLA COMPLETA
     const issueModal = document.getElementById('issueModalOverlay');
     if (issueModal) issueModal.classList.remove('active');
     
-    document.getElementById('historyModalOverlay').classList.add('active');
+    const historyModal = document.getElementById('historyModalOverlay');
+    if (historyModal) historyModal.classList.add('active');
   }
 }
 
-// 🟢 Caso 3: Clic en botón "Actualizar" desde el historial
+// 🟢 Caso 3: Clic en botón "Actualizar" desde el historial (INTACTO)
 export function editExistingIssue() {
   if(!State.selectedMarker) return;
   const issue = State.issues.find(i => i.id === State.selectedMarker.userData.issueId);
@@ -205,7 +219,7 @@ export function editExistingIssue() {
 // Lo exponemos al window para el HTML
 window.editExistingIssue = editExistingIssue;
 
-// 🟢 Cierre general
+// 🟢 Cierre general (INTACTO)
 export function deselectMarker() { 
   if(State.selectedMarker) State.selectedMarker.scale.set(1,1,1);
   State.selectedMarker = null; 
@@ -215,6 +229,64 @@ export function deselectMarker() {
   if (modalHistory) modalHistory.classList.remove('active');
 }
 window.deselectMarker = deselectMarker;
+
+// ==========================================
+// 📸 LIGHTBOX UNIVERSAL (A prueba de Z-Index)
+// ==========================================
+window.openLightbox = function(imageSrc) {
+    // 1. Destruimos cualquier lightbox anterior atascado
+    const existing = document.getElementById('sumatraLightbox');
+    if (existing) existing.remove();
+
+    // 2. Creamos el fondo oscuro dinámicamente
+    const lightbox = document.createElement('div');
+    lightbox.id = 'sumatraLightbox';
+    lightbox.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+        background: rgba(0,0,0,0.85); z-index: 999999; display: flex; 
+        justify-content: center; align-items: center; cursor: zoom-out; 
+        backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.2s ease;
+    `;
+    
+    // 3. Creamos la imagen en grande
+    const img = document.createElement('img');
+    img.src = imageSrc;
+    img.style.cssText = `
+        max-width: 90vw; max-height: 90vh; border-radius: 8px; 
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5); object-fit: contain; 
+        transform: scale(0.9); transition: transform 0.2s ease;
+    `;
+    
+    // 4. Botón de cerrar (X)
+    const closeBtn = document.createElement('div');
+    closeBtn.innerHTML = '✕';
+    closeBtn.style.cssText = `
+        position: absolute; top: 25px; right: 35px; color: white; 
+        font-size: 35px; cursor: pointer; font-family: sans-serif; 
+        opacity: 0.8; transition: opacity 0.2s;
+    `;
+    closeBtn.onmouseover = () => closeBtn.style.opacity = '1';
+    closeBtn.onmouseout = () => closeBtn.style.opacity = '0.8';
+
+    // 5. Ensamblamos y mostramos en pantalla
+    lightbox.appendChild(img);
+    lightbox.appendChild(closeBtn);
+    document.body.appendChild(lightbox);
+
+    // Arrancamos la animación suave
+    requestAnimationFrame(() => {
+        lightbox.style.opacity = '1';
+        img.style.transform = 'scale(1)';
+    });
+
+    // Destruimos el modal al hacer clic en cualquier lado
+    lightbox.onclick = () => {
+        lightbox.style.opacity = '0';
+        img.style.transform = 'scale(0.9)';
+        setTimeout(() => lightbox.remove(), 200);
+    };
+};
+
 
 /* ==========================================
    3. GUARDADO, ELIMINACIÓN Y RENDERIZADO

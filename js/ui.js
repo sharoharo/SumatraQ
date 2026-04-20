@@ -12,17 +12,7 @@ export function initUI() {
     }
   };
 
-  // Abre el visor de fotos en pantalla completa
-  window.openLightbox = function(src) {
-    document.getElementById('lightboxImg').src = src;
-    document.getElementById('lightbox').classList.add('active');
-  };
-
-  // Cierra el visor de fotos al pulsar la 'X'
-  const lightboxClose = document.getElementById('lightboxClose');
-  if(lightboxClose) {
-    lightboxClose.onclick = () => {
-      document.getElementById('lightbox').classList.remove('active');
-    };
-  }
+  // 🗑️ NOTA DE DESARROLLO: 
+  // La función antigua de window.openLightbox y lightboxClose se han eliminado de aquí.
+  // El nuevo "Lightbox Universal" se inyecta dinámicamente desde incidencias.js
 }
