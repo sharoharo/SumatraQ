@@ -118,7 +118,7 @@ export function selectMarker(marker){
   State.selectedMarker = marker; 
   
   // 🔴 AUMENTAMOS LA ESFERA x4 PARA QUE DESTAQUE EN LA FOTO MÓVIL
-  marker.scale.set(8, 8, 8); 
+  marker.scale.set(5, 5, 5); 
   
   const issue = State.issues.find(i => i.id === marker.userData.issueId);
   
@@ -554,3 +554,88 @@ export const generatePDF = function() {
 };
 
  deselectMarker();
+
+ // ==========================================
+// 📸 CAPTURA 3D INTERNA (Evita salir de la app)
+// ==========================================
+window.take3DScreenshot = function(e) {
+    if (e) e.preventDefault(); // Evitamos que el formulario se envíe por error
+    
+    if (State.renderer && State.scene && State.camera) {
+        // 1. Ocultamos temporalmente el modal para que no estorbe en la foto
+        const modal = document.getElementById('issueModalOverlay');
+        const wasActive = modal ? modal.classList.contains('active') : false;
+        if (wasActive) modal.style.opacity = '0'; // Lo hacemos transparente un milisegundo
+
+        // 2. Forzamos un renderizado limpio
+        State.renderer.render(State.scene, State.camera);
+        
+        // 3. Extraemos la imagen de alta calidad
+        const dataUrl = State.renderer.domElement.toDataURL('image/jpeg', 0.9);
+        
+        // 4. Restauramos el modal
+        if (wasActive) modal.style.opacity = '1';
+
+        // 5. Añadimos la foto a nuestro array de evidencias
+        State.currentPhotos.push({ dataUrl: dataUrl });
+        
+        // 6. Refrescamos la cuadrícula para que el usuario vea la foto al instante
+        if (typeof renderPhotoGrid === 'function') renderPhotoGrid();
+        
+        // (Opcional) Feedback de voz
+        if (window.asistenteVoz) window.asistenteVoz("Vista 3D capturada con éxito.");
+    } else {
+        console.warn("No se pudo hacer la captura: el visor 3D no está inicializado.");
+    }
+};
+
+// ==========================================
+// 📋 LEER DEL PORTAPAPELES (Recortes de CATIA/Windows/Móvil)
+// ==========================================
+window.pasteFromClipboard = async function(e) {
+    if(e) e.preventDefault();
+    try {
+        const items = await navigator.clipboard.read();
+        for (let item of items) {
+            const imageTypes = item.types.filter(type => type.startsWith('image/'));
+            if (imageTypes.length > 0) {
+                const blob = await item.getType(imageTypes[0]);
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    State.currentPhotos.push({ dataUrl: event.target.result });
+                    if (typeof renderPhotoGrid === 'function') renderPhotoGrid();
+                };
+                reader.readAsDataURL(blob);
+                return; 
+            }
+        }
+        alert("⚠️ No hay ninguna imagen copiada en tu portapapeles. ¡Copia un recorte primero!");
+    } catch (err) {
+        console.error("Error al leer el portapapeles:", err);
+        alert("⚠️ Permiso denegado o función no soportada en este dispositivo. Intenta usar Ctrl+V o presionar y mantener pulsado para pegar.");
+    }
+};
+
+// ==========================================
+// ⌨️ ATAJO DE TECLADO: Ctrl+V UNIVERSAL
+// ==========================================
+document.addEventListener('paste', (e) => {
+    // Solo actuamos si el formulario de incidencias está abierto
+    const modal = document.getElementById('issueModalOverlay');
+    if (!modal || !modal.classList.contains('active')) return;
+
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+            const blob = items[i].getAsFile();
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                State.currentPhotos.push({ dataUrl: event.target.result });
+                if (typeof renderPhotoGrid === 'function') renderPhotoGrid();
+            };
+            reader.readAsDataURL(blob);
+            e.preventDefault(); // Evitamos que pegue el texto de la imagen en un input
+            return;
+        }
+    }
+});

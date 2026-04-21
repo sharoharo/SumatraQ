@@ -229,10 +229,13 @@
           <label>Comentario rápido:</label>
           <input type="text" id="issueComment" placeholder="Ej: Falta punto, poro, raya..." style="padding: 12px; font-size: 14px;" />
           
-          <label>Evidencia Visual:</label>
-          <div style="display:flex; gap:8px; margin-bottom:12px;">
-            <button class="btn-primary btn-inline" id="btnCamera" style="flex: 1; display:flex; justify-content:center; align-items:center; gap:5px; background-color: #34a853;">📷 Tomar Foto</button>
-            <button class="btn-primary btn-inline" id="btnGallery" style="flex: 1; display:flex; justify-content:center; align-items:center; gap:5px; background-color: #5f6368;">🖼️ Subir</button>
+          <label>Evidencia Visual (Soporta Ctrl+V):</label>
+          <div style="display:flex; flex-wrap: wrap; gap:6px; margin-bottom:12px;">
+            <button class="btn-primary btn-inline" id="btnCamera" style="flex: 1; min-width: 80px; background-color: #34a853; font-size: 13px; padding: 10px;">📷 Cámara</button>
+            <button class="btn-primary btn-inline" id="btnGallery" style="flex: 1; min-width: 80px; background-color: #5f6368; font-size: 13px; padding: 10px;">🖼️ Subir</button>
+            <button class="btn-primary btn-inline" onclick="window.take3DScreenshot(event)" style="flex: 1; min-width: 80px; background-color: #1a73e8; font-size: 13px; padding: 10px;">👁️ 3D</button>
+            
+            <button class="btn-primary btn-inline" onclick="window.pasteFromClipboard(event)" style="flex: 1; min-width: 80px; background-color: #fbbc04; color: #333; font-size: 13px; padding: 10px; border: 1px solid #e0a800;" title="Pega una imagen de otro programa (CATIA, Mail...)">📋 Pegar</button>
           </div>
           <input type="file" id="inputGallery" accept="image/*" style="display:none" />
           <input type="file" id="inputCamera" accept="image/*" capture="environment" style="display:none" />
