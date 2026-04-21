@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { State, CONFIG } from './estado.js';
 import { animateCamera } from './visor3d.js';
-import { saveIssueToCloud } from './nube.js';
+import { saveIssueToCloud, deleteIssueFromCloud } from './nube.js';
 import { renderPhotoGrid } from './fotos.js';
 import { passesFilters, populateFilterSelects } from './filtros.js';
 
@@ -141,7 +141,13 @@ export function selectMarker(marker){
         historyTimeline.innerHTML = ''; 
         if (issue.history && issue.history.length > 0) {
             const reversedHistory = [...issue.history].reverse();
-            reversedHistory.forEach(h => {
+            
+            // 🚨 CAMBIO 1: Añadimos 'reversedIndex' al bucle
+            reversedHistory.forEach((h, reversedIndex) => {
+                
+                // 🚨 CAMBIO 2: Calculamos la posición real de este comentario en la memoria
+                const originalIndex = issue.history.length - 1 - reversedIndex;
+
                 const dateObj = new Date(h.date);
                 const dateStr = isNaN(dateObj.getTime()) ? h.date : dateObj.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
 
@@ -152,7 +158,7 @@ export function selectMarker(marker){
 
                 let photosHtml = '';
                 if (h.photos && h.photos.length > 0) {
-                    // SE MANTIENE TU LÓGICA DE FOTOS, pero aumentamos tamaño a 80px y el gap a 10px
+                    // SE MANTIENE TU LÓGICA DE FOTOS
                     photosHtml = `<div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">`;
                     h.photos.forEach(photo => {
                         photosHtml += `<img src="${photo.dataUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="window.openLightbox('${photo.dataUrl}')" title="Ver imagen ampliada">`;
@@ -162,17 +168,56 @@ export function selectMarker(marker){
 
                 const entryDiv = document.createElement('div');
                 entryDiv.className = 'history-entry';
-                entryDiv.style.marginBottom = '30px'; // Más separación entre eventos para lectura fácil
-                
-                // Mantenemos tu estructura HTML pero con fuentes más grandes (13px y 14px) y diseño de Dashboard
+                entryDiv.style.marginBottom = '30px'; 
+                entryDiv.style.position = 'relative'; 
+
+              // --- LÓGICA DE PERMISOS SÚPER BLINDADA ---
+                const usuarioActual = (State.userName || "").trim().toLowerCase();
+                const autorComentario = (h.user || "").trim().toLowerCase();
+
+                // 1. EL TRUCO NINJA
+                const tieneNombreAdmin = usuarioActual.includes("admin");
+
+                // 2. Lista de respaldo
+                let listaAdmins = [
+                    "admin", 
+                    "sharoharo", 
+                    "sergio haro"
+                ]; 
+
+                // 3. Intentamos leer la BD
+                if (State.usuarios && Array.isArray(State.usuarios)) {
+                    State.usuarios.forEach(u => {
+                        if (u.Rol && u.Rol.trim().toLowerCase() === 'admin' && u.Nombre) {
+                            listaAdmins.push(u.Nombre.trim().toLowerCase());
+                        }
+                    });
+                }
+
+                // 4. Verificaciones de poder
+                const esAdmin = tieneNombreAdmin || listaAdmins.includes(usuarioActual);
+                const esDueño = usuarioActual === autorComentario && usuarioActual !== "anónimo";
+
+                // 5. Decisión final
+                const puedeBorrar = esAdmin || esDueño;
+
+                // 🚨 CAMBIO 3: Le pasamos el ${originalIndex} al onclick del botón
+                const trashBtnHTML = puedeBorrar ? 
+                    `<button onclick="window.deleteHistoryEntry('${issue.id}', ${originalIndex}, '${h.date}')" 
+                            style="position: absolute; right: 0; top: 0; background: none; border: none; font-size: 18px; cursor: pointer; color: #d93025; padding: 5px;" 
+                            title="Borrar esta actualización">🗑️</button>` 
+                    : '';
+
                 entryDiv.innerHTML = `
+                    ${trashBtnHTML}
                     <div class="history-dot" style="background-color: ${dotColor}; border-color: ${dotColor}; width: 14px; height: 14px; left: -24px; top: 2px;"></div>
-                    <div class="history-date" style="font-size: 13px;">${dateStr} - 👤 ${h.user || 'Anónimo'}</div>
+                    <div class="history-date" style="font-size: 13px; padding-right: 30px;">${dateStr} - 👤 ${h.user || 'Anónimo'}</div>
                     <div class="history-comment" style="font-weight: bold; font-size: 14px; text-transform: uppercase; margin-top: 6px;">
                         Estado: ${h.status} | Fase: ${h.fase || 'N/A'}
                     </div>
                     ${h.comment ? `<div class="history-comment" style="color: #444; font-style: italic; background: #f4f7f6; padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 14px;">💬 "${h.comment}"</div>` : ''}
                     ${photosHtml} `;
+
                 historyTimeline.appendChild(entryDiv);
             });
         } else {
@@ -291,53 +336,76 @@ window.openLightbox = function(imageSrc) {
 /* ==========================================
    3. GUARDADO, ELIMINACIÓN Y RENDERIZADO
    ========================================== */
-export function deleteSelectedIssue() {
+export async function deleteSelectedIssue() {
   if(!State.selectedMarker) return;
-  const seguro = confirm("⚠️ ¿Estás seguro de que deseas eliminar esta incidencia?");
+  const seguro = confirm("⚠️ ¿Estás seguro de que deseas eliminar esta incidencia de forma permanente?");
   if (!seguro) return; 
 
   const id = State.selectedMarker.userData.issueId;
-  State.issues = State.issues.filter(i => i.id !== id);
+  const markerToRemove = State.selectedMarker;
   
-  State.scene.remove(State.selectedMarker); 
-  if(State.selectedMarker.geometry) State.selectedMarker.geometry.dispose();
-  if(State.selectedMarker.material) State.selectedMarker.material.dispose();
+  // 1. Borramos de la memoria RAM (Interfaz limpia al instante)
+  State.issues = State.issues.filter(i => i.id !== id);
+  State.scene.remove(markerToRemove); 
+  if(markerToRemove.geometry) markerToRemove.geometry.dispose();
+  if(markerToRemove.material) markerToRemove.material.dispose();
   
   deselectMarker(); 
   renderIssues();
+
+  // 2. ☁️ Mandamos la orden de destrucción a Google Sheets
+  try {
+    if (window.asistenteVoz) window.asistenteVoz("Eliminando incidencia de la base de datos...");
+    await deleteIssueFromCloud(id);
+    if (window.asistenteVoz) window.asistenteVoz("Incidencia eliminada definitivamente.");
+  } catch (error) {
+    console.error("Error al borrar en la nube:", error);
+    alert("⚠️ Se borró de la pantalla, pero hubo un error de conexión al intentar borrarla de Google Sheets.");
+  }
 }
 
 export async function saveIssueFn() {
   const btn = document.getElementById('saveIssue');
   const originalText = btn?.innerText;
   
-  const currentStatus = getActiveChip('statusChips');
-  const currentPriority = getActiveChip('priorityChips');
-  const currentFase = getActiveChip('faseChips');
-  const currentComment = document.getElementById('issueComment').value;
-  const currentType = document.getElementById('issueType').value;
+  // Protegemos contra valores nulos asegurando strings vacíos si no hay datos
+  const currentStatus = getActiveChip('statusChips') || 'open';
+  const currentPriority = getActiveChip('priorityChips') || 'media';
+  const currentFase = getActiveChip('faseChips') || 'estampacion';
+  const currentComment = document.getElementById('issueComment').value || '';
+  const currentType = document.getElementById('issueType')?.value || 'Sin clasificar';
 
+  // 1. Estructura maestra del momento exacto del guardado
   let issueUpdateData = {
     status: currentStatus, priority: currentPriority, fase: currentFase,
     comment: currentComment, date: new Date().toISOString(),
-    user: State.userName || "Anónimo", photos: JSON.parse(JSON.stringify(State.currentPhotos))
+    user: State.userName || "Anónimo", photos: JSON.parse(JSON.stringify(State.currentPhotos || []))
   };
 
   let issueToUpload = null;
 
   if (State.selectedMarker && State.issues.find(i => i.id === State.selectedMarker.userData.issueId)) {
+    // 🔄 CASO A: ACTUALIZACIÓN DE UNA INCIDENCIA EXISTENTE
     const issue = State.issues.find(i => i.id === State.selectedMarker.userData.issueId);
-    issue.status = currentStatus; issue.priority = currentPriority;
-    issue.fase = currentFase; issue.comment = currentComment;
-    if(currentType) issue.type = currentType;
+    
+    // 🚨 FIX CRÍTICO: Actualizamos explícitamente TODAS las variables raíz para que Sheets las vea
+    issue.status = currentStatus; 
+    issue.priority = currentPriority;
+    issue.fase = currentFase; 
+    issue.comment = currentComment;
+    issue.type = currentType;
+    issue.date = issueUpdateData.date;       // <-- Antes esto se perdía
+    issue.user = issueUpdateData.user;       // <-- Antes esto se perdía
+    issue.photos = issueUpdateData.photos;   // <-- Antes la foto no subía en las actualizaciones
     
     if (!issue.history) issue.history = [];
     issue.history.push({ ...issueUpdateData });
     issueToUpload = issue;
   } else {
+    // 🆕 CASO B: CREACIÓN DE UNA INCIDENCIA NUEVA
     const safeId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
     const newIssue = {
-      id: safeId, fileName: State.targetFileName,
+      id: safeId, fileName: State.targetFileName || 'Pieza_Desconocida',
       x: State.currentPoint.x, y: State.currentPoint.y, z: State.currentPoint.z,
       type: currentType, ...issueUpdateData, history: [{ ...issueUpdateData }]
     };
@@ -348,19 +416,24 @@ export async function saveIssueFn() {
   renderIssues(); 
   deselectMarker(); 
 
+  // 2. Proceso de subida a la nube bloqueando el botón (Evita duplicados)
   try {
     if (btn) { btn.innerText = "⏳ Subiendo..."; btn.disabled = true; }
     await saveIssueToCloud(issueToUpload);
-    if (window.asistenteVoz) window.asistenteVoz("Incidencia guardada correctamente.");
+    if (window.asistenteVoz) window.asistenteVoz("Incidencia guardada correctamente en la nube.");
     alert("✅ Guardado correctamente");
   } catch (error) {
-    if (window.asistenteVoz) window.asistenteVoz("Error al guardar en la nube.");
+    console.error("Error de subida:", error);
+    if (window.asistenteVoz) window.asistenteVoz("Error de conexión al guardar.");
     alert("❌ Error de conexión al guardar."); 
   } finally {
     if (btn) { btn.innerText = originalText; btn.disabled = false; }
   }
 }
 
+// ==========================================
+// 🔴 RESTAURACIÓN: FUNCIONES DE RENDERIZADO 🔴
+// ==========================================
 export function renderIssues() {
   const toRemove = []; 
   State.scene.traverse(obj => { if(obj.userData && obj.userData.marker) toRemove.push(obj); });
@@ -422,6 +495,7 @@ export function renderIssueListUI() {
     list.appendChild(card);
   });
 }
+
 // ==========================================
 // 📄 GENERACIÓN DE REPORTE PDF (ADAPTADO AL JUEZ)
 // ==========================================
@@ -639,3 +713,41 @@ document.addEventListener('paste', (e) => {
         }
     }
 });
+
+// ==========================================
+// 🗑️ BORRADO PARCIAL (Modo Francotirador)
+// ==========================================
+window.deleteHistoryEntry = async function(issueId, arrayIndex, dateString) {
+    const seguro = confirm("⚠️ ¿Borrar este estado del historial? Esta acción no se puede deshacer.");
+    if (!seguro) return;
+
+    // 1. Lo borramos de la memoria local usando su posición exacta
+    const issue = State.issues.find(i => i.id === issueId);
+    if (issue && issue.history && issue.history[arrayIndex]) {
+        // Splice arranca EXACTAMENTE 1 elemento en esa posición, imposible borrar duplicados
+        issue.history.splice(arrayIndex, 1); 
+        
+        if (issue.history.length === 0) {
+            deleteSelectedIssue(); // Si vaciamos el historial, se borra la chincheta entera
+            return;
+        } else {
+            selectMarker(State.selectedMarker); // Refrescamos pantalla
+        }
+    }
+
+    // 2. Mandamos la orden a Google Sheets
+    try {
+        await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: 'delete_history_row', 
+                id: issueId, 
+                date: dateString 
+            })
+        });
+    } catch (err) {
+        console.error("Error borrando el historial de la nube:", err);
+    }
+};

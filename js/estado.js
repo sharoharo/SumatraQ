@@ -3,7 +3,7 @@ import * as THREE from 'three';
 
 export const CONFIG = {
   // Tu URL de Google Apps Script
-  GOOGLE_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzNG8rP3GuJp5M55SsQtzEdTlXXly7lEdOUzwSCcqG4yhDY1-DtCM7H7FBzPEt-uBGN/exec"
+  GOOGLE_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzAboro9v15NDmI7-yG5rALg6AE2Dex1RrA8iSrqBn1gSJKo840xp_gY6_Bcbsgjlmo/exec"
 };
 
 export const State = {

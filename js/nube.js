@@ -80,3 +80,34 @@ export function loadIssuesForFile(fileName) {
     }
   });
 }
+
+// ==========================================
+// 🗑️ ELIMINAR INCIDENCIA DE LA NUBE
+// ==========================================
+export async function deleteIssueFromCloud(issueId) {
+    // Verificamos que tengamos la URL de tu Google Script
+    if (!CONFIG.GOOGLE_SCRIPT_URL) {
+        console.warn("Modo Local: No hay URL de Google Script configurada para borrar.");
+        return;
+    }
+
+    try {
+        // Le decimos a Google Script: "Acción: borrar" y le pasamos el ID
+        const response = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', // Bypass de seguridad CORS estándar
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'delete',
+                id: issueId
+            })
+        });
+        
+        return response;
+    } catch (error) {
+        console.error("Fallo crítico en fetch de eliminación:", error);
+        throw error;
+    }
+}
