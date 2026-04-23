@@ -14,8 +14,20 @@ export function handlePhotoInput(e) {
       else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
       canvas.width = width; canvas.height = height;
       canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      State.currentPhotos.push({ dataUrl: canvas.toDataURL('image/jpeg', 0.8) });
-      renderPhotoGrid();
+      
+      // Ya tenemos la foto comprimida en Base64
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      
+      // ⚡ INTERCEPTOR DEL MODO RÁFAGA
+      if (State.rapidPhotoMode && State.rapidPhotoTargetId) {
+          if (window.processRapidPhoto) {
+              window.processRapidPhoto(dataUrl);
+          }
+      } else {
+          // Flujo normal (se pinta en el formulario)
+          State.currentPhotos.push({ dataUrl });
+          renderPhotoGrid();
+      }
     };
     img.src = ev.target.result;
   }; 
