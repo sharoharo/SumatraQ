@@ -39,7 +39,7 @@
         ▼
       </button>
       
-      <input type="file" id="fileInput" multiple accept=".stl" style="display: none;" />
+      <input type="file" id="fileInput" multiple accept=".stl" style="display: none;" onclick="event.stopPropagation();" />
     </div>  
 
     <div id="emptyState" class="interactive-element" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 5; background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(229,227,223,0.9) 100%); backdrop-filter: blur(2px); transition: opacity 0.5s ease;">
@@ -93,6 +93,11 @@
          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
       </button>
     
+      <button id="rapidModeBtn" class="toolbar-btn" title="Modo Ráfaga de Campo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+      </button>
     
     </div>
 
@@ -391,6 +396,46 @@
       </div>
     </div>
   </div>
+
+  <div id="rapidModeModal" class="info-modal-overlay">
+    <div class="info-modal-content interactive-element" style="max-width: 400px;">
+      
+      <div class="info-modal-header">
+        <h2 style="margin:0; color: #f5b400; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          Modo Ráfaga
+        </h2>
+        <button onclick="document.getElementById('rapidModeModal').classList.remove('active')" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; transition: color 0.2s;" onmouseover="this.style.color='#e94335'" onmouseout="this.style.color='#999'">✕</button>
+      </div>
+      
+      <div class="info-modal-body" style="padding: 20px; background: #f8f9fa;">
+        <p style="font-size: 13px; color: #666; margin-top: 0; margin-bottom: 20px; line-height: 1.5;">Configura los parámetros comunes. Todos los puntos que toques ahora se guardarán automáticamente con estos datos.</p>
+
+        <label style="font-size: 12px; font-weight: bold; color: #555; display: block; margin-bottom: 5px;">Fase Productiva Común:</label>
+        <select id="rapidFase" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; margin-bottom: 15px; background: white;">
+            <option value="estampacion">Estampación</option>
+            <option value="chapisteria">Chapistería</option>
+            <option value="pintura">Pintura</option>
+            <option value="ensamblaje">Ensamblaje Final</option>
+        </select>
+
+        <label style="font-size: 12px; font-weight: bold; color: #555; display: block; margin-bottom: 5px;">Prioridad Común:</label>
+        <select id="rapidPrioridad" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; margin-bottom: 20px; background: white;">
+            <option value="baja">Baja</option>
+            <option value="media" selected>Media</option>
+            <option value="alta">Alta</option>
+            <option value="prio1">🔥 Prio 1</option>
+        </select>
+
+        <button id="startRapidMode" class="btn-primary" style="width: 100%; background-color: #f5b400; color: #000; font-weight: bold; box-shadow: 0 4px 6px rgba(245, 180, 0, 0.2);">
+            ⚡ Activar Ráfaga
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
 
    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   

@@ -40,5 +40,11 @@ export const State = {
   
   // Posicionamiento de Cámara
   bounds: { center: new THREE.Vector3(), size: new THREE.Vector3(), radius: 1 },
-  viewDistance: 200
+  viewDistance: 200,
+
+  // Modo Ráfaga de Campo
+  rapidPhotoMode: false,         
+  rapidPhotoDefaults: null,      
+  rapidPhotoTargetId: null
+
 };

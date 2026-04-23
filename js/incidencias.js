@@ -23,6 +23,7 @@ export function getColor(status) {
   return colors[status] || 0x4285f4; 
 }
 
+
 /* ==========================================
    1. LÓGICA DE RATÓN Y CLICKS
    ========================================== */
@@ -84,6 +85,31 @@ export function onClick(event){
 
 // 🟢 Caso 1: Punto Nuevo -> Abre directo el Formulario
 export function openNewIssueForm() {
+  // ⚡ BYPASS MODO RÁFAGA (PUNTO NUEVO)
+  if (State.rapidPhotoMode && State.selectedMarker) {
+      const issueId = State.selectedMarker.userData.issueId;
+      State.rapidPhotoTargetId = issueId;
+      
+      // Creamos la incidencia en memoria "en la sombra" con los valores por defecto
+      const newIssue = {
+          id: issueId,
+          fileName: State.selectedMarker.userData.fileName,
+          x: State.selectedMarker.position.x,
+          y: State.selectedMarker.position.y,
+          z: State.selectedMarker.position.z,
+          type: "Falla Rápida", // Nombre por defecto
+          status: "open",
+          priority: State.rapidPhotoDefaults.prioridad,
+          fase: State.rapidPhotoDefaults.fase,
+          history: []
+      };
+      State.issues.push(newIssue);
+      
+      // 📷 Disparamos la cámara nativa inmediatamente y abortamos abrir el formulario
+      document.getElementById('inputCamera').click();
+      return; 
+  }
+  
   deselectMarker();
   document.getElementById('modalMainTitle').innerText = "Creación de incidencia";
   document.getElementById('saveIssue').innerText = "Guardar Incidencia nueva";
@@ -114,6 +140,14 @@ export function openNewIssueForm() {
 
 // 🟢 Caso 2: Clic en Punto Existente -> Abre Historial a PANTALLA COMPLETA
 export function selectMarker(marker){
+   // ⚡ BYPASS MODO RÁFAGA (PUNTO EXISTENTE)
+  if (State.rapidPhotoMode) {
+      State.rapidPhotoTargetId = marker.userData.issueId;
+      // 📷 Disparamos la cámara nativa inmediatamente y abortamos abrir el historial
+      document.getElementById('inputCamera').click();
+      return;
+  }
+ 
   deselectMarker(); 
   State.selectedMarker = marker; 
   
@@ -749,5 +783,147 @@ window.deleteHistoryEntry = async function(issueId, arrayIndex, dateString) {
         });
     } catch (err) {
         console.error("Error borrando el historial de la nube:", err);
+    }
+};
+
+// ==========================================
+// ⚡ CONTROLADOR DEL MODO RÁFAGA (FASE 1)
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    const rapidBtn = document.getElementById('rapidModeBtn');
+    const rapidModal = document.getElementById('rapidModeModal');
+    const startRapidBtn = document.getElementById('startRapidMode');
+
+    // 1. Abrir modal al pulsar el rayo en la barra
+    if (rapidBtn && rapidModal) {
+        rapidBtn.addEventListener('click', () => {
+            // Si ya estaba activo, lo apagamos (Toggle off)
+            if (State.rapidPhotoMode) {
+                deactivateRapidMode();
+            } else {
+                // Si estaba apagado, abrimos el modal para configurarlo
+                rapidModal.classList.add('active');
+            }
+        });
+    }
+
+    // 2. Guardar configuración y activar el modo
+    if (startRapidBtn) {
+        startRapidBtn.addEventListener('click', () => {
+            // Guardamos los valores comunes
+            State.rapidPhotoDefaults = {
+                fase: document.getElementById('rapidFase').value,
+                prioridad: document.getElementById('rapidPrioridad').value,
+                // Puedes añadir un comentario base o un tipo por defecto aquí si quieres
+                comentarioBase: "Modo ráfaga" 
+            };
+            
+            // Encendemos la máquina
+            State.rapidPhotoMode = true;
+            
+            // Cambiamos el estilo del botón para que el usuario sepa que está "Grabando"
+            if (rapidBtn) {
+                rapidBtn.style.backgroundColor = '#f5b400';
+                rapidBtn.style.color = '#000';
+                rapidBtn.classList.add('pulsing-warning'); // Clase CSS opcional para que palpite
+            }
+
+            // Cerramos el modal
+            rapidModal.classList.remove('active');
+            
+            if (window.asistenteVoz) window.asistenteVoz("Modo ráfaga activado. Toque un punto para capturar foto directamente.");
+            
+            // Forzamos el modo de creación de puntos (chincheta activada) para más agilidad
+            State.mode = true; 
+            const addBtn = document.getElementById('addBtn');
+            if(addBtn) addBtn.classList.add('active');
+        });
+    }
+
+    // Función auxiliar para apagarlo
+    function deactivateRapidMode() {
+        State.rapidPhotoMode = false;
+        State.rapidPhotoDefaults = null;
+        State.rapidPhotoTargetId = null;
+        
+        if (rapidBtn) {
+            rapidBtn.style.backgroundColor = '';
+            rapidBtn.style.color = '';
+            rapidBtn.classList.remove('pulsing-warning');
+        }
+        
+        if (window.asistenteVoz) window.asistenteVoz("Modo ráfaga desactivado.");
+    }
+});
+
+// ==========================================
+// ⚡ MOTOR DE GUARDADO AUTO (MODO RÁFAGA)
+// ==========================================
+
+window.processRapidPhoto = async function(photoDataUrl) {
+    const issueId = State.rapidPhotoTargetId;
+    const issue = State.issues.find(i => i.id === issueId);
+    
+    if (!issue) return;
+
+    // 1. Ensamblamos la entrada del historial
+    const historyEntry = {
+        date: new Date().toISOString(),
+        user: State.userName || "Inspector",
+        status: "open", // Siempre abrimos incidencia en modo rápido
+        priority: State.rapidPhotoDefaults.prioridad,
+        fase: State.rapidPhotoDefaults.fase,
+        comment: "📸 Captura rápida en campo",
+        photos: [{ dataUrl: photoDataUrl }]
+    };
+
+    // 2. Actualizamos la memoria
+    if (!issue.history) issue.history = [];
+    issue.history.push(historyEntry);
+    issue.status = "open";
+    issue.priority = State.rapidPhotoDefaults.prioridad;
+    issue.fase = State.rapidPhotoDefaults.fase;
+
+    if (window.asistenteVoz) window.asistenteVoz("Guardando captura en la nube...");
+
+    // 3. Preparamos el paquete para Google Sheets
+    const issueToUpload = {
+        action: 'append',
+        id: issue.id,
+        fileName: issue.fileName,
+        x: issue.x,
+        y: issue.y,
+        z: issue.z,
+        type: issue.type,
+        status: issue.status,
+        priority: issue.priority,
+        fase: issue.fase,
+        date: historyEntry.date,
+        user: historyEntry.user,
+        comment: historyEntry.comment,
+        photos: [photoDataUrl]
+    };
+
+    // 4. Disparamos a la nube de forma silenciosa
+    try {
+        await fetch(CONFIG.GOOGLE_SCRIPT_URL, { 
+            method: "POST", 
+            mode: "no-cors", 
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(issueToUpload) 
+        });
+        
+        console.log("⚡ Ráfaga guardada con éxito en Google Sheets");
+        if (window.asistenteVoz) window.asistenteVoz("Guardado. Listo para el siguiente punto.");
+        
+        // Limpiamos el objetivo para que el operario pueda seguir clicando
+        State.rapidPhotoTargetId = null;
+        deselectMarker();
+        if (window.renderIssues) window.renderIssues(); // Actualiza colores
+        
+    } catch (e) {
+        console.error("Error en ráfaga:", e);
+        alert("Error de red guardando la captura rápida.");
     }
 };

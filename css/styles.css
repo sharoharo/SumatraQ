@@ -447,3 +447,14 @@ select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; bor
   /* 6. Evitar que el botón de guardar se corte */
   #saveIssue { bottom: -15px !important; padding: 12px !important; }
 }
+
+@keyframes pulseWarning {
+  0% { box-shadow: 0 0 0 0 rgba(245, 180, 0, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(245, 180, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 180, 0, 0); }
+}
+
+.pulsing-warning {
+  animation: pulseWarning 2s infinite;
+  border-color: #f5b400 !important;
+}
