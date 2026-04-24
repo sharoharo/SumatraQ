@@ -7,6 +7,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a73e8">
+  <link rel="apple-touch-icon" href="img/SumatraQ_logo.jpg">
 </head>
 <body>
 
@@ -491,6 +494,16 @@
   <script src="js/filtros.js" type="module"></script>
   <script src="js/incidencias.js" type="module"></script>
   <script src="js/app.js" type="module"></script>
+
+<script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('🛡️ Guardián Offline registrado correctamente.', reg.scope))
+          .catch(err => console.error('❌ Error registrando el Guardián:', err));
+      });
+    }
+  </script>
 
 </body>
 

@@ -1,0 +1,21 @@
+{
+  "name": "Sumatra Q",
+  "short_name": "Sumatra Q",
+  "description": "Visor CAD y Control de Calidad Offline",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a73e8",
+  "icons": [
+    {
+      "src": "img/SumatraQ_logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "img/SumatraQ_logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
