@@ -8,6 +8,7 @@ import { handlePhotoInput } from './fotos.js';
 import { initUI } from './ui.js';
 import { initMagiaVoz } from './magiaVoz.js';
 import { deselectMarker } from './incidencias.js';  
+import { syncOfflineIssues } from './nube.js';
 
 
 /* --- EXPONER FUNCIONES AL HTML (PÚBLICAS) --- */
@@ -145,5 +146,78 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
         observer.observe(fileNameDisplay, { childList: true, characterData: true, subtree: true });
+    }
+});
+
+// ==========================================
+// 📡 VIGILANTES DE CONEXIÓN A INTERNET
+// ==========================================
+import { getOfflineIssues } from './db.js';
+
+// Función para repintar la Nube
+window.updateCloudStatusUI = async function() {
+    const btn = document.getElementById('cloudStatusBtn');
+    const badge = document.getElementById('offlineBadge');
+    if (!btn || !badge) return;
+
+    const pendingIssues = await getOfflineIssues();
+    const count = pendingIssues.length;
+
+    // 🟢 CASO 1: ONLINE Y TODO SINCRONIZADO
+    if (navigator.onLine && count === 0) {
+        btn.className = 'toolbar-btn sync-online';
+        btn.title = "Nube sincronizada";
+        badge.style.display = 'none';
+        return;
+    }
+
+    // 🟡 CASO 2: ONLINE PERO SUBIENDO DATOS
+    if (navigator.onLine && count > 0) {
+        btn.className = 'toolbar-btn sync-uploading';
+        btn.title = `Sincronizando ${count} incidencias...`;
+        badge.style.display = 'flex';
+        badge.innerText = count;
+        return;
+    }
+
+    // 🔴 CASO 3: OFFLINE
+    if (!navigator.onLine) {
+        btn.className = 'toolbar-btn sync-offline';
+        btn.title = "Trabajando sin conexión";
+        if (count > 0) {
+            badge.style.display = 'flex';
+            badge.innerText = count;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+};
+
+// Refresco extra al volver a tener red
+window.addEventListener('online', () => {
+    setTimeout(() => { // Damos 500ms para que el sistema se asiente
+        window.updateCloudStatusUI();
+        syncOfflineIssues();
+    }, 500);
+});
+
+// Escuchadores de red
+window.addEventListener('online', () => {
+    console.log("🟢 Conexión a Internet Restaurada");
+    window.updateCloudStatusUI(); // Repintamos a amarillo (sincronizando)
+    syncOfflineIssues();
+});
+
+window.addEventListener('offline', () => {
+    console.warn("🔴 Conexión a Internet Perdida. Entrando en Modo Offline.");
+    window.updateCloudStatusUI(); // Repintamos a rojo
+    if (window.asistenteVoz) window.asistenteVoz("Sin conexión a internet. Guardando en modo local.");
+});
+
+// Al arrancar la app, pintamos la nube
+document.addEventListener('DOMContentLoaded', () => {
+    window.updateCloudStatusUI();
+    if (navigator.onLine) {
+        syncOfflineIssues();
     }
 });

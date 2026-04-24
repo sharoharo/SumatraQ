@@ -83,27 +83,37 @@ export function onClick(event){
    2. NAVEGACIÓN ENTRE MODALES: HISTORIAL Y EDICIÓN
    ========================================== */
 
+// 🟢 Caso 1: Punto Nuevo -> Abre directo el Formulario (o Cámara en Modo Ráfaga)
 export function openNewIssueForm() {
+  
+  // 1. ⚡ BYPASS MODO RÁFAGA (PUNTO NUEVO - OPCIÓN 2)
   if (State.rapidPhotoMode) {
+      // Generamos ID
       const newIssueId = "RAF-" + Date.now().toString();
       State.rapidPhotoTargetId = newIssueId;
+      
+      // APLICANDO TUS REGLAS EXACTAS:
       const newIssue = {
           id: newIssueId,
           fileName: State.targetFileName || "pieza_actual",
           x: State.currentPoint ? State.currentPoint.x : 0,
           y: State.currentPoint ? State.currentPoint.y : 0,
           z: State.currentPoint ? State.currentPoint.z : 0,
-          type: "Pendiente de valorar",
-          status: "open",
-          priority: "Pendiente de valorar",
-          fase: State.rapidPhotoDefaults ? State.rapidPhotoDefaults.fase : "estampacion",
+          type: "Pendiente de clasificar",      // Regla 3
+          priority: "Pendiente de priorizar", // Regla 4
+          status: "open",                     // Regla 5
+          fase: State.rapidPhotoDefaults ? State.rapidPhotoDefaults.fase : "estampacion", // Regla 1
           history: []
       };
+      
       State.issues.push(newIssue);
+      
+      // 📷 Disparamos la cámara/explorador y abortamos
       document.getElementById('inputCamera').click();
-      return; 
+      return; // 🛑 Este return bloquea que se abra la ventana estándar
   }
 
+  // 2. --- LÓGICA NORMAL (Si el rayo NO está activado) ---
   deselectMarker(); 
   document.getElementById('modalMainTitle').innerText = "Creación de incidencia";
   document.getElementById('saveIssue').innerText = "Guardar Incidencia nueva";
@@ -133,16 +143,21 @@ export function openNewIssueForm() {
   if(addBtn) addBtn.classList.remove('active');
 }
 
+// 🟢 Caso 2: Clic en Punto Existente -> Abre Historial a PANTALLA COMPLETA
 export function selectMarker(marker){
+   // ⚡ BYPASS MODO RÁFAGA (PUNTO EXISTENTE)
   if (State.rapidPhotoMode) {
       State.rapidPhotoTargetId = marker.userData.issueId;
+      // 📷 Disparamos la cámara nativa inmediatamente y abortamos abrir el historial
       document.getElementById('inputCamera').click();
-      return; 
+      return;
   }
-
+ 
   deselectMarker(); 
   State.selectedMarker = marker; 
-  marker.scale.set(5, 5, 5);
+  
+  // 🔴 AUMENTAMOS LA ESFERA x4 PARA QUE DESTAQUE EN LA FOTO MÓVIL
+  marker.scale.set(5, 5, 5); 
   
   const issue = State.issues.find(i => i.id === marker.userData.issueId);
   
@@ -151,6 +166,7 @@ export function selectMarker(marker){
     const historyTimeline = document.getElementById('historyTimeline');
     const historyScreenshot = document.getElementById('historyScreenshot');
 
+    // 📸 MAGIA: Capturar foto 3D de la pieza en tiempo real
     if(historyScreenshot && State.renderer) {
         State.renderer.render(State.scene, State.camera); 
         historyScreenshot.src = State.renderer.domElement.toDataURL('image/jpeg', 0.8);
@@ -165,8 +181,12 @@ export function selectMarker(marker){
         if (issue.history && issue.history.length > 0) {
             const reversedHistory = [...issue.history].reverse();
             
+            // 🚨 CAMBIO 1: Añadimos 'reversedIndex' al bucle
             reversedHistory.forEach((h, reversedIndex) => {
+                
+                // 🚨 CAMBIO 2: Calculamos la posición real de este comentario en la memoria
                 const originalIndex = issue.history.length - 1 - reversedIndex;
+
                 const dateObj = new Date(h.date);
                 const dateStr = isNaN(dateObj.getTime()) ? h.date : dateObj.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
 
@@ -177,6 +197,7 @@ export function selectMarker(marker){
 
                 let photosHtml = '';
                 if (h.photos && h.photos.length > 0) {
+                    // SE MANTIENE TU LÓGICA DE FOTOS
                     photosHtml = `<div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">`;
                     h.photos.forEach(photo => {
                         photosHtml += `<img src="${photo.dataUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="window.openLightbox('${photo.dataUrl}')" title="Ver imagen ampliada">`;
@@ -189,11 +210,21 @@ export function selectMarker(marker){
                 entryDiv.style.marginBottom = '30px'; 
                 entryDiv.style.position = 'relative'; 
 
+              // --- LÓGICA DE PERMISOS SÚPER BLINDADA ---
                 const usuarioActual = (State.userName || "").trim().toLowerCase();
                 const autorComentario = (h.user || "").trim().toLowerCase();
-                const tieneNombreAdmin = usuarioActual.includes("admin");
-                let listaAdmins = ["admin", "sharoharo", "sergio haro"]; 
 
+                // 1. EL TRUCO NINJA
+                const tieneNombreAdmin = usuarioActual.includes("admin");
+
+                // 2. Lista de respaldo
+                let listaAdmins = [
+                    "admin", 
+                    "sharoharo", 
+                    "sergio haro"
+                ]; 
+
+                // 3. Intentamos leer la BD
                 if (State.usuarios && Array.isArray(State.usuarios)) {
                     State.usuarios.forEach(u => {
                         if (u.Rol && u.Rol.trim().toLowerCase() === 'admin' && u.Nombre) {
@@ -202,10 +233,14 @@ export function selectMarker(marker){
                     });
                 }
 
+                // 4. Verificaciones de poder
                 const esAdmin = tieneNombreAdmin || listaAdmins.includes(usuarioActual);
                 const esDueño = usuarioActual === autorComentario && usuarioActual !== "anónimo";
+
+                // 5. Decisión final
                 const puedeBorrar = esAdmin || esDueño;
 
+                // 🚨 CAMBIO 3: Le pasamos el ${originalIndex} al onclick del botón
                 const trashBtnHTML = puedeBorrar ? 
                     `<button onclick="window.deleteHistoryEntry('${issue.id}', ${originalIndex}, '${h.date}')" 
                             style="position: absolute; right: 0; top: 0; background: none; border: none; font-size: 18px; cursor: pointer; color: #d93025; padding: 5px;" 
@@ -229,6 +264,7 @@ export function selectMarker(marker){
         }
     }
 
+    // 🏆 ABRIMOS SOLO EL MODAL DE HISTORIAL A PANTALLA COMPLETA
     const issueModal = document.getElementById('issueModalOverlay');
     if (issueModal) issueModal.classList.remove('active');
     
@@ -237,12 +273,16 @@ export function selectMarker(marker){
   }
 }
 
+// 🟢 Caso 3: Clic en botón "Actualizar" desde el historial (INTACTO)
 export function editExistingIssue() {
   if(!State.selectedMarker) return;
   const issue = State.issues.find(i => i.id === State.selectedMarker.userData.issueId);
   if(!issue) return;
 
+  // 1. Ocultar Modal de Historial
   document.getElementById('historyModalOverlay').classList.remove('active');
+
+  // 2. Rellenar Formulario con datos actuales
   document.getElementById('modalMainTitle').innerText = `Actualización de incidencia`;
   document.getElementById('saveIssue').innerText = "Actualizar y Guardar";
   document.getElementById('issueComment').value = ""; 
@@ -257,10 +297,13 @@ export function editExistingIssue() {
   setActiveChip('priorityChips', issue.priority || 'media');
   setActiveChip('faseChips', issue.fase || 'estampacion');
 
+  // 3. Mostrar Modal de Edición
   document.getElementById('issueModalOverlay').classList.add('active');
 }
+// Lo exponemos al window para el HTML
 window.editExistingIssue = editExistingIssue;
 
+// 🟢 Cierre general (INTACTO)
 export function deselectMarker() { 
   if(State.selectedMarker) State.selectedMarker.scale.set(1,1,1);
   State.selectedMarker = null; 
@@ -275,9 +318,11 @@ window.deselectMarker = deselectMarker;
 // 📸 LIGHTBOX UNIVERSAL (A prueba de Z-Index)
 // ==========================================
 window.openLightbox = function(imageSrc) {
+    // 1. Destruimos cualquier lightbox anterior atascado
     const existing = document.getElementById('sumatraLightbox');
     if (existing) existing.remove();
 
+    // 2. Creamos el fondo oscuro dinámicamente
     const lightbox = document.createElement('div');
     lightbox.id = 'sumatraLightbox';
     lightbox.style.cssText = `
@@ -287,6 +332,7 @@ window.openLightbox = function(imageSrc) {
         backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.2s ease;
     `;
     
+    // 3. Creamos la imagen en grande
     const img = document.createElement('img');
     img.src = imageSrc;
     img.style.cssText = `
@@ -295,6 +341,7 @@ window.openLightbox = function(imageSrc) {
         transform: scale(0.9); transition: transform 0.2s ease;
     `;
     
+    // 4. Botón de cerrar (X)
     const closeBtn = document.createElement('div');
     closeBtn.innerHTML = '✕';
     closeBtn.style.cssText = `
@@ -305,21 +352,25 @@ window.openLightbox = function(imageSrc) {
     closeBtn.onmouseover = () => closeBtn.style.opacity = '1';
     closeBtn.onmouseout = () => closeBtn.style.opacity = '0.8';
 
+    // 5. Ensamblamos y mostramos en pantalla
     lightbox.appendChild(img);
     lightbox.appendChild(closeBtn);
     document.body.appendChild(lightbox);
 
+    // Arrancamos la animación suave
     requestAnimationFrame(() => {
         lightbox.style.opacity = '1';
         img.style.transform = 'scale(1)';
     });
 
+    // Destruimos el modal al hacer clic en cualquier lado
     lightbox.onclick = () => {
         lightbox.style.opacity = '0';
         img.style.transform = 'scale(0.9)';
         setTimeout(() => lightbox.remove(), 200);
     };
 };
+
 
 /* ==========================================
    3. GUARDADO, ELIMINACIÓN Y RENDERIZADO
@@ -332,6 +383,7 @@ export async function deleteSelectedIssue() {
   const id = State.selectedMarker.userData.issueId;
   const markerToRemove = State.selectedMarker;
   
+  // 1. Borramos de la memoria RAM (Interfaz limpia al instante)
   State.issues = State.issues.filter(i => i.id !== id);
   State.scene.remove(markerToRemove); 
   if(markerToRemove.geometry) markerToRemove.geometry.dispose();
@@ -340,6 +392,7 @@ export async function deleteSelectedIssue() {
   deselectMarker(); 
   renderIssues();
 
+  // 2. ☁️ Mandamos la orden de destrucción a Google Sheets
   try {
     if (window.asistenteVoz) window.asistenteVoz("Eliminando incidencia de la base de datos...");
     await deleteIssueFromCloud(id);
@@ -350,17 +403,18 @@ export async function deleteSelectedIssue() {
   }
 }
 
-// 🌐 LA FUNCIÓN REPARADA PARA EL MODO OFFLINE
-export async function saveIssueFn() {
+ {
   const btn = document.getElementById('saveIssue');
   const originalText = btn?.innerText;
   
+  // Protegemos contra valores nulos asegurando strings vacíos si no hay datos
   const currentStatus = getActiveChip('statusChips') || 'open';
   const currentPriority = getActiveChip('priorityChips') || 'media';
   const currentFase = getActiveChip('faseChips') || 'estampacion';
   const currentComment = document.getElementById('issueComment').value || '';
   const currentType = document.getElementById('issueType')?.value || 'Sin clasificar';
 
+  // 1. Estructura maestra del momento exacto del guardado
   let issueUpdateData = {
     status: currentStatus, priority: currentPriority, fase: currentFase,
     comment: currentComment, date: new Date().toISOString(),
@@ -370,21 +424,24 @@ export async function saveIssueFn() {
   let issueToUpload = null;
 
   if (State.selectedMarker && State.issues.find(i => i.id === State.selectedMarker.userData.issueId)) {
+    // 🔄 CASO A: ACTUALIZACIÓN DE UNA INCIDENCIA EXISTENTE
     const issue = State.issues.find(i => i.id === State.selectedMarker.userData.issueId);
     
+    // 🚨 FIX CRÍTICO: Actualizamos explícitamente TODAS las variables raíz para que Sheets las vea
     issue.status = currentStatus; 
     issue.priority = currentPriority;
     issue.fase = currentFase; 
     issue.comment = currentComment;
     issue.type = currentType;
-    issue.date = issueUpdateData.date;       
-    issue.user = issueUpdateData.user;       
-    issue.photos = issueUpdateData.photos;   
+    issue.date = issueUpdateData.date;       // <-- Antes esto se perdía
+    issue.user = issueUpdateData.user;       // <-- Antes esto se perdía
+    issue.photos = issueUpdateData.photos;   // <-- Antes la foto no subía en las actualizaciones
     
-    if (!issue.history) issue.history = [];
+    if (!issue.history) issuexport async function saveIssueFn()e.history = [];
     issue.history.push({ ...issueUpdateData });
     issueToUpload = issue;
   } else {
+    // 🆕 CASO B: CREACIÓN DE UNA INCIDENCIA NUEVA
     const safeId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
     const newIssue = {
       id: safeId, fileName: State.targetFileName || 'Pieza_Desconocida',
@@ -398,10 +455,11 @@ export async function saveIssueFn() {
   renderIssues(); 
   deselectMarker(); 
 
+  // 2. Proceso de subida a la nube bloqueando el botón
   try {
     if (btn) { btn.innerText = "⏳ Subiendo..."; btn.disabled = true; }
     
-    // El Interceptor hace la magia aquí
+    // Recibimos el estado desde nuestro Interceptor
     const result = await saveIssueToCloud(issueToUpload);
     
     if (result && result.status === 'offline') {
@@ -418,7 +476,6 @@ export async function saveIssueFn() {
   } finally {
     if (btn) { btn.innerText = originalText; btn.disabled = false; }
   }
-}
 
 // ==========================================
 // 🔴 RESTAURACIÓN: FUNCIONES DE RENDERIZADO 🔴
@@ -429,6 +486,7 @@ export function renderIssues() {
   toRemove.forEach(obj => State.scene.remove(obj));
 
   State.issues.forEach(issue => {
+    // 🧠 El Juez Universal (filtros.js)
     if (!passesFilters(issue)) return;
     
     const color = getColor(issue.status);
@@ -444,6 +502,7 @@ export function renderIssues() {
   });
   renderIssueListUI();
 }
+
 window.renderIssues = renderIssues;
 
 export function renderIssueListUI() {
@@ -454,6 +513,7 @@ export function renderIssueListUI() {
   if (typeof populateFilterSelects === 'function') populateFilterSelects();
 
   State.issues.forEach(issue => {
+    // 🧠 El Juez Universal (filtros.js)
     if (!passesFilters(issue)) return;
 
     const card = document.createElement('div');
@@ -488,6 +548,7 @@ export function renderIssueListUI() {
 export const generatePDF = function() {
   window.generatePDF = generatePDF;
 
+  // 1. Aplicamos el Doble Filtro a las incidencias que se van a imprimir
   const issuesToPrint = State.issues.filter(issue => passesFilters(issue));
 
   if (issuesToPrint.length === 0) {
@@ -505,11 +566,13 @@ export const generatePDF = function() {
 
   const fecha = new Date().toLocaleDateString('es-ES');
   
+  // Título dinámico para saber qué se está imprimiendo
   let filtroTexto = "Reporte Filtrado";
   if (State.filters.status === 'all' && State.filters.priority === 'all' && State.filters.user === 'all' && State.filters.type === 'all' && !State.filters.dateFrom && !State.filters.dateTo) {
       filtroTexto = "Reporte Global";
   }
 
+  // --- CABECERA TABULAR CON LOGO ---
   let html = `
     <div style="padding: 20px; font-family: Arial, sans-serif; color: #333; background-color: #fff; width: 700px; margin: 0 auto;">
       
@@ -610,25 +673,36 @@ export const generatePDF = function() {
   });
 };
 
-// ==========================================
+ deselectMarker();
+
+ // ==========================================
 // 📸 CAPTURA 3D INTERNA (Evita salir de la app)
 // ==========================================
 window.take3DScreenshot = function(e) {
-    if (e) e.preventDefault(); 
+    if (e) e.preventDefault(); // Evitamos que el formulario se envíe por error
     
     if (State.renderer && State.scene && State.camera) {
+        // 1. Ocultamos temporalmente el modal para que no estorbe en la foto
         const modal = document.getElementById('issueModalOverlay');
         const wasActive = modal ? modal.classList.contains('active') : false;
-        if (wasActive) modal.style.opacity = '0'; 
+        if (wasActive) modal.style.opacity = '0'; // Lo hacemos transparente un milisegundo
 
+        // 2. Forzamos un renderizado limpio
         State.renderer.render(State.scene, State.camera);
+        
+        // 3. Extraemos la imagen de alta calidad
         const dataUrl = State.renderer.domElement.toDataURL('image/jpeg', 0.9);
         
+        // 4. Restauramos el modal
         if (wasActive) modal.style.opacity = '1';
 
+        // 5. Añadimos la foto a nuestro array de evidencias
         State.currentPhotos.push({ dataUrl: dataUrl });
+        
+        // 6. Refrescamos la cuadrícula para que el usuario vea la foto al instante
         if (typeof renderPhotoGrid === 'function') renderPhotoGrid();
         
+        // (Opcional) Feedback de voz
         if (window.asistenteVoz) window.asistenteVoz("Vista 3D capturada con éxito.");
     } else {
         console.warn("No se pudo hacer la captura: el visor 3D no está inicializado.");
@@ -666,6 +740,7 @@ window.pasteFromClipboard = async function(e) {
 // ⌨️ ATAJO DE TECLADO: Ctrl+V UNIVERSAL
 // ==========================================
 document.addEventListener('paste', (e) => {
+    // Solo actuamos si el formulario de incidencias está abierto
     const modal = document.getElementById('issueModalOverlay');
     if (!modal || !modal.classList.contains('active')) return;
 
@@ -679,7 +754,7 @@ document.addEventListener('paste', (e) => {
                 if (typeof renderPhotoGrid === 'function') renderPhotoGrid();
             };
             reader.readAsDataURL(blob);
-            e.preventDefault(); 
+            e.preventDefault(); // Evitamos que pegue el texto de la imagen en un input
             return;
         }
     }
@@ -692,18 +767,21 @@ window.deleteHistoryEntry = async function(issueId, arrayIndex, dateString) {
     const seguro = confirm("⚠️ ¿Borrar este estado del historial? Esta acción no se puede deshacer.");
     if (!seguro) return;
 
+    // 1. Lo borramos de la memoria local usando su posición exacta
     const issue = State.issues.find(i => i.id === issueId);
     if (issue && issue.history && issue.history[arrayIndex]) {
+        // Splice arranca EXACTAMENTE 1 elemento en esa posición, imposible borrar duplicados
         issue.history.splice(arrayIndex, 1); 
         
         if (issue.history.length === 0) {
-            deleteSelectedIssue(); 
+            deleteSelectedIssue(); // Si vaciamos el historial, se borra la chincheta entera
             return;
         } else {
-            selectMarker(State.selectedMarker); 
+            selectMarker(State.selectedMarker); // Refrescamos pantalla
         }
     }
 
+    // 2. Mandamos la orden a Google Sheets
     try {
         await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
             method: 'POST',
@@ -721,73 +799,65 @@ window.deleteHistoryEntry = async function(issueId, arrayIndex, dateString) {
 };
 
 // ==========================================
-// ⚡ MOTOR DE GUARDADO AUTO (MODO RÁFAGA V2)
+// ⚡ MOTOR DE GUARDADO AUTO (MODO RÁFAGA V3.1)
 // ==========================================
+
 window.processRapidPhoto = async function(photoDataUrl) {
     const issueId = State.rapidPhotoTargetId;
     const issue = State.issues.find(i => i.id === issueId);
     
     if (!issue) return;
 
-    const textoComentario = (State.rapidPhotoDefaults && State.rapidPhotoDefaults.comentario.trim() !== "") 
+    // 1. Preparamos el comentario de los parámetros comunes
+    const textoComentario = (State.rapidPhotoDefaults && State.rapidPhotoDefaults.comentario && State.rapidPhotoDefaults.comentario.trim() !== "") 
         ? State.rapidPhotoDefaults.comentario 
         : "📸 Captura rápida en campo";
 
+    // 2. Creamos la entrada del historial
     const historyEntry = {
         date: new Date().toISOString(),
         user: State.userName || "Inspector",
-        status: issue.status,     
-        priority: issue.priority, 
+        status: issue.status,      // Mantiene estado (Abierto si es nuevo, el que tuviera si es viejo)
+        priority: issue.priority,  // Mantiene prioridad (Pendiente si es nuevo, el que tuviera si es viejo)
         fase: State.rapidPhotoDefaults.fase, 
         comment: textoComentario,
         photos: [{ dataUrl: photoDataUrl }]
     };
 
+    // 3. ACTUALIZAMOS EL OBJETO MAESTRO (Sincronización local)
     if (!issue.history) issue.history = [];
     issue.history.push(historyEntry);
-    issue.fase = State.rapidPhotoDefaults.fase;
+    
+    // Actualizamos los campos raíz para que coincidan con la última actualización
+    issue.fase = historyEntry.fase;
+    issue.date = historyEntry.date;
+    issue.user = historyEntry.user;
+    issue.photos = historyEntry.photos; // Enviamos la foto actual
 
-    if (window.asistenteVoz) window.asistenteVoz("Guardando captura en la nube...");
+    if (window.asistenteVoz) window.asistenteVoz("Sincronizando con la base de datos...");
 
-    const issueToUpload = {
-        action: 'append',
-        id: issue.id,
-        fileName: issue.fileName,
-        x: issue.x,
-        y: issue.y,
-        z: issue.z,
-        type: issue.type,         
-        status: issue.status,     
-        priority: issue.priority, 
-        fase: issue.fase,
-        date: historyEntry.date,
-        user: historyEntry.user,
-        comment: historyEntry.comment,
-        photos: [photoDataUrl]
-    };
-
+    // 4. EL TRUCO SENIOR: Reutilizar la función de nube.js que ya funciona
     try {
-        // En Ráfaga también llamamos al interceptor
-        const result = await saveIssueToCloud(issueToUpload);
-        if (result && result.status === 'offline') {
-            console.log("⚡ Ráfaga guardada en OFFLINE.");
-        } else {
-            console.log("⚡ Ráfaga guardada con éxito en Google.");
-        }
+        // Enviamos el objeto 'issue' completo, igual que hace el formulario normal
+        await saveIssueToCloud(issue);
         
-        if (window.asistenteVoz) window.asistenteVoz("Guardado. Listo para el siguiente punto.");
+        console.log("✅ Sincronización exitosa con Google Sheets");
+        if (window.asistenteVoz) window.asistenteVoz("Guardado en la nube. Siguiente punto.");
         
+        // Limpieza y refresco visual
         State.rapidPhotoTargetId = null;
         if (typeof deselectMarker === 'function') deselectMarker();
         if (window.renderIssues) window.renderIssues(); 
         
     } catch (e) {
-        console.error("Error en ráfaga:", e);
+        console.error("❌ Error crítico de guardado:", e);
+        if (window.asistenteVoz) window.asistenteVoz("Error de conexión. Reintente.");
+        alert("No se pudo guardar en la base de datos. Compruebe su conexión.");
     }
 };
 
 // ==========================================
-// ⚡ EVENTOS DE INTERFAZ (MODO RÁFAGA)
+// ⚡ CONTROLADOR ÚNICO DE INTERFAZ (MODO RÁFAGA)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     const rapidBtn = document.getElementById('rapidModeBtn');
@@ -796,23 +866,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (rapidBtn && rapidModal) {
         rapidBtn.addEventListener('click', () => {
-            if (State.rapidPhotoMode) {
-                deactivateRapidMode();
-            } else {
-                rapidModal.classList.add('active');
-            }
+            if (State.rapidPhotoMode) deactivateRapidMode();
+            else rapidModal.classList.add('active');
         });
     }
 
     if (startRapidBtn) {
         startRapidBtn.addEventListener('click', () => {
             State.rapidPhotoDefaults = {
-                fase: document.getElementById('rapidFase').value,
-                comentario: document.getElementById('rapidComentario').value
+                fase: document.getElementById('rapidFase')?.value || 'estampacion',
+                comentario: document.getElementById('rapidComentario')?.value || ''
             };
             
             State.rapidPhotoMode = true;
-            
             if (rapidBtn) {
                 rapidBtn.style.backgroundColor = '#f5b400';
                 rapidBtn.style.color = '#000';
@@ -820,30 +886,97 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             rapidModal.classList.remove('active');
-            
-            if (window.asistenteVoz) window.asistenteVoz("Modo ráfaga activado. Toque un punto para capturar foto.");
+            if (window.asistenteVoz) window.asistenteVoz("Modo ráfaga activado.");
             
             State.mode = true; 
-            const addBtn = document.getElementById('addBtn');
-            if(addBtn) addBtn.classList.add('active');
+            document.getElementById('addBtn')?.classList.add('active');
         });
     }
 
     function deactivateRapidMode() {
         State.rapidPhotoMode = false;
         State.rapidPhotoDefaults = null;
-        State.rapidPhotoTargetId = null;
-        
         if (rapidBtn) {
             rapidBtn.style.backgroundColor = '';
             rapidBtn.style.color = '';
             rapidBtn.classList.remove('pulsing-warning');
         }
-        
         State.mode = false;
-        const addBtn = document.getElementById('addBtn');
-        if(addBtn) addBtn.classList.remove('active');
-        
+        document.getElementById('addBtn')?.classList.remove('active');
         if (window.asistenteVoz) window.asistenteVoz("Modo ráfaga desactivado.");
     }
+});
+
+// ==========================================
+// 🎤 MOTOR DE DICTADO POR VOZ (SPEECH TO TEXT)
+// ==========================================
+function initVoiceDictation(inputId, btnId) {
+    const input = document.getElementById(inputId);
+    const btn = document.getElementById(btnId);
+    
+    if (!input || !btn) return;
+
+    // Comprobamos compatibilidad del navegador (Chrome, Edge, Safari lo soportan)
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        btn.style.display = 'none'; 
+        console.warn("API de reconocimiento de voz no soportada en este navegador.");
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES'; // Idioma español
+    recognition.continuous = true; // Permite pausas largas sin cortarse
+    recognition.interimResults = true; // Escribe en tiempo real
+
+    let isRecording = false;
+    let textBeforeRecording = "";
+
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (isRecording) {
+            recognition.stop(); // Si está grabando, lo para
+        } else {
+            // Guardamos lo que ya estuviera escrito para no borrarlo
+            textBeforeRecording = input.value + (input.value.trim() !== "" ? " " : "");
+            recognition.start(); // Empieza a escuchar
+        }
+    });
+
+    recognition.onstart = () => {
+        isRecording = true;
+        btn.classList.add('recording');
+        input.placeholder = "🔴 Escuchando... (Hable ahora)";
+        if (navigator.vibrate) navigator.vibrate(50); // Vibración háptica en móvil
+    };
+
+    recognition.onresult = (event) => {
+        let currentTranscript = "";
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            currentTranscript += event.results[i][0].transcript;
+        }
+        // Escribe en tiempo real uniendo lo viejo con lo que está escuchando
+        input.value = textBeforeRecording + currentTranscript;
+    };
+
+    recognition.onend = () => {
+        isRecording = false;
+        btn.classList.remove('recording');
+        input.placeholder = "Ej: Captura de campo...";
+    };
+
+    recognition.onerror = (event) => {
+        console.error("Error de micrófono:", event.error);
+        isRecording = false;
+        btn.classList.remove('recording');
+        if (event.error === 'not-allowed') {
+            alert("⚠️ Debes dar permiso al navegador para usar el micrófono.");
+        }
+    };
+}
+
+// Inicializamos los botones cuando carga la página
+document.addEventListener('DOMContentLoaded', () => {
+    initVoiceDictation('issueComment', 'micBtnNormal');
+    initVoiceDictation('rapidComentario', 'micBtnRapid');
 });

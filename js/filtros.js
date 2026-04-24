@@ -20,6 +20,27 @@ export function updateFilters(key, value, btnElement = null) {
     container.querySelectorAll('.filter-chip').forEach(btn => btn.classList.remove('active'));
     btnElement.classList.add('active');
   }
+
+  // --- NUEVO: Control del botón "Mis Puntos" ---
+  if (key === 'user') {
+      const btnMis = document.getElementById('btnMisPuntos');
+      const selectUser = document.getElementById('filterUser');
+      
+      if (btnMis) {
+          // Si el usuario seleccionado soy yo, le pongo el borde negro al muñequito
+          if (value === State.userName && value !== 'all') {
+              btnMis.classList.add('active');
+          } else {
+              btnMis.classList.remove('active');
+          }
+      }
+      // Sincronizar el select visualmente si pulsamos el botón
+      if (selectUser && value !== selectUser.value) {
+          const optionExists = Array.from(selectUser.options).some(opt => opt.value === value);
+          if (optionExists) selectUser.value = value;
+      }
+  }
+  // ---------------------------------------------
   
   // Repintamos el 3D y la lista
   if (window.renderIssues) window.renderIssues();
@@ -39,12 +60,13 @@ export function clearAllFilters() {
   const filterType = document.getElementById('filterType');
   const filterDateFrom = document.getElementById('filterDateFrom');
   const filterDateTo = document.getElementById('filterDateTo');
-
+  const btnMis = document.getElementById('btnMisPuntos');
+  
   if(filterUser) filterUser.value = 'all';
   if(filterType) filterType.value = 'all';
   if(filterDateFrom) filterDateFrom.value = '';
   if(filterDateTo) filterDateTo.value = '';
-
+  if (btnMis) btnMis.classList.remove('active');
   if (window.renderIssues) window.renderIssues();
   if (window.asistenteVoz) window.asistenteVoz("Filtros limpiados.");
 }
@@ -144,12 +166,29 @@ export function populateFilterSelects() {
     typeSelect.value = currentType;
 }
 
+// 6. Botón rápido: Mis Puntos
+export function toggleMisPuntos() {
+    const btn = document.getElementById('btnMisPuntos');
+    const select = document.getElementById('filterUser');
+    const miNombre = State.userName || "Anónimo";
+
+    if (btn && btn.classList.contains('active')) {
+        // Si ya está activo (borde negro), lo apagamos
+        if (select) select.value = 'all';
+        updateFilters('user', 'all');
+    } else {
+        // Si está apagado, filtramos por nuestro nombre
+        updateFilters('user', miNombre);
+    }
+}
+
 // ==========================================
 // 🚨 ¡SÚPER IMPORTANTE! NO BORRES ESTAS LÍNEAS 🚨
-// Estas líneas entregan las funciones al HTML (a tus onchange)
+// Estas líneas entregan las funciones al HTML (a tus onchange/onclick)
 // ==========================================
 window.updateFilters = updateFilters;
 window.clearAllFilters = clearAllFilters;
+window.toggleMisPuntos = toggleMisPuntos; // <--- LA LÍNEA CRÍTICA
 window.setAdvancedFilter = function(type, value) {
     const selector = `.filter-chip[data-filter-type="${type}"][data-val="${value}"]`;
     const btn = document.querySelector(selector);
