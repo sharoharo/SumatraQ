@@ -2,14 +2,14 @@
 import { State } from './estado.js';
 import { fetchDatabase, processLogin, processLogout, checkAuthStatus } from './auth.js';
 import { init3D, loadSTLs, updateFileListUI, toggleMeshVisibility, removeMesh, setView, applyShadingAll } from './visor3d.js';
-import { onClick, onPointerDown, onPointerMove, onPointerUp, saveIssueFn, deleteSelectedIssue } from './incidencias.js';
+import { onClick, onPointerDown, onPointerMove, onPointerUp, saveIssueFn, deleteSelectedIssue, deselectMarker } from './incidencias.js';
 import { exportIssues, exportToCSV, generatePDF } from './exportador.js';
 import { handlePhotoInput } from './fotos.js';
 import { initUI } from './ui.js';
 import { initMagiaVoz } from './magiaVoz.js';
-import { deselectMarker } from './incidencias.js'; 
 import { initDiccionarios } from './diccionarios.js'; 
-
+import { syncOfflineIssues } from './nube.js';
+import { getOfflineIssues } from './db.js';
 
 /* --- EXPONER FUNCIONES AL HTML (PÚBLICAS) --- */
 window.processLogin = processLogin;
@@ -23,17 +23,41 @@ window.generatePDF = generatePDF;
 
 
 
+window.inyectarDemo = async function(ruta, nombre) {
+    try {
+        console.log("📥 Descargando demo de pruebas: " + nombre);
+        
+        // 1. Descargamos el archivo de la carpeta local
+        const response = await fetch(ruta);
+        if (!response.ok) throw new Error("Archivo no encontrado");
+        const blob = await response.blob();
+        
+        // 2. Lo empaquetamos como si fuera un archivo real
+        const file = new File([blob], nombre, { type: 'model/stl' });
+        
+        // 3. Simulamos que el usuario lo ha subido a mano
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        
+        // 4. Se lo mandamos a tu cargador 3D oficial
+        loadSTLs({ target: { files: dataTransfer.files } });
+        
+        // Cerramos el modal para limpiar la vista
+        const modal = document.getElementById('modalCargaModelos');
+        if (modal) modal.style.display = 'none';
 
-
-
-
+    } catch (error) {
+        console.error("Error al inyectar demo:", error);
+        alert("⚠️ No se pudo cargar la pieza. Asegúrate de que el archivo existe en la carpeta /demos/.");
+    }
+};
 
 
 /* --- ASIGNAR EVENTOS A LOS BOTONES --- */
 window.onload = async () => {
- 
+  
   await initDiccionarios();
- 
+  
   initUI(); // Arranca los menús y paneles (togglePanel y openLightbox ya viven aquí)
   initMagiaVoz(); // Encendemos el micro
 
@@ -45,7 +69,7 @@ window.onload = async () => {
   canvas.addEventListener("mouseup", onPointerUp);
 
   // Botones UI Principales
- document.getElementById('fileInput').onchange = (e) => {
+  document.getElementById('fileInput').onchange = (e) => {
     loadSTLs(e); // 1. Cargamos el 3D
     // 2. Ocultamos el menú de carga automáticamente
     const modalCarga = document.getElementById('modalCargaModelos');
@@ -196,5 +220,77 @@ document.addEventListener("DOMContentLoaded", () => {
             characterData: true, 
             subtree: true 
         });
+    }
+});
+
+// ==========================================
+// 📡 VIGILANTES DE CONEXIÓN A INTERNET
+// ==========================================
+
+// Función para repintar la Nube
+window.updateCloudStatusUI = async function() {
+    const btn = document.getElementById('cloudStatusBtn');
+    const badge = document.getElementById('offlineBadge');
+    if (!btn || !badge) return;
+
+    const pendingIssues = await getOfflineIssues();
+    const count = pendingIssues.length;
+
+    // 🟢 CASO 1: ONLINE Y TODO SINCRONIZADO
+    if (navigator.onLine && count === 0) {
+        btn.className = 'toolbar-btn sync-online';
+        btn.title = "Nube sincronizada";
+        badge.style.display = 'none';
+        return;
+    }
+
+    // 🟡 CASO 2: ONLINE PERO SUBIENDO DATOS
+    if (navigator.onLine && count > 0) {
+        btn.className = 'toolbar-btn sync-uploading';
+        btn.title = `Sincronizando ${count} incidencias...`;
+        badge.style.display = 'flex';
+        badge.innerText = count;
+        return;
+    }
+
+    // 🔴 CASO 3: OFFLINE
+    if (!navigator.onLine) {
+        btn.className = 'toolbar-btn sync-offline';
+        btn.title = "Trabajando sin conexión";
+        if (count > 0) {
+            badge.style.display = 'flex';
+            badge.innerText = count;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+};
+
+// Refresco extra al volver a tener red
+window.addEventListener('online', () => {
+    setTimeout(() => { // Damos 500ms para que el sistema se asiente
+        window.updateCloudStatusUI();
+        syncOfflineIssues();
+    }, 500);
+});
+
+// Escuchadores de red
+window.addEventListener('online', () => {
+    console.log("🟢 Conexión a Internet Restaurada");
+    window.updateCloudStatusUI(); // Repintamos a amarillo (sincronizando)
+    syncOfflineIssues();
+});
+
+window.addEventListener('offline', () => {
+    console.warn("🔴 Conexión a Internet Perdida. Entrando en Modo Offline.");
+    window.updateCloudStatusUI(); // Repintamos a rojo
+    if (window.asistenteVoz) window.asistenteVoz("Sin conexión a internet. Guardando en modo local.");
+});
+
+// Al arrancar la app, pintamos la nube
+document.addEventListener('DOMContentLoaded', () => {
+    window.updateCloudStatusUI();
+    if (navigator.onLine) {
+        syncOfflineIssues();
     }
 });

@@ -84,7 +84,6 @@ export function onClick(event){
 
 // 🟢 Caso 1: Punto Nuevo -> Abre directo el Formulario "Panel Dios"
 export function openNewIssueForm() {
-  
   if (State.rapidPhotoMode) {
       const newIssueId = "RAF-" + Date.now().toString();
       State.rapidPhotoTargetId = newIssueId;
@@ -98,7 +97,7 @@ export function openNewIssueForm() {
           history: []
       };
       State.issues.push(newIssue);
-      document.getElementById('inputCamera').click();
+      document.getElementById('inputCameraNivelDios')?.click(); // 👈 ¡Arreglado!
       return; 
   }
 
@@ -151,7 +150,6 @@ export function openNewIssueForm() {
 } 
 
 // --- HELPERS DE LA CASCADA ---
-
 function actualizarActividades(fId, module) {
     const contenedor = document.getElementById('chipsActividades');
     if (!contenedor) return;
@@ -166,7 +164,8 @@ function actualizarActividades(fId, module) {
 
     ids.forEach(aId => {
         const data = module.Diccionarios.actividades.find(a => a.id == aId);
-        const nombre = data ? (data.context_name || data.name) : "Actividad " + aId;
+        // 🛡️ Buscamos la propiedad se llame como se llame en tu CSV
+        const nombre = data ? (data.context_name || data.Nombre || data.nombre || data.Name || data.name) : "Actividad " + aId;
         const btn = crearChip(nombre, () => {
             activarChip('.chip-actividad', btn);
             actualizarSubfases(fId, aId, module);
@@ -193,7 +192,8 @@ function actualizarSubfases(fId, aId, module) {
         let nombre = "General / Proceso";
         if (!isZero) {
             const data = module.Diccionarios.subfases.find(s => s.id == sId);
-            if (data) nombre = data.subphase_name || data.name;
+            // 🛡️ Protección contra mayúsculas del CSV
+            if (data) nombre = data.subphase_name || data.Nombre || data.nombre || data.Name || data.name;
         }
         
         const btn = crearChip(nombre, () => {
@@ -217,7 +217,9 @@ function actualizarDefectos(fId, aId, sId, module) {
     }
 
     lista.forEach(def => {
-        const btn = crearChip(def.nombre, () => activarChip('.chip-defecto', btn), 'chip-defecto');
+        // 🛡️ Protección en los defectos
+        const nombreDefecto = def.Nombre_Falla || def.Nombre || def.nombre || def.Name || def.name || def.id;
+        const btn = crearChip(nombreDefecto, () => activarChip('.chip-defecto', btn), 'chip-defecto');
         contenedor.appendChild(btn);
     });
 }
@@ -235,17 +237,16 @@ function activarChip(selector, target) {
     target.classList.add('seleccionado');
 }
 
-// 🟢 Caso 2: Clic en Punto Existente -> Abre Historial a PANTALLA COMPLETA
 export function selectMarker(marker){
   if (State.rapidPhotoMode) {
       State.rapidPhotoTargetId = marker.userData.issueId;
-      document.getElementById('inputCamera').click();
-      return;
+      document.getElementById('inputCameraNivelDios')?.click(); // 👈 ¡Arreglado!
+      return; 
   }
- 
+
   deselectMarker(); 
   State.selectedMarker = marker; 
-  marker.scale.set(5, 5, 5); 
+  marker.scale.set(5, 5, 5);
   
   const issue = State.issues.find(i => i.id === marker.userData.issueId);
   
@@ -500,6 +501,7 @@ export async function deleteSelectedIssue() {
   }
 }
 
+// 🌐 LA FUNCIÓN REPARADA PARA EL MODO OFFLINE Y LOS 4 NIVELES
 export async function saveIssueFn() {
   const btn = document.getElementById('saveIssue');
   const originalText = btn?.innerText;
@@ -559,13 +561,21 @@ export async function saveIssueFn() {
 
   try {
     if (btn) { btn.innerText = "⏳ Subiendo..."; btn.disabled = true; }
-    await saveIssueToCloud(issueToUpload);
-    if (window.asistenteVoz) window.asistenteVoz("Incidencia guardada correctamente en la nube.");
-    alert("✅ Guardado correctamente");
+    
+    // El Interceptor hace la magia aquí
+    const result = await saveIssueToCloud(issueToUpload);
+    
+    if (result && result.status === 'offline') {
+        if (window.asistenteVoz) window.asistenteVoz("Sin conexión. Incidencia guardada en el móvil.");
+        alert("⚠️ Sin conexión. Incidencia guardada en la memoria del dispositivo.");
+    } else {
+        if (window.asistenteVoz) window.asistenteVoz("Incidencia guardada correctamente en la nube.");
+        alert("✅ Guardado correctamente en la nube.");
+    }
+
   } catch (error) {
-    console.error("Error de subida:", error);
-    if (window.asistenteVoz) window.asistenteVoz("Error de conexión al guardar.");
-    alert("❌ Error de conexión al guardar."); 
+    console.error("Error crítico de guardado:", error);
+    alert("❌ Error desconocido al guardar."); 
   } finally {
     if (btn) { btn.innerText = originalText; btn.disabled = false; }
   }
@@ -595,7 +605,6 @@ export function renderIssues() {
   });
   renderIssueListUI();
 }
-
 window.renderIssues = renderIssues;
 
 export function renderIssueListUI() {
@@ -774,6 +783,7 @@ window.take3DScreenshot = function(e) {
 
         State.currentPhotos.push({ dataUrl: dataUrl });
         if (typeof renderPhotoGrid === 'function') renderPhotoGrid();
+        
         if (window.asistenteVoz) window.asistenteVoz("Vista 3D capturada con éxito.");
     } else {
         console.warn("No se pudo hacer la captura: el visor 3D no está inicializado.");
@@ -859,7 +869,7 @@ window.deleteHistoryEntry = async function(issueId, arrayIndex, dateString) {
 };
 
 // ==========================================
-// ⚡ MOTOR DE GUARDADO AUTO (MODO RÁFAGA V3.1)
+// ⚡ MOTOR DE GUARDADO AUTO (MODO RÁFAGA V3)
 // ==========================================
 window.processRapidPhoto = async function(photoDataUrl) {
     const issueId = State.rapidPhotoTargetId;
@@ -892,9 +902,15 @@ window.processRapidPhoto = async function(photoDataUrl) {
     if (window.asistenteVoz) window.asistenteVoz("Sincronizando con la base de datos...");
 
     try {
-        await saveIssueToCloud(issue);
-        console.log("✅ Sincronización exitosa");
-        if (window.asistenteVoz) window.asistenteVoz("Guardado en la nube. Siguiente punto.");
+        // En Ráfaga también usamos el interceptor Offline
+        const result = await saveIssueToCloud(issue);
+        if (result && result.status === 'offline') {
+            console.log("⚡ Ráfaga guardada en OFFLINE.");
+        } else {
+            console.log("⚡ Ráfaga guardada con éxito en Google.");
+        }
+        
+        if (window.asistenteVoz) window.asistenteVoz("Guardado. Listo para el siguiente punto.");
         
         State.rapidPhotoTargetId = null;
         if (typeof deselectMarker === 'function') deselectMarker();
@@ -903,12 +919,11 @@ window.processRapidPhoto = async function(photoDataUrl) {
     } catch (e) {
         console.error("❌ Error crítico de guardado:", e);
         if (window.asistenteVoz) window.asistenteVoz("Error de conexión. Reintente.");
-        alert("No se pudo guardar en la base de datos.");
     }
 };
 
 // ==========================================
-// ⚡ CONTROLADOR ÚNICO DE INTERFAZ (MODO RÁFAGA)
+// ⚡ EVENTOS DE INTERFAZ (MODO RÁFAGA)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     const rapidBtn = document.getElementById('rapidModeBtn');
@@ -917,19 +932,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (rapidBtn && rapidModal) {
         rapidBtn.addEventListener('click', () => {
-            if (State.rapidPhotoMode) deactivateRapidMode();
-            else rapidModal.classList.add('active');
+            if (State.rapidPhotoMode) {
+                deactivateRapidMode();
+            } else {
+                rapidModal.classList.add('active');
+            }
         });
     }
 
     if (startRapidBtn) {
         startRapidBtn.addEventListener('click', () => {
             State.rapidPhotoDefaults = {
-                fase: document.getElementById('rapidFase')?.value || 'estampacion',
-                comentario: document.getElementById('rapidComentario')?.value || ''
+                fase: document.getElementById('rapidFase').value,
+                comentario: document.getElementById('rapidComentario').value
             };
             
             State.rapidPhotoMode = true;
+            
             if (rapidBtn) {
                 rapidBtn.style.backgroundColor = '#f5b400';
                 rapidBtn.style.color = '#000';
@@ -937,23 +956,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             rapidModal.classList.remove('active');
-            if (window.asistenteVoz) window.asistenteVoz("Modo ráfaga activado.");
+            
+            if (window.asistenteVoz) window.asistenteVoz("Modo ráfaga activado. Toque un punto para capturar foto.");
             
             State.mode = true; 
-            document.getElementById('addBtn')?.classList.add('active');
+            const addBtn = document.getElementById('addBtn');
+            if(addBtn) addBtn.classList.add('active');
         });
     }
 
     function deactivateRapidMode() {
         State.rapidPhotoMode = false;
         State.rapidPhotoDefaults = null;
+        State.rapidPhotoTargetId = null;
+        
         if (rapidBtn) {
             rapidBtn.style.backgroundColor = '';
             rapidBtn.style.color = '';
             rapidBtn.classList.remove('pulsing-warning');
         }
+        
         State.mode = false;
-        document.getElementById('addBtn')?.classList.remove('active');
+        const addBtn = document.getElementById('addBtn');
+        if(addBtn) addBtn.classList.remove('active');
+        
         if (window.asistenteVoz) window.asistenteVoz("Modo ráfaga desactivado.");
     }
 });
@@ -1025,4 +1051,3 @@ document.addEventListener('DOMContentLoaded', () => {
     initVoiceDictation('issueComment', 'micBtnNormal');
     initVoiceDictation('rapidComentario', 'micBtnRapid');
 });
-

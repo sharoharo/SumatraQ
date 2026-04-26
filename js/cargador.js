@@ -45,3 +45,5 @@ window.inyectarDemo = async function(rutaArchivo, nombreArchivo) {
         alert("No se pudo cargar la demo. Revisa que el nombre del archivo en la carpeta 'demos' sea correcto.");
     }
 };
+
+window.inyectarDemo = inyectarDemo;
