@@ -1,0 +1,13 @@
+id,phase_id,name
+1,1,SE
+2,1,Konzept
+3,1,Status int
+4,1,Lib P
+5,1,Lib G
+6,1,Lib F
+10,2,Prototipos
+11,2,Pap press
+12,2,Prensa serie
+13,2,Util Geo
+14,2,Util comple
+15,2,Falzen

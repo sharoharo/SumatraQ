@@ -23,7 +23,6 @@ export function getColor(status) {
   return colors[status] || 0x4285f4; 
 }
 
-
 /* ==========================================
    1. LÓGICA DE RATÓN Y CLICKS
    ========================================== */
@@ -83,80 +82,169 @@ export function onClick(event){
    2. NAVEGACIÓN ENTRE MODALES: HISTORIAL Y EDICIÓN
    ========================================== */
 
-// 🟢 Caso 1: Punto Nuevo -> Abre directo el Formulario (o Cámara en Modo Ráfaga)
+// 🟢 Caso 1: Punto Nuevo -> Abre directo el Formulario "Panel Dios"
 export function openNewIssueForm() {
   
-  // 1. ⚡ BYPASS MODO RÁFAGA (PUNTO NUEVO - OPCIÓN 2)
   if (State.rapidPhotoMode) {
-      // Generamos ID
       const newIssueId = "RAF-" + Date.now().toString();
       State.rapidPhotoTargetId = newIssueId;
-      
-      // APLICANDO TUS REGLAS EXACTAS:
       const newIssue = {
-          id: newIssueId,
-          fileName: State.targetFileName || "pieza_actual",
+          id: newIssueId, fileName: State.targetFileName || "pieza_actual",
           x: State.currentPoint ? State.currentPoint.x : 0,
           y: State.currentPoint ? State.currentPoint.y : 0,
           z: State.currentPoint ? State.currentPoint.z : 0,
-          type: "Pendiente de clasificar",      // Regla 3
-          priority: "Pendiente de priorizar", // Regla 4
-          status: "open",                     // Regla 5
-          fase: State.rapidPhotoDefaults ? State.rapidPhotoDefaults.fase : "estampacion", // Regla 1
+          type: "Pendiente", priority: "Pendiente", status: "open",                     
+          fase: State.rapidPhotoDefaults ? State.rapidPhotoDefaults.fase : "estampacion", 
           history: []
       };
-      
       State.issues.push(newIssue);
-      
-      // 📷 Disparamos la cámara/explorador y abortamos
       document.getElementById('inputCamera').click();
-      return; // 🛑 Este return bloquea que se abra la ventana estándar
+      return; 
   }
 
-  // 2. --- LÓGICA NORMAL (Si el rayo NO está activado) ---
   deselectMarker(); 
-  document.getElementById('modalMainTitle').innerText = "Creación de incidencia";
-  document.getElementById('saveIssue').innerText = "Guardar Incidencia nueva";
-  document.getElementById('issueComment').value = ""; 
-  
-  const typeSelect = document.getElementById('issueType');
-  if(typeSelect) typeSelect.selectedIndex = 0;
+  State.mode = false; 
+  const addBtn = document.getElementById('addBtn');
+  if(addBtn) addBtn.classList.remove('active');
+
+  const tituloPanel = document.querySelector('.panel-header h3');
+  if (tituloPanel) tituloPanel.innerText = `📋 Creación incidencia`;
+  const btnGuardar = document.getElementById('saveIssue');
+  if (btnGuardar) btnGuardar.innerText = "✓ Guardar Incidencia";
   
   State.currentPhotos = [];
   if (typeof renderPhotoGrid === 'function') renderPhotoGrid();
-
-  if (typeof setActiveChip === 'function') {
-      setActiveChip('statusChips', 'open');
-      setActiveChip('priorityChips', 'media');
-      setActiveChip('faseChips', 'estampacion');
-  }
+  const textoNotas = document.getElementById('textoIncidenciaNivelDios');
+  if (textoNotas) textoNotas.value = ""; 
 
   const historyModal = document.getElementById('historyModalOverlay');
   if (historyModal) historyModal.classList.remove('active');
   
-  document.getElementById('issueModalOverlay').classList.add('active');
+  import('./diccionarios.js').then(module => {
+      const dict = module.Diccionarios;
+      const contenedorFases = document.getElementById('chipsFases');
+      if (contenedorFases) contenedorFases.innerHTML = '';
+      
+      dict.fases.forEach(fase => {
+          const btn = crearChip(fase.phase_name || fase.nombre || fase.name, () => {
+              activarChip('.chip-fase', btn);
+              actualizarActividades(fase.id, module);
+          }, 'chip-fase');
+          if (contenedorFases) contenedorFases.appendChild(btn);
+      });
+
+      if(contenedorFases && contenedorFases.firstChild) contenedorFases.firstChild.click();
+      
+      document.querySelectorAll('.chip-prio').forEach(c => c.classList.remove('seleccionado'));
+      const prioDefecto = document.querySelector('.chip-prio[data-val="media"]');
+      if (prioDefecto) prioDefecto.classList.add('seleccionado');
+
+      document.querySelectorAll('.chip-estado').forEach(c => c.classList.remove('seleccionado'));
+      const estadoDefecto = document.querySelector('.chip-estado[data-val="open"]');
+      if (estadoDefecto) estadoDefecto.classList.add('seleccionado');
+  });
+
+  const panel = document.getElementById('panelIncidencias');
+  if (panel) panel.classList.remove('oculta');
 
   if (window.asistenteVoz) window.asistenteVoz("Punto de inspección capturado. Por favor, clasifique la falla.");
+} 
 
-  State.mode = false; 
-  const addBtn = document.getElementById('addBtn');
-  if(addBtn) addBtn.classList.remove('active');
+// --- HELPERS DE LA CASCADA ---
+
+function actualizarActividades(fId, module) {
+    const contenedor = document.getElementById('chipsActividades');
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+    const ids = module.getActividades(fId);
+
+    if (ids.length === 0) {
+        contenedor.innerHTML = '<span class="placeholder-text">Sin actividades.</span>';
+        actualizarSubfases(fId, null, module);
+        return;
+    }
+
+    ids.forEach(aId => {
+        const data = module.Diccionarios.actividades.find(a => a.id == aId);
+        const nombre = data ? (data.context_name || data.name) : "Actividad " + aId;
+        const btn = crearChip(nombre, () => {
+            activarChip('.chip-actividad', btn);
+            actualizarSubfases(fId, aId, module);
+        }, 'chip-actividad');
+        contenedor.appendChild(btn);
+    });
+    if(contenedor.firstChild) contenedor.firstChild.click();
+}
+
+function actualizarSubfases(fId, aId, module) {
+    const contenedor = document.getElementById('chipsSubfases');
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+    const ids = module.getSubfases(fId, aId);
+
+    if (ids.length === 0) {
+        contenedor.innerHTML = '<span class="placeholder-text">Sin subfases.</span>';
+        actualizarDefectos(fId, aId, null, module);
+        return;
+    }
+
+    ids.forEach(sId => {
+        const isZero = (sId === "0" || sId == 0);
+        let nombre = "General / Proceso";
+        if (!isZero) {
+            const data = module.Diccionarios.subfases.find(s => s.id == sId);
+            if (data) nombre = data.subphase_name || data.name;
+        }
+        
+        const btn = crearChip(nombre, () => {
+            activarChip('.chip-subfase', btn);
+            actualizarDefectos(fId, aId, sId, module);
+        }, 'chip-subfase');
+        contenedor.appendChild(btn);
+    });
+    if(contenedor.firstChild) contenedor.firstChild.click();
+}
+
+function actualizarDefectos(fId, aId, sId, module) {
+    const contenedor = document.getElementById('chipsDefectos');
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+    const lista = module.getDefectos(fId, aId, sId);
+
+    if (lista.length === 0) {
+        contenedor.innerHTML = '<span class="placeholder-text">No hay defectos.</span>';
+        return;
+    }
+
+    lista.forEach(def => {
+        const btn = crearChip(def.nombre, () => activarChip('.chip-defecto', btn), 'chip-defecto');
+        contenedor.appendChild(btn);
+    });
+}
+
+function crearChip(texto, accion, clase) {
+    const btn = document.createElement('button');
+    btn.className = `chip ${clase}`;
+    btn.innerText = texto;
+    btn.onclick = (e) => { e.preventDefault(); accion(); };
+    return btn;
+}
+
+function activarChip(selector, target) {
+    document.querySelectorAll(selector).forEach(c => c.classList.remove('seleccionado'));
+    target.classList.add('seleccionado');
 }
 
 // 🟢 Caso 2: Clic en Punto Existente -> Abre Historial a PANTALLA COMPLETA
 export function selectMarker(marker){
-   // ⚡ BYPASS MODO RÁFAGA (PUNTO EXISTENTE)
   if (State.rapidPhotoMode) {
       State.rapidPhotoTargetId = marker.userData.issueId;
-      // 📷 Disparamos la cámara nativa inmediatamente y abortamos abrir el historial
       document.getElementById('inputCamera').click();
       return;
   }
  
   deselectMarker(); 
   State.selectedMarker = marker; 
-  
-  // 🔴 AUMENTAMOS LA ESFERA x4 PARA QUE DESTAQUE EN LA FOTO MÓVIL
   marker.scale.set(5, 5, 5); 
   
   const issue = State.issues.find(i => i.id === marker.userData.issueId);
@@ -166,7 +254,6 @@ export function selectMarker(marker){
     const historyTimeline = document.getElementById('historyTimeline');
     const historyScreenshot = document.getElementById('historyScreenshot');
 
-    // 📸 MAGIA: Capturar foto 3D de la pieza en tiempo real
     if(historyScreenshot && State.renderer) {
         State.renderer.render(State.scene, State.camera); 
         historyScreenshot.src = State.renderer.domElement.toDataURL('image/jpeg', 0.8);
@@ -181,12 +268,8 @@ export function selectMarker(marker){
         if (issue.history && issue.history.length > 0) {
             const reversedHistory = [...issue.history].reverse();
             
-            // 🚨 CAMBIO 1: Añadimos 'reversedIndex' al bucle
             reversedHistory.forEach((h, reversedIndex) => {
-                
-                // 🚨 CAMBIO 2: Calculamos la posición real de este comentario en la memoria
                 const originalIndex = issue.history.length - 1 - reversedIndex;
-
                 const dateObj = new Date(h.date);
                 const dateStr = isNaN(dateObj.getTime()) ? h.date : dateObj.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
 
@@ -197,7 +280,6 @@ export function selectMarker(marker){
 
                 let photosHtml = '';
                 if (h.photos && h.photos.length > 0) {
-                    // SE MANTIENE TU LÓGICA DE FOTOS
                     photosHtml = `<div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">`;
                     h.photos.forEach(photo => {
                         photosHtml += `<img src="${photo.dataUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="window.openLightbox('${photo.dataUrl}')" title="Ver imagen ampliada">`;
@@ -210,21 +292,12 @@ export function selectMarker(marker){
                 entryDiv.style.marginBottom = '30px'; 
                 entryDiv.style.position = 'relative'; 
 
-              // --- LÓGICA DE PERMISOS SÚPER BLINDADA ---
                 const usuarioActual = (State.userName || "").trim().toLowerCase();
                 const autorComentario = (h.user || "").trim().toLowerCase();
 
-                // 1. EL TRUCO NINJA
                 const tieneNombreAdmin = usuarioActual.includes("admin");
+                let listaAdmins = ["admin", "sharoharo", "sergio haro"]; 
 
-                // 2. Lista de respaldo
-                let listaAdmins = [
-                    "admin", 
-                    "sharoharo", 
-                    "sergio haro"
-                ]; 
-
-                // 3. Intentamos leer la BD
                 if (State.usuarios && Array.isArray(State.usuarios)) {
                     State.usuarios.forEach(u => {
                         if (u.Rol && u.Rol.trim().toLowerCase() === 'admin' && u.Nombre) {
@@ -233,19 +306,14 @@ export function selectMarker(marker){
                     });
                 }
 
-                // 4. Verificaciones de poder
                 const esAdmin = tieneNombreAdmin || listaAdmins.includes(usuarioActual);
                 const esDueño = usuarioActual === autorComentario && usuarioActual !== "anónimo";
-
-                // 5. Decisión final
                 const puedeBorrar = esAdmin || esDueño;
 
-                // 🚨 CAMBIO 3: Le pasamos el ${originalIndex} al onclick del botón
                 const trashBtnHTML = puedeBorrar ? 
                     `<button onclick="window.deleteHistoryEntry('${issue.id}', ${originalIndex}, '${h.date}')" 
                             style="position: absolute; right: 0; top: 0; background: none; border: none; font-size: 18px; cursor: pointer; color: #d93025; padding: 5px;" 
-                            title="Borrar esta actualización">🗑️</button>` 
-                    : '';
+                            title="Borrar esta actualización">🗑️</button>` : '';
 
                 entryDiv.innerHTML = `
                     ${trashBtnHTML}
@@ -264,7 +332,6 @@ export function selectMarker(marker){
         }
     }
 
-    // 🏆 ABRIMOS SOLO EL MODAL DE HISTORIAL A PANTALLA COMPLETA
     const issueModal = document.getElementById('issueModalOverlay');
     if (issueModal) issueModal.classList.remove('active');
     
@@ -273,56 +340,94 @@ export function selectMarker(marker){
   }
 }
 
-// 🟢 Caso 3: Clic en botón "Actualizar" desde el historial (INTACTO)
+// 🟢 Caso 3: Clic en botón "Actualizar" desde el historial
 export function editExistingIssue() {
   if(!State.selectedMarker) return;
   const issue = State.issues.find(i => i.id === State.selectedMarker.userData.issueId);
   if(!issue) return;
 
-  // 1. Ocultar Modal de Historial
-  document.getElementById('historyModalOverlay').classList.remove('active');
+  const historyModal = document.getElementById('historyModalOverlay');
+  if (historyModal) historyModal.classList.remove('active');
 
-  // 2. Rellenar Formulario con datos actuales
-  document.getElementById('modalMainTitle').innerText = `Actualización de incidencia`;
-  document.getElementById('saveIssue').innerText = "Actualizar y Guardar";
-  document.getElementById('issueComment').value = ""; 
+  const tituloPanel = document.querySelector('.panel-header h3');
+  if (tituloPanel) tituloPanel.innerText = `🔄 Actualizar incidencia`;
   
-  const typeSelect = document.getElementById('issueType');
-  if(typeSelect && issue.type) typeSelect.value = issue.type;
+  const btnGuardar = document.getElementById('saveIssue');
+  if (btnGuardar) btnGuardar.innerText = "✓ Guardar Cambios";
+  
+  const textoNotas = document.getElementById('textoIncidenciaNivelDios');
+  if (textoNotas) textoNotas.value = issue.comment || ""; 
   
   State.currentPhotos = [];
   if (typeof renderPhotoGrid === 'function') renderPhotoGrid();
-  
-  setActiveChip('statusChips', issue.status || 'open');
-  setActiveChip('priorityChips', issue.priority || 'media');
-  setActiveChip('faseChips', issue.fase || 'estampacion');
 
-  // 3. Mostrar Modal de Edición
-  document.getElementById('issueModalOverlay').classList.add('active');
+  document.querySelectorAll('.chip-estado').forEach(c => c.classList.remove('seleccionado'));
+  const estadoChip = document.querySelector(`.chip-estado[data-val="${issue.status || 'open'}"]`);
+  if (estadoChip) estadoChip.classList.add('seleccionado');
+
+  document.querySelectorAll('.chip-prio').forEach(c => c.classList.remove('seleccionado'));
+  const prioChip = document.querySelector(`.chip-prio[data-val="${issue.priority || 'media'}"]`);
+  if (prioChip) prioChip.classList.add('seleccionado');
+
+  const faseChips = Array.from(document.querySelectorAll('.chip-fase'));
+  const faseChipMatcheada = faseChips.find(c => c.innerText.trim().toLowerCase() === (issue.fase || '').trim().toLowerCase());
+  
+  if (faseChipMatcheada) {
+      faseChipMatcheada.click(); 
+      setTimeout(() => {
+          const actChips = Array.from(document.querySelectorAll('.chip-actividad'));
+          const actChipMatcheada = actChips.find(c => c.innerText.trim().toLowerCase() === (issue.actividad || '').trim().toLowerCase());
+          if(actChipMatcheada) actChipMatcheada.click();
+          
+          setTimeout(() => {
+              const subfaseChips = Array.from(document.querySelectorAll('.chip-subfase'));
+              const subfaseChipMatcheada = subfaseChips.find(c => c.innerText.trim().toLowerCase() === (issue.subfase || '').trim().toLowerCase());
+              if (subfaseChipMatcheada) subfaseChipMatcheada.click(); 
+              
+              setTimeout(() => {
+                  const defectoChips = Array.from(document.querySelectorAll('.chip-defecto'));
+                  const defectoChipMatcheado = defectoChips.find(c => c.innerText.trim().toLowerCase() === (issue.type || '').trim().toLowerCase());
+                  
+                  if (defectoChipMatcheado) {
+                      document.querySelectorAll('.chip-defecto').forEach(c => c.classList.remove('seleccionado'));
+                      defectoChipMatcheado.classList.add('seleccionado');
+                  }
+              }, 50);
+          }, 50);
+      }, 50);
+  }
+
+  const panelDios = document.getElementById('panelIncidencias');
+  if (panelDios) panelDios.classList.remove('oculta');
 }
-// Lo exponemos al window para el HTML
 window.editExistingIssue = editExistingIssue;
 
-// 🟢 Cierre general (INTACTO)
+// 🟢 Cierre general y limpieza de interfaz
 export function deselectMarker() { 
-  if(State.selectedMarker) State.selectedMarker.scale.set(1,1,1);
+  if(State.selectedMarker) {
+      State.selectedMarker.scale.set(1, 1, 1);
+  }
   State.selectedMarker = null; 
-  const modalForm = document.getElementById('issueModalOverlay');
-  const modalHistory = document.getElementById('historyModalOverlay');
-  if (modalForm) modalForm.classList.remove('active');
-  if (modalHistory) modalHistory.classList.remove('active');
+  
+  document.getElementById('issueModalOverlay')?.classList.remove('active');
+  document.getElementById('historyModalOverlay')?.classList.remove('active');
+
+  const panelDios = document.getElementById('panelIncidencias');
+  if (panelDios) panelDios.classList.add('oculta');
+
+  const addBtn = document.getElementById('addBtn');
+  if (addBtn) addBtn.classList.remove('active');
+  State.mode = false;
 }
 window.deselectMarker = deselectMarker;
 
 // ==========================================
-// 📸 LIGHTBOX UNIVERSAL (A prueba de Z-Index)
+// 📸 LIGHTBOX UNIVERSAL
 // ==========================================
 window.openLightbox = function(imageSrc) {
-    // 1. Destruimos cualquier lightbox anterior atascado
     const existing = document.getElementById('sumatraLightbox');
     if (existing) existing.remove();
 
-    // 2. Creamos el fondo oscuro dinámicamente
     const lightbox = document.createElement('div');
     lightbox.id = 'sumatraLightbox';
     lightbox.style.cssText = `
@@ -332,7 +437,6 @@ window.openLightbox = function(imageSrc) {
         backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.2s ease;
     `;
     
-    // 3. Creamos la imagen en grande
     const img = document.createElement('img');
     img.src = imageSrc;
     img.style.cssText = `
@@ -341,7 +445,6 @@ window.openLightbox = function(imageSrc) {
         transform: scale(0.9); transition: transform 0.2s ease;
     `;
     
-    // 4. Botón de cerrar (X)
     const closeBtn = document.createElement('div');
     closeBtn.innerHTML = '✕';
     closeBtn.style.cssText = `
@@ -352,25 +455,21 @@ window.openLightbox = function(imageSrc) {
     closeBtn.onmouseover = () => closeBtn.style.opacity = '1';
     closeBtn.onmouseout = () => closeBtn.style.opacity = '0.8';
 
-    // 5. Ensamblamos y mostramos en pantalla
     lightbox.appendChild(img);
     lightbox.appendChild(closeBtn);
     document.body.appendChild(lightbox);
 
-    // Arrancamos la animación suave
     requestAnimationFrame(() => {
         lightbox.style.opacity = '1';
         img.style.transform = 'scale(1)';
     });
 
-    // Destruimos el modal al hacer clic en cualquier lado
     lightbox.onclick = () => {
         lightbox.style.opacity = '0';
         img.style.transform = 'scale(0.9)';
         setTimeout(() => lightbox.remove(), 200);
     };
 };
-
 
 /* ==========================================
    3. GUARDADO, ELIMINACIÓN Y RENDERIZADO
@@ -383,7 +482,6 @@ export async function deleteSelectedIssue() {
   const id = State.selectedMarker.userData.issueId;
   const markerToRemove = State.selectedMarker;
   
-  // 1. Borramos de la memoria RAM (Interfaz limpia al instante)
   State.issues = State.issues.filter(i => i.id !== id);
   State.scene.remove(markerToRemove); 
   if(markerToRemove.geometry) markerToRemove.geometry.dispose();
@@ -392,7 +490,6 @@ export async function deleteSelectedIssue() {
   deselectMarker(); 
   renderIssues();
 
-  // 2. ☁️ Mandamos la orden de destrucción a Google Sheets
   try {
     if (window.asistenteVoz) window.asistenteVoz("Eliminando incidencia de la base de datos...");
     await deleteIssueFromCloud(id);
@@ -407,16 +504,22 @@ export async function saveIssueFn() {
   const btn = document.getElementById('saveIssue');
   const originalText = btn?.innerText;
   
-  // Protegemos contra valores nulos asegurando strings vacíos si no hay datos
-  const currentStatus = getActiveChip('statusChips') || 'open';
-  const currentPriority = getActiveChip('priorityChips') || 'media';
-  const currentFase = getActiveChip('faseChips') || 'estampacion';
-  const currentComment = document.getElementById('issueComment').value || '';
-  const currentType = document.getElementById('issueType')?.value || 'Sin clasificar';
+  const currentStatus = document.querySelector('.chip-estado.seleccionado')?.dataset.val || 'open';
+  const currentPriority = document.querySelector('.chip-prio.seleccionado')?.dataset.val || 'media';
+  
+  const objFase = document.querySelector('.chip-fase.seleccionado');
+  const currentFase = objFase ? objFase.innerText : 'Estampación';
+ 
+  const currentActividad = document.querySelector('.chip-actividad.seleccionado')?.innerText || 'N/A';
+  const currentSubfase = document.querySelector('.chip-subfase.seleccionado')?.innerText || 'N/A';
 
-  // 1. Estructura maestra del momento exacto del guardado
+  const currentType = document.querySelector('.chip-defecto.seleccionado')?.innerText || 'Sin clasificar';
+  const currentComment = document.getElementById('textoIncidenciaNivelDios')?.value || '';
+
   let issueUpdateData = {
     status: currentStatus, priority: currentPriority, fase: currentFase,
+    actividad: currentActividad,
+    subfase: currentSubfase,
     comment: currentComment, date: new Date().toISOString(),
     user: State.userName || "Anónimo", photos: JSON.parse(JSON.stringify(State.currentPhotos || []))
   };
@@ -424,24 +527,23 @@ export async function saveIssueFn() {
   let issueToUpload = null;
 
   if (State.selectedMarker && State.issues.find(i => i.id === State.selectedMarker.userData.issueId)) {
-    // 🔄 CASO A: ACTUALIZACIÓN DE UNA INCIDENCIA EXISTENTE
     const issue = State.issues.find(i => i.id === State.selectedMarker.userData.issueId);
     
-    // 🚨 FIX CRÍTICO: Actualizamos explícitamente TODAS las variables raíz para que Sheets las vea
     issue.status = currentStatus; 
     issue.priority = currentPriority;
     issue.fase = currentFase; 
+    issue.actividad = currentActividad;
+    issue.subfase = currentSubfase;
     issue.comment = currentComment;
     issue.type = currentType;
-    issue.date = issueUpdateData.date;       // <-- Antes esto se perdía
-    issue.user = issueUpdateData.user;       // <-- Antes esto se perdía
-    issue.photos = issueUpdateData.photos;   // <-- Antes la foto no subía en las actualizaciones
+    issue.date = issueUpdateData.date;       
+    issue.user = issueUpdateData.user;       
+    issue.photos = issueUpdateData.photos;   
     
     if (!issue.history) issue.history = [];
     issue.history.push({ ...issueUpdateData });
     issueToUpload = issue;
   } else {
-    // 🆕 CASO B: CREACIÓN DE UNA INCIDENCIA NUEVA
     const safeId = Date.now().toString() + Math.random().toString(36).substring(2, 6);
     const newIssue = {
       id: safeId, fileName: State.targetFileName || 'Pieza_Desconocida',
@@ -455,7 +557,6 @@ export async function saveIssueFn() {
   renderIssues(); 
   deselectMarker(); 
 
-  // 2. Proceso de subida a la nube bloqueando el botón (Evita duplicados)
   try {
     if (btn) { btn.innerText = "⏳ Subiendo..."; btn.disabled = true; }
     await saveIssueToCloud(issueToUpload);
@@ -479,7 +580,6 @@ export function renderIssues() {
   toRemove.forEach(obj => State.scene.remove(obj));
 
   State.issues.forEach(issue => {
-    // 🧠 El Juez Universal (filtros.js)
     if (!passesFilters(issue)) return;
     
     const color = getColor(issue.status);
@@ -506,7 +606,6 @@ export function renderIssueListUI() {
   if (typeof populateFilterSelects === 'function') populateFilterSelects();
 
   State.issues.forEach(issue => {
-    // 🧠 El Juez Universal (filtros.js)
     if (!passesFilters(issue)) return;
 
     const card = document.createElement('div');
@@ -541,7 +640,6 @@ export function renderIssueListUI() {
 export const generatePDF = function() {
   window.generatePDF = generatePDF;
 
-  // 1. Aplicamos el Doble Filtro a las incidencias que se van a imprimir
   const issuesToPrint = State.issues.filter(issue => passesFilters(issue));
 
   if (issuesToPrint.length === 0) {
@@ -559,16 +657,13 @@ export const generatePDF = function() {
 
   const fecha = new Date().toLocaleDateString('es-ES');
   
-  // Título dinámico para saber qué se está imprimiendo
   let filtroTexto = "Reporte Filtrado";
   if (State.filters.status === 'all' && State.filters.priority === 'all' && State.filters.user === 'all' && State.filters.type === 'all' && !State.filters.dateFrom && !State.filters.dateTo) {
       filtroTexto = "Reporte Global";
   }
 
-  // --- CABECERA TABULAR CON LOGO ---
   let html = `
     <div style="padding: 20px; font-family: Arial, sans-serif; color: #333; background-color: #fff; width: 700px; margin: 0 auto;">
-      
       <table style="width: 100%; border-spacing: 0; margin-bottom: 25px; border-bottom: 2px solid #ddd; padding-bottom: 15px;">
         <tr>
           <td style="vertical-align: middle;">
@@ -586,7 +681,6 @@ export const generatePDF = function() {
           </td>
         </tr>
       </table>
-
       <table style="width: 100%; border-spacing: 10px; margin-bottom: 25px;">
         <tr>
           <td style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; text-align: center; background: #fafafa; width: 33%;">
@@ -603,14 +697,12 @@ export const generatePDF = function() {
           </td>
         </tr>
       </table>
-      
       <h3 style="border-bottom: 2px solid #4285F4; padding-bottom: 5px; margin-bottom: 15px; font-size: 18px;">Detalle de Incidencias (${issuesToPrint.length})</h3>
   `;
 
   issuesToPrint.forEach((issue, index) => {
     const estadoHTML = issue.status === 'open' ? '<span style="color:#e94335; font-weight:bold;">🔴 Abierto</span>' : 
                        (issue.status === 'review' ? '<span style="color:#fbbc04; font-weight:bold;">🟡 Revisión</span>' : '<span style="color:#34a853; font-weight:bold;">🟢 Cerrado</span>');
-    
     const prioHTML = issue.priority === 'prio1' ? '<span style="color:#d93025; font-weight:bold; font-size: 12px; margin-left: 10px;">🔥 PRIO 1</span>' : '';
 
     html += `
@@ -625,7 +717,6 @@ export const generatePDF = function() {
             </td>
           </tr>
         </table>
-        
         <p style="margin: 0 0 5px 0; font-size: 13px;"><strong>Comentario:</strong> ${issue.comment || 'N/A'}</p>
         <p style="margin: 0 0 8px 0; font-size: 11px; color: #555;"><strong>Fase:</strong> ${issue.fase || 'N/A'} | <strong>Inspector inicial:</strong> 👤 ${issue.user || 'Desconocido'}</p>
         <p style="margin: 0 0 12px 0; font-size: 10px; color: #888; border-bottom: 1px solid #f5f5f5; padding-bottom: 5px;">
@@ -643,7 +734,6 @@ export const generatePDF = function() {
       });
       html += `</ul></div>`;
     }
-
     html += `</div>`;
   });
   
@@ -666,36 +756,24 @@ export const generatePDF = function() {
   });
 };
 
- deselectMarker();
-
- // ==========================================
-// 📸 CAPTURA 3D INTERNA (Evita salir de la app)
+// ==========================================
+// 📸 CAPTURA 3D INTERNA
 // ==========================================
 window.take3DScreenshot = function(e) {
-    if (e) e.preventDefault(); // Evitamos que el formulario se envíe por error
+    if (e) e.preventDefault(); 
     
     if (State.renderer && State.scene && State.camera) {
-        // 1. Ocultamos temporalmente el modal para que no estorbe en la foto
         const modal = document.getElementById('issueModalOverlay');
         const wasActive = modal ? modal.classList.contains('active') : false;
-        if (wasActive) modal.style.opacity = '0'; // Lo hacemos transparente un milisegundo
+        if (wasActive) modal.style.opacity = '0'; 
 
-        // 2. Forzamos un renderizado limpio
         State.renderer.render(State.scene, State.camera);
-        
-        // 3. Extraemos la imagen de alta calidad
         const dataUrl = State.renderer.domElement.toDataURL('image/jpeg', 0.9);
         
-        // 4. Restauramos el modal
         if (wasActive) modal.style.opacity = '1';
 
-        // 5. Añadimos la foto a nuestro array de evidencias
         State.currentPhotos.push({ dataUrl: dataUrl });
-        
-        // 6. Refrescamos la cuadrícula para que el usuario vea la foto al instante
         if (typeof renderPhotoGrid === 'function') renderPhotoGrid();
-        
-        // (Opcional) Feedback de voz
         if (window.asistenteVoz) window.asistenteVoz("Vista 3D capturada con éxito.");
     } else {
         console.warn("No se pudo hacer la captura: el visor 3D no está inicializado.");
@@ -703,7 +781,7 @@ window.take3DScreenshot = function(e) {
 };
 
 // ==========================================
-// 📋 LEER DEL PORTAPAPELES (Recortes de CATIA/Windows/Móvil)
+// 📋 LEER DEL PORTAPAPELES
 // ==========================================
 window.pasteFromClipboard = async function(e) {
     if(e) e.preventDefault();
@@ -725,15 +803,11 @@ window.pasteFromClipboard = async function(e) {
         alert("⚠️ No hay ninguna imagen copiada en tu portapapeles. ¡Copia un recorte primero!");
     } catch (err) {
         console.error("Error al leer el portapapeles:", err);
-        alert("⚠️ Permiso denegado o función no soportada en este dispositivo. Intenta usar Ctrl+V o presionar y mantener pulsado para pegar.");
+        alert("⚠️ Permiso denegado o función no soportada en este dispositivo.");
     }
 };
 
-// ==========================================
-// ⌨️ ATAJO DE TECLADO: Ctrl+V UNIVERSAL
-// ==========================================
 document.addEventListener('paste', (e) => {
-    // Solo actuamos si el formulario de incidencias está abierto
     const modal = document.getElementById('issueModalOverlay');
     if (!modal || !modal.classList.contains('active')) return;
 
@@ -747,7 +821,7 @@ document.addEventListener('paste', (e) => {
                 if (typeof renderPhotoGrid === 'function') renderPhotoGrid();
             };
             reader.readAsDataURL(blob);
-            e.preventDefault(); // Evitamos que pegue el texto de la imagen en un input
+            e.preventDefault(); 
             return;
         }
     }
@@ -760,31 +834,24 @@ window.deleteHistoryEntry = async function(issueId, arrayIndex, dateString) {
     const seguro = confirm("⚠️ ¿Borrar este estado del historial? Esta acción no se puede deshacer.");
     if (!seguro) return;
 
-    // 1. Lo borramos de la memoria local usando su posición exacta
     const issue = State.issues.find(i => i.id === issueId);
     if (issue && issue.history && issue.history[arrayIndex]) {
-        // Splice arranca EXACTAMENTE 1 elemento en esa posición, imposible borrar duplicados
         issue.history.splice(arrayIndex, 1); 
         
         if (issue.history.length === 0) {
-            deleteSelectedIssue(); // Si vaciamos el historial, se borra la chincheta entera
+            deleteSelectedIssue(); 
             return;
         } else {
-            selectMarker(State.selectedMarker); // Refrescamos pantalla
+            selectMarker(State.selectedMarker); 
         }
     }
 
-    // 2. Mandamos la orden a Google Sheets
     try {
         await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                action: 'delete_history_row', 
-                id: issueId, 
-                date: dateString 
-            })
+            body: JSON.stringify({ action: 'delete_history_row', id: issueId, date: dateString })
         });
     } catch (err) {
         console.error("Error borrando el historial de la nube:", err);
@@ -794,50 +861,41 @@ window.deleteHistoryEntry = async function(issueId, arrayIndex, dateString) {
 // ==========================================
 // ⚡ MOTOR DE GUARDADO AUTO (MODO RÁFAGA V3.1)
 // ==========================================
-
 window.processRapidPhoto = async function(photoDataUrl) {
     const issueId = State.rapidPhotoTargetId;
     const issue = State.issues.find(i => i.id === issueId);
     
     if (!issue) return;
 
-    // 1. Preparamos el comentario de los parámetros comunes
     const textoComentario = (State.rapidPhotoDefaults && State.rapidPhotoDefaults.comentario && State.rapidPhotoDefaults.comentario.trim() !== "") 
         ? State.rapidPhotoDefaults.comentario 
         : "📸 Captura rápida en campo";
 
-    // 2. Creamos la entrada del historial
     const historyEntry = {
         date: new Date().toISOString(),
         user: State.userName || "Inspector",
-        status: issue.status,      // Mantiene estado (Abierto si es nuevo, el que tuviera si es viejo)
-        priority: issue.priority,  // Mantiene prioridad (Pendiente si es nuevo, el que tuviera si es viejo)
+        status: issue.status,      
+        priority: issue.priority,  
         fase: State.rapidPhotoDefaults.fase, 
         comment: textoComentario,
         photos: [{ dataUrl: photoDataUrl }]
     };
 
-    // 3. ACTUALIZAMOS EL OBJETO MAESTRO (Sincronización local)
     if (!issue.history) issue.history = [];
     issue.history.push(historyEntry);
     
-    // Actualizamos los campos raíz para que coincidan con la última actualización
     issue.fase = historyEntry.fase;
     issue.date = historyEntry.date;
     issue.user = historyEntry.user;
-    issue.photos = historyEntry.photos; // Enviamos la foto actual
+    issue.photos = historyEntry.photos; 
 
     if (window.asistenteVoz) window.asistenteVoz("Sincronizando con la base de datos...");
 
-    // 4. EL TRUCO SENIOR: Reutilizar la función de nube.js que ya funciona
     try {
-        // Enviamos el objeto 'issue' completo, igual que hace el formulario normal
         await saveIssueToCloud(issue);
-        
-        console.log("✅ Sincronización exitosa con Google Sheets");
+        console.log("✅ Sincronización exitosa");
         if (window.asistenteVoz) window.asistenteVoz("Guardado en la nube. Siguiente punto.");
         
-        // Limpieza y refresco visual
         State.rapidPhotoTargetId = null;
         if (typeof deselectMarker === 'function') deselectMarker();
         if (window.renderIssues) window.renderIssues(); 
@@ -845,7 +903,7 @@ window.processRapidPhoto = async function(photoDataUrl) {
     } catch (e) {
         console.error("❌ Error crítico de guardado:", e);
         if (window.asistenteVoz) window.asistenteVoz("Error de conexión. Reintente.");
-        alert("No se pudo guardar en la base de datos. Compruebe su conexión.");
+        alert("No se pudo guardar en la base de datos.");
     }
 };
 
@@ -909,18 +967,16 @@ function initVoiceDictation(inputId, btnId) {
     
     if (!input || !btn) return;
 
-    // Comprobamos compatibilidad del navegador (Chrome, Edge, Safari lo soportan)
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
         btn.style.display = 'none'; 
-        console.warn("API de reconocimiento de voz no soportada en este navegador.");
         return;
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'es-ES'; // Idioma español
-    recognition.continuous = true; // Permite pausas largas sin cortarse
-    recognition.interimResults = true; // Escribe en tiempo real
+    recognition.lang = 'es-ES'; 
+    recognition.continuous = true; 
+    recognition.interimResults = true; 
 
     let isRecording = false;
     let textBeforeRecording = "";
@@ -928,19 +984,18 @@ function initVoiceDictation(inputId, btnId) {
     btn.addEventListener('click', (e) => {
         e.preventDefault();
         if (isRecording) {
-            recognition.stop(); // Si está grabando, lo para
+            recognition.stop(); 
         } else {
-            // Guardamos lo que ya estuviera escrito para no borrarlo
             textBeforeRecording = input.value + (input.value.trim() !== "" ? " " : "");
-            recognition.start(); // Empieza a escuchar
+            recognition.start(); 
         }
     });
 
     recognition.onstart = () => {
         isRecording = true;
         btn.classList.add('recording');
-        input.placeholder = "🔴 Escuchando... (Hable ahora)";
-        if (navigator.vibrate) navigator.vibrate(50); // Vibración háptica en móvil
+        input.placeholder = "🔴 Escuchando...";
+        if (navigator.vibrate) navigator.vibrate(50); 
     };
 
     recognition.onresult = (event) => {
@@ -948,7 +1003,6 @@ function initVoiceDictation(inputId, btnId) {
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             currentTranscript += event.results[i][0].transcript;
         }
-        // Escribe en tiempo real uniendo lo viejo con lo que está escuchando
         input.value = textBeforeRecording + currentTranscript;
     };
 
@@ -959,17 +1013,16 @@ function initVoiceDictation(inputId, btnId) {
     };
 
     recognition.onerror = (event) => {
-        console.error("Error de micrófono:", event.error);
         isRecording = false;
         btn.classList.remove('recording');
         if (event.error === 'not-allowed') {
-            alert("⚠️ Debes dar permiso al navegador para usar el micrófono.");
+            alert("⚠️ Permiso denegado para el micrófono.");
         }
     };
 }
 
-// Inicializamos los botones cuando carga la página
 document.addEventListener('DOMContentLoaded', () => {
     initVoiceDictation('issueComment', 'micBtnNormal');
     initVoiceDictation('rapidComentario', 'micBtnRapid');
 });
+

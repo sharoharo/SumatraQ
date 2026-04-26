@@ -195,68 +195,89 @@
     </div>
 </div>
 
-  <div id="issueModalOverlay" class="layers-modal-overlay">
-    <div class="info-modal-content interactive-element" style="max-width: 500px; max-height: 90vh;">
-      <div class="info-modal-header" style="background-color: #fff; padding: 15px 20px;">
-        <h2 id="modalMainTitle" style="margin:0; color:#1a73e8; font-size: 16px;">Creación/Actualización incidencia</h2>
-        <button id="btnCloseIssueModal" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; transition: color 0.2s;" onmouseover="this.style.color='#e94335'" onmouseout="this.style.color='#999'">✕</button>
+  <div id="panelIncidencias" class="panel-lateral oculta" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" onwheel="event.stopPropagation()">
+    <div class="panel-header">
+      <h3>📋 Creación incidencia</h3>
+      <button id="btnCerrarPanel" class="btn-cerrar">&times;</button>
+    </div>
+
+    <div class="panel-body">
+      <div class="modo-toggle">
+        <button id="btnModoRapido" class="activo">Todo en 1</button>
+        <button id="btnModoGuiado">Paso a Paso</button>
       </div>
-      <div class="info-modal-body" style="padding: 20px; background: #f4f7f6;">
 
-        <div id="form" class="form-container" style="display:block; margin:0; border:none; background:transparent; padding:0;">
-          <p id="issueTargetFile" style="display: none;"></p>
-          
-          <label style="margin-top: 0;">Fase Productiva:</label>
-          <div class="chip-group" id="faseChips">
-            <button class="ui-chip active" data-val="estampacion">Estampación</button>
-            <button class="ui-chip" data-val="chapisteria">Chapistería</button>
-            <button class="ui-chip" data-val="pintura">Pintura</button>
-            <button class="ui-chip" data-val="ensamblaje">Ensamblaje final</button>
+      <div id="contenedorFases" class="seccion-chips">
+        <label>1. Fase de Fabricación:</label>
+        <div id="chipsFases" class="chips-group">
           </div>
-
-          <label style="margin-top: 10px;">Tipo de Falla:</label>
-          <select id="issueType" style="width:100%; padding:12px; margin-bottom:15px; border-radius:6px; border:1px solid #ccc; font-size: 14px;">
-            <option value="">Cargando tipos...</option>
-          </select>
-
-          <label>Prioridad:</label>
-          <div class="chip-group" id="priorityChips" style="margin-bottom: 15px;">
-            <button class="ui-chip active" data-val="baja">Baja</button>
-            <button class="ui-chip" data-val="media">Media</button>
-            <button class="ui-chip" data-val="alta">Alta</button>
-            <button class="ui-chip" data-val="prio1" style="border-color:#d93025; color:#d93025; font-weight:bold;">🔥 Prio 1</button>
-          </div>
-
-          <label>Comentario rápido:</label>
-          
-          <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <input type="text" id="issueComment" placeholder="Ej: Falta punto, poro, raya..." style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; box-sizing: border-box;">
-            <button id="micBtnNormal" type="button" class="mic-btn" title="Dictar por voz" style="background: #f1f3f4; border: 1px solid #ccc; border-radius: 6px; padding: 0 15px; font-size: 18px; cursor: pointer; transition: 0.2s;">🎤</button>
-        </div>
-          
-          <label>Evidencia Visual (Soporta Ctrl+V):</label>
-          <div style="display:flex; flex-wrap: wrap; gap:6px; margin-bottom:12px;">
-            <button class="btn-primary btn-inline" id="btnCamera" style="flex: 1; min-width: 80px; background-color: #34a853; font-size: 13px; padding: 10px;">📷 Cámara</button>
-            <button class="btn-primary btn-inline" id="btnGallery" style="flex: 1; min-width: 80px; background-color: #5f6368; font-size: 13px; padding: 10px;">🖼️ Subir</button>
-            <button class="btn-primary btn-inline" onclick="window.take3DScreenshot(event)" style="flex: 1; min-width: 80px; background-color: #1a73e8; font-size: 13px; padding: 10px;">👁️ 3D</button>
-            
-            <button class="btn-primary btn-inline" onclick="window.pasteFromClipboard(event)" style="flex: 1; min-width: 80px; background-color: #fbbc04; color: #333; font-size: 13px; padding: 10px; border: 1px solid #e0a800;" title="Pega una imagen de otro programa (CATIA, Mail...)">📋 Pegar</button>
-          </div>
-          <input type="file" id="inputGallery" accept="image/*" style="display:none" />
-          <input type="file" id="inputCamera" accept="image/*" capture="environment" style="display:none" />
-          <div id="photoGrid" class="photo-grid"></div>
-
-          <label>Estado Actual:</label>
-          <div class="chip-group" id="statusChips" style="margin-bottom: 20px;">
-            <button class="ui-chip active" data-val="open" style="border-bottom: 3px solid #e94335;">Abierto</button>
-            <button class="ui-chip" data-val="review" style="border-bottom: 3px solid #fbbc04;">Revisión</button>
-            <button class="ui-chip" data-val="closed" style="border-bottom: 3px solid #34a853;">Cerrado</button>
-          </div>
-
-          <button class="btn-primary" id="saveIssue" style="font-size: 16px; padding: 14px; background-color: #1a73e8;">Guardar Incidencia</button>
-        </div>
-
       </div>
+      
+      <div id="contenedorActividades" class="seccion-chips">
+        <label>2. Actividad / Contexto:</label>
+        <div id="chipsActividades" class="chips-group">
+          <span class="placeholder-text">⬅️ Selecciona una fase...</span>
+        </div>
+      </div>
+
+      <div id="contenedorSubfases" class="seccion-chips">
+        <label>1.5. Subfase / Proceso:</label>
+        <div id="chipsSubfases" class="chips-group">
+          <span class="placeholder-text">⬅️ Selecciona una fase primero...</span>
+        </div>
+      </div>
+
+      <div id="contenedorDefectos" class="seccion-chips">
+        <label>2. Tipo de Defecto:</label>
+        <div id="chipsDefectos" class="chips-group">
+          <span class="placeholder-text">⬅️ Selecciona una fase primero...</span>
+        </div>
+      </div>
+
+      <div id="contenedorPrioridad" class="seccion-chips">
+        <label>3. Prioridad:</label>
+        <div class="chips-group-circle">
+          <button class="chip-circle chip-prio" data-val="prio1" title="Crítica / Prio 1">P</button>
+          <button class="chip-circle chip-prio" data-val="alta" title="Alta">A</button>
+          <button class="chip-circle chip-prio seleccionado" data-val="media" title="Media / Baja">B</button>
+        </div>
+      </div>
+
+      <div id="contenedorEstado" class="seccion-chips">
+        <label>4. Estado:</label>
+        <div class="chips-group-circle">
+          <button class="chip-circle chip-estado seleccionado" data-val="open" title="Abierto">A</button>
+          <button class="chip-circle chip-estado" data-val="review" title="En Revisión">R</button>
+          <button class="chip-circle chip-estado" data-val="closed" title="Cerrado">C</button>
+        </div>
+      </div>
+
+      <div class="seccion-chips">
+        <label>5. Evidencia Visual (soporta Ctrl+V):</label>
+        <div class="evidence-group">
+          <button class="evidence-btn" id="btnCameraNivelDios" title="Cámara">📷</button>
+          <button class="evidence-btn" onclick="window.take3DScreenshot(event)" title="Captura 3D">👁️</button>
+          <button class="evidence-btn" id="btnGalleryNivelDios" title="Subir Imagen de Galería">🖼️</button>
+          <button class="evidence-btn" onclick="window.pasteFromClipboard(event)" title="Pegar del portapapeles">📋</button>
+        </div>
+        <input type="file" id="inputGalleryNivelDios" accept="image/*" style="display:none" />
+        <input type="file" id="inputCameraNivelDios" accept="image/*" capture="environment" style="display:none" />
+        <div id="photoGrid" class="photo-grid"></div>
+      </div>
+
+      <div class="seccion-comentario">
+        <label>6. Notas:</label>
+        <div class="input-con-voz">
+          <textarea id="textoIncidenciaNivelDios" placeholder="Describe el detalle..."></textarea>
+          <button id="btnVozNivelDios" class="btn-voz" title="Dictar por voz">🎤</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-footer">
+      <button id="saveIssue" class="btn-guardar-principal">
+        ✓ Guardar Incidencia
+      </button>
     </div>
   </div>
 
@@ -457,7 +478,8 @@
   <script src="js/cargador.js" type="module"></script>
   <script src="js/filtros.js" type="module"></script>
   <script src="js/incidencias.js" type="module"></script>
-  <script src="js/app.js" type="module"></script>
+  <script type="module" src="js/app.js"></script>
+  <script src="js/diccionarios.js" type="module"></script>
 
 </body>
 
