@@ -370,33 +370,57 @@ export function editExistingIssue() {
   const prioChip = document.querySelector(`.chip-prio[data-val="${issue.priority || 'media'}"]`);
   if (prioChip) prioChip.classList.add('seleccionado');
 
-  const faseChips = Array.from(document.querySelectorAll('.chip-fase'));
-  const faseChipMatcheada = faseChips.find(c => c.innerText.trim().toLowerCase() === (issue.fase || '').trim().toLowerCase());
-  
-  if (faseChipMatcheada) {
-      faseChipMatcheada.click(); 
-      setTimeout(() => {
-          const actChips = Array.from(document.querySelectorAll('.chip-actividad'));
-          const actChipMatcheada = actChips.find(c => c.innerText.trim().toLowerCase() === (issue.actividad || '').trim().toLowerCase());
-          if(actChipMatcheada) actChipMatcheada.click();
+  // 🛠️ LA MAGIA: Obligamos a cargar y pintar los diccionarios ANTES de buscar la fase
+  import('./diccionarios.js').then(module => {
+      const dict = module.Diccionarios;
+      const contenedorFases = document.getElementById('chipsFases');
+      if (contenedorFases) contenedorFases.innerHTML = '';
+
+      // 1. Pintamos las Fases en la pantalla
+      dict.fases.forEach(fase => {
+          const btn = crearChip(fase.phase_name || fase.nombre || fase.name, () => {
+              activarChip('.chip-fase', btn);
+              actualizarActividades(fase.id, module);
+          }, 'chip-fase');
+          if (contenedorFases) contenedorFases.appendChild(btn);
+      });
+
+      // 2. Buscamos qué Fase tenía la incidencia vieja para hacer "clic" virtual
+      const faseChips = Array.from(document.querySelectorAll('.chip-fase'));
+      const faseChipMatcheada = faseChips.find(c => c.innerText.trim().toLowerCase() === (issue.fase || '').trim().toLowerCase());
+      
+      if (faseChipMatcheada) {
+          faseChipMatcheada.click(); 
           
+          // Desplegamos Actividades (dando 50ms para que se pinten)
           setTimeout(() => {
-              const subfaseChips = Array.from(document.querySelectorAll('.chip-subfase'));
-              const subfaseChipMatcheada = subfaseChips.find(c => c.innerText.trim().toLowerCase() === (issue.subfase || '').trim().toLowerCase());
-              if (subfaseChipMatcheada) subfaseChipMatcheada.click(); 
+              const actChips = Array.from(document.querySelectorAll('.chip-actividad'));
+              const actChipMatcheada = actChips.find(c => c.innerText.trim().toLowerCase() === (issue.actividad || '').trim().toLowerCase());
+              if(actChipMatcheada) actChipMatcheada.click();
               
+              // Desplegamos Subfases
               setTimeout(() => {
-                  const defectoChips = Array.from(document.querySelectorAll('.chip-defecto'));
-                  const defectoChipMatcheado = defectoChips.find(c => c.innerText.trim().toLowerCase() === (issue.type || '').trim().toLowerCase());
+                  const subfaseChips = Array.from(document.querySelectorAll('.chip-subfase'));
+                  const subfaseChipMatcheada = subfaseChips.find(c => c.innerText.trim().toLowerCase() === (issue.subfase || '').trim().toLowerCase());
+                  if (subfaseChipMatcheada) subfaseChipMatcheada.click(); 
                   
-                  if (defectoChipMatcheado) {
-                      document.querySelectorAll('.chip-defecto').forEach(c => c.classList.remove('seleccionado'));
-                      defectoChipMatcheado.classList.add('seleccionado');
-                  }
+                  // Marcamos el Defecto
+                  setTimeout(() => {
+                      const defectoChips = Array.from(document.querySelectorAll('.chip-defecto'));
+                      const defectoChipMatcheado = defectoChips.find(c => c.innerText.trim().toLowerCase() === (issue.type || '').trim().toLowerCase());
+                      
+                      if (defectoChipMatcheado) {
+                          document.querySelectorAll('.chip-defecto').forEach(c => c.classList.remove('seleccionado'));
+                          defectoChipMatcheado.classList.add('seleccionado');
+                      }
+                  }, 50);
               }, 50);
           }, 50);
-      }, 50);
-  }
+      } else {
+          // Si por lo que sea no cuadra la fase antigua, pintamos la primera por defecto
+          if(contenedorFases && contenedorFases.firstChild) contenedorFases.firstChild.click();
+      }
+  });
 
   const panelDios = document.getElementById('panelIncidencias');
   if (panelDios) panelDios.classList.remove('oculta');
