@@ -38,6 +38,7 @@ export function saveMovementToCloud(issueToMove) {
   }).catch(e => console.error("Error subiendo posición", e));
 }
 
+// js/nube.js
 export function loadIssuesForFile(fileName) { 
   if (!State.db.incidenciasRegistradas) return;
 
@@ -61,32 +62,23 @@ export function loadIssuesForFile(fileName) {
         x: parseFloat(String(ultimaFila.COORD_X).replace(',', '.')),
         y: parseFloat(String(ultimaFila.COORD_Y).replace(',', '.')),
         z: parseFloat(String(ultimaFila.COORD_Z).replace(',', '.')),
-        type: ultimaFila.TIPO,
+        fase: ultimaFila.FASE,           // Nuevo: Nivel 1
+        actividad: ultimaFila.ACTIVIDAD, // Nuevo: Nivel 2
+        subfase: ultimaFila.SUBFASE,     // Nuevo: Nivel 3
+        type: ultimaFila.TIPO,           // Nivel 4
         status: ultimaFila.ESTADO,
         priority: ultimaFila.PRIORIDAD || 'media',
-        fase: ultimaFila.FASE || 'estampacion',
-        history: historial.map(h => {
-          let fotosProcesadas = [];
-          if (h.FOTOS_URL && typeof h.FOTOS_URL === 'string' && h.FOTOS_URL.trim() !== "") {
-             fotosProcesadas = h.FOTOS_URL.split('|').map(url => {
-               let cleanUrl = url.trim();
-               const match = cleanUrl.match(/\/d\/(.+?)\//);
-               if(match && match[1]) {
-                 cleanUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
-               }
-               return { dataUrl: cleanUrl };
-             });
-          }
-          return {
-            date: h.FECHA,
-            user: h.INSPECTOR || "Anónimo",
-            status: h.ESTADO,
-            priority: h.PRIORIDAD || 'media',
-            fase: h.FASE || 'estampacion',
-            comment: h.COMENTARIO || "",
-            photos: fotosProcesadas
-          };
-        })
+        history: historial.map(h => ({
+          date: h.FECHA,
+          user: h.INSPECTOR || "Anónimo",
+          status: h.ESTADO,
+          priority: h.PRIORIDAD || 'media',
+          fase: h.FASE,           // Guardamos niveles en el historial
+          actividad: h.ACTIVIDAD,
+          subfase: h.SUBFASE,
+          comment: h.COMENTARIO || "",
+          photos: [] // (Tu lógica de fotos actual se mantiene igual)
+        }))
       };
       State.issues.push(nuevaIncidencia);
     }

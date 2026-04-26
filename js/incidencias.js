@@ -580,6 +580,8 @@ export async function saveIssueFn() {
     issueToUpload = newIssue;
   }
 
+  window.saveIssueFn = saveIssueFn;
+  
   renderIssues(); 
   deselectMarker(); 
 
