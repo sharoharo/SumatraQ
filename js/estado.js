@@ -4,7 +4,7 @@ import * as THREE from 'three';
 export const CONFIG = {
   // Tu URL de Google Apps Script
   GOOGLE_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzvA5RBHqEiatKPxpd5qf3p5wTevbOIv0tXI6ZHvssl1NztDpwKWArPoESP1LwjoZ6-/exec"
-
+}
 
 export const State = {
   // Datos de la Nube
