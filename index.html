@@ -1,5 +1,55 @@
 <!DOCTYPE html>
 <html lang="es">
+  
+<!-- =================================================== -->
+  <!-- PARCHE MAESTRO DE INTERFAZ, CAPAS Y MODO MÓVIL      -->
+  <!-- =================================================== -->
+  <style>
+    /* 1. JERARQUÍA DE CAPAS (Para que el 3D no se coma los paneles) */
+    .ui-layer { z-index: 10 !important; }
+    .top-toolbar { z-index: 100 !important; }
+    #functionalityPanel { z-index: 500 !important; }
+    #panelIncidencias { z-index: 1000 !important; }
+    .filter-panel-overlay, .info-modal-overlay, .layers-modal-overlay { z-index: 2000 !important; pointer-events: auto !important; }
+    
+    /* 2. PANEL INCIDENCIAS DARK PREMIUM (Forzado para Escritorio) */
+    #panelIncidencias {
+      position: absolute !important; top: 80px !important; right: 16px !important; 
+      width: 380px !important; max-height: calc(100vh - 100px) !important;
+      background: rgba(30, 30, 35, 0.95) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 16px !important;
+      box-shadow: -5px 10px 30px rgba(0, 0, 0, 0.6) !important;
+      transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease !important;
+      pointer-events: auto !important;
+    }
+    #panelIncidencias.oculta {
+      transform: translateX(120%) !important; opacity: 0 !important; pointer-events: none !important;
+    }
+
+    /* 3. MODO MÓVIL PERFECTO (Evita que asomen por debajo de la pantalla) */
+    @media (max-width: 768px) {
+      /* Panel de Incidencias: Entra desde abajo */
+      #panelIncidencias {
+        top: auto !important; bottom: 0 !important; right: 0 !important; left: 0 !important;
+        width: 100% !important; max-height: 85vh !important;
+        border-radius: 20px 20px 0 0 !important;
+      }
+      #panelIncidencias.oculta {
+        transform: translateY(100%) !important; /* Se esconde hacia ABAJO, no a la derecha */
+      }
+      
+      /* Panel de Filtros: Entra desde abajo */
+      .filter-panel-content {
+        max-height: 85vh !important; border-radius: 20px 20px 0 0 !important;
+        transform: translateY(100%) !important; transition: transform 0.3s ease !important;
+      }
+      .filter-panel-overlay.active .filter-panel-content {
+        transform: translateY(0) !important;
+      }
+    }
+  </style>
+
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -13,25 +63,75 @@
 </head>
 <body>
 
-  <div id="splashScreen" class="splash-screen">
-    <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q Logo" class="splash-logo">
-    <div class="splash-spinner"></div>
+ <div id="splashScreen" class="splash-screen">
+   <div style="display: flex; flex-direction: column; align-items: center; animation: pulseLogo 2s infinite ease-in-out;">
+    <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q Logo" style="width: 110px; height: 110px; object-fit: contain; border-radius: var(--rad-md); box-shadow: 0 10px 30px rgba(0,0,0,0.8); margin-bottom: var(--sp-3);">
+    <h2 style="margin: 0 0 4px 0; font-size: 28px; color: var(--text-main); font-weight: 700; letter-spacing: 2px;">Sumatra Q</h2>
+    <p style="margin: 0 0 var(--sp-4) 0; font-size: 11px; color: var(--accent-blue); font-weight: 700; letter-spacing: 3px; text-transform: uppercase;">Release 1.7.1 Stable</p>
   </div>
 
-  <div id="loginOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; display:flex; justify-content:center; align-items:center;">
-    <div style="background:white; padding:30px; border-radius:12px; text-align:center; max-width:320px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-      <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q" style="width: 120px; height: 120px; object-fit: contain; margin: 0 auto 15px auto; display: block;">
-      <p style="font-size:13px; color:#666; margin-bottom:20px;">Identifícate con tus credenciales de sistema.</p>
-      <input type="email" id="loginEmail" placeholder="Tu Email" style="width:100%; padding:12px; margin-bottom:12px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px;">
-      <input type="password" id="loginPassword" placeholder="Tu Contraseña" style="width:100%; padding:12px; margin-bottom:20px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px;">
-      <button id="loginBtn" onclick="window.processLogin()" style="width:100%; padding:14px; background:#4285F4; color:white; border:none; border-radius:6px; font-weight:bold; font-size:15px; cursor:pointer; transition:0.3s;">Conectando a BD...</button>
-    </div>
-  </div>
+  <div class="splash-spinner"></div>
+  <p style="margin-top: var(--sp-3); font-size: 13px; color: var(--text-muted); font-style: italic; letter-spacing: 0.5px;">Inicializando motor 3D...</p>
 
-  <div id="map-container"></div>
+</div>
+
+ <div id="loginOverlay">
+  <div class="info-modal-content interactive-element" style="padding: 32px; text-align: center; max-width: 320px; width: 90%; margin: 0 auto;">
+        <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q" style="width: 90px; height: 90px; object-fit: contain; margin: 0 auto var(--sp-3) auto; display: block; border-radius: var(--rad-sm); box-shadow: var(--shadow-sm);">
+        <p style="font-size: 13px; color: var(--text-muted); margin-top: 0; margin-bottom: var(--sp-3);">
+      Identifícate con tus credenciales de sistema para acceder a la base de datos.
+    </p>
+    <input type="email" id="loginEmail" placeholder="Tu Email corporativo" style="width: 100%; padding: 12px; border-radius: var(--rad-sm); border: 1px solid var(--border-glass); background: var(--bg-input); color: var(--text-main); font-size: 14px; margin-bottom: var(--sp-2); outline: none; box-sizing: border-box; transition: 0.2s;">
+    <input type="password" id="loginPassword" placeholder="Tu Contraseña" style="width: 100%; padding: 12px; border-radius: var(--rad-sm); border: 1px solid var(--border-glass); background: var(--bg-input); color: var(--text-main); font-size: 14px; margin-bottom: var(--sp-3); outline: none; box-sizing: border-box; transition: 0.2s;">
+    <button id="loginBtn" onclick="window.processLogin()" class="btn-primary" style="padding: 14px; font-size: 15px;">
+      Acceder al Sistema
+    </button>
+  </div>
+</div>
+
+<div id="map-container"></div>
 
   <div class="ui-layer">
+  <div id="modalHerramientas" class="info-modal-overlay">
+    <div class="info-modal-content interactive-element">
+        <div class="info-modal-header">
+            <h3 style="margin: 0; font-size: 16px; display: flex; align-items: center; gap: 10px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                Herramientas Avanzadas
+            </h3>
+            <button onclick="document.getElementById('modalHerramientas').classList.remove('active')" class="icon-action-btn">✕</button>
+        </div>
+        <div class="info-modal-body" style="display: flex; flex-direction: column; gap: 12px; padding: 24px;">
+            
+            <button onclick="window.generatePDF()" class="menu-action-btn" style="display: flex; align-items: center; gap: 15px; background: var(--bg-input); border: 1px solid var(--border-glass); padding: 16px; border-radius: 12px; color: var(--text-main); cursor: pointer; transition: 0.2s; text-align: left; width: 100%;">
+                <div style="background: rgba(231, 76, 60, 0.1); color: var(--danger-red); padding: 10px; border-radius: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></div>
+                <div style="flex-grow: 1;">
+                    <div style="font-weight: 600; font-size: 14px;">Generar Reporte PDF</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Exporta el listado actual filtrado</div>
+                </div>
+            </button>
+
+            <button onclick="window.exportToCSV()" class="menu-action-btn" style="display: flex; align-items: center; gap: 15px; background: var(--bg-input); border: 1px solid var(--border-glass); padding: 16px; border-radius: 12px; color: var(--text-main); cursor: pointer; transition: 0.2s; text-align: left; width: 100%;">
+                <div style="background: rgba(46, 204, 113, 0.1); color: var(--success-green); padding: 10px; border-radius: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg></div>
+                <div style="flex-grow: 1;">
+                    <div style="font-weight: 600; font-size: 14px;">Exportar a Excel (CSV)</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Descarga la base de datos en crudo</div>
+                </div>
+            </button>
+
+            <button onclick="window.exportIssues()" class="menu-action-btn" style="display: flex; align-items: center; gap: 15px; background: var(--bg-input); border: 1px solid var(--border-glass); padding: 16px; border-radius: 12px; color: var(--text-main); cursor: pointer; transition: 0.2s; text-align: left; width: 100%;">
+                <div style="background: rgba(52, 152, 219, 0.1); color: var(--accent-blue); padding: 10px; border-radius: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div>
+                <div style="flex-grow: 1;">
+                    <div style="font-weight: 600; font-size: 14px;">Exportar Sesión Local</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Guarda un backup JSON</div>
+                </div>
+            </button>
+
+        </div>
+    </div>
+</div>
     
+
     <div class="search-box interactive-element" onclick="document.getElementById('modalCargaModelos').style.display = 'flex';" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.boxShadow='var(--shadow-2)'" onmouseout="this.style.boxShadow='var(--shadow-1)'">
       <button class="menu-btn" onclick="event.stopPropagation(); window.togglePanel()" title="Abrir Menú Lateral">☰</button>
       <div class="search-title" id="fileNameDisplay" style="color: #1a73e8; font-weight: 600;">📂 Toca aquí para cargar pieza...</div>
@@ -43,9 +143,7 @@
         <div style="background: white; padding: 60px 40px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.08); text-align: center; max-width: 360px; width: 90%; display: flex; flex-direction: column; align-items: center; border: 1px solid rgba(255,255,255,0.5);">
 
             <img src="./img/LogoEmpresa.png" alt="Logo Empresa" style="width: 100%; max-width: 220px; object-fit: contain; margin-bottom: 15px;">
-
             <p style="color: #555; font-size: 13px; font-weight: 500; margin: 0 0 45px 0; letter-spacing: 0.5px;">SumatraQ – Release 1.7.1</p>
-
             <button onclick="document.getElementById('modalCargaModelos').style.display = 'flex';" style="background: #1a73e8; color: white; border: none; font-size: 16px; font-weight: 600; padding: 16px 30px; border-radius: 30px; cursor: pointer; box-shadow: 0 6px 15px rgba(26,115,232,0.3); transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); width: 100%; letter-spacing: 0.5px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(26,115,232,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 15px rgba(26,115,232,0.3)'" onmousedown="this.style.transform='translateY(1px)'; this.style.boxShadow='0 2px 8px rgba(26,115,232,0.3)'">
                 Menú de Carga
             </button>
@@ -53,362 +151,521 @@
         </div>
     </div>
     
-    <div class="user-profile-floating interactive-element">
-      <div class="user-avatar-circle" id="userAvatarLetter" title="Tu cuenta">U</div>
-      <div class="user-dropdown">
-        <div style="font-size: 11px; color: #666; margin-bottom: 2px;">Sesión activa:</div>
-        <div id="currentUserDisplay" style="font-size: 13px; font-weight: 500; color: #333; margin-bottom: 12px; word-break: break-all;">---</div>
-        <button onclick="window.processLogout()" class="btn-primary" style="width: 100%; background-color: #fce8e6; color: #d93025; border: 1px solid #f8d7da;">🚪 Salir</button>
-      </div>
-    </div>
+<div class="user-profile-floating interactive-element">
+  <div class="user-avatar-circle" id="userAvatarLetter" title="Tu cuenta">U</div>
+  <div class="user-dropdown">
+    <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Sesión activa:</div>
+       <div id="currentUserDisplay" style="font-size: 14px; font-weight: 500; color: var(--text-main); margin-bottom: var(--sp-2); word-break: break-all;">---</div>
+       <div style="height: 1px; background: var(--border-glass); margin: var(--sp-2) 0;"></div>
+    <button onclick="window.processLogout()" style="width: 100%; padding: 10px; border-radius: var(--rad-sm); background: rgba(231, 76, 60, 0.1); color: var(--danger-red); border: 1px solid rgba(231, 76, 60, 0.3); font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;" onmouseover="this.style.background='rgba(231, 76, 60, 0.2)'" onmouseout="this.style.background='rgba(231, 76, 60, 0.1)'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16 17 21 12 16 7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+      Cerrar Sesión
+    </button>
+  </div>
+</div>
     
-    <div class="top-toolbar interactive-element">
-      <button id="btnOpenFilterPanel" class="toolbar-btn" title="Filtrar Incidencias">
+<!-- ========================================== -->
+    <!-- BARRA HERRAMIENTAS (CON ESCUDO ANTI-CLICS) -->
+    <!-- ========================================== -->
+    <div class="top-toolbar interactive-element" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+      
+      <button id="btnOpenFilterPanel" class="toolbar-btn" title="Filtrar Incidencias" onclick="document.getElementById('filterPanelOverlay').classList.add('active')">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
       </button>
+
       <button id="btnOpenLayers" class="toolbar-btn" title="Tipo de visualización">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 12 12 17 22 12"></polyline><polyline points="2 17 12 22 22 17"></polyline></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 12 12 17 22 12"></polyline><polyline points="2 17 12 22 22 17"></polyline></svg>
       </button>
-      <button class="toolbar-btn fab" data-view="fit" title="Centrar">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>
+      
+      <button class="toolbar-btn" data-view="fit" title="Centrar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>
       </button>
-      <button class="toolbar-btn fab" data-view="iso" title="Vista Isométrica">
-         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+      
+      <button class="toolbar-btn" data-view="iso" title="Vista Isométrica">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
       </button>
+      
       <button id="addBtn" class="toolbar-btn" title="Añadir Incidencia">
-         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
       </button>
+      
       <button id="btnOpenTools" class="toolbar-btn" title="Herramientas">
-         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
       </button>
+      
       <button id="rapidModeBtn" class="toolbar-btn" title="Modo Ráfaga de Campo">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
       </button>
+      
       <button id="cloudStatusBtn" class="toolbar-btn sync-online" title="Estado de la Nube: Conectado" style="position: relative; margin-left: auto;">
-        <svg id="cloudIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path></svg>
-        <span id="offlineBadge" style="display: none; position: absolute; top: -5px; right: -5px; background: #d93025; color: white; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; align-items: center; justify-content: center; border: 2px solid white;">0</span>
+        <svg id="cloudIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path></svg>
+        <span id="offlineBadge" style="display: none; position: absolute; top: -2px; right: -2px; background: var(--danger-red); color: white; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; align-items: center; justify-content: center; border: 2px solid var(--bg-panel); box-shadow: var(--shadow-sm);">0</span>
       </button>
     </div>
 
-    <div class="side-panel interactive-element" id="functionalityPanel" style="z-index: 100;">
-      <div class="panel-header" style="display: flex; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q" style="height: 26px; width: 26px; object-fit: contain; border-radius: 4px;">
-          <span>Inspección 3D</span>
-        </div>
-        <button class="menu-btn" style="width: 32px; height: 32px; margin: 0;" onclick="window.togglePanel()">✕</button>
-      </div>
-      <div class="panel-content" style="display: flex; flex-direction: column; height: 100%;">
-        <div style="padding: 16px; flex-grow: 1; overflow-y: auto;">
-          <h3 style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;">
-            INCIDENCIAS REGISTRADAS
-            <span style="font-size: 10px; background: #e8f0fe; color: #1a73e8; padding: 4px 8px; border-radius: 12px; font-weight: bold;">Lista Activa</span>
-          </h3>
-          <div id="list"></div>
-        </div>
-        <div style="margin-top: auto; padding: 15px; border-top: 1px solid #eee; text-align: center; background: #fff;">
-          <span style="font-size: 10px; color: #999; letter-spacing: 1px; font-weight: 500;">
-            <div id="btnOpenInfo" style="cursor: pointer; color: #999;" onmouseover="this.style.color='#4285F4'" onmouseout="this.style.color='#999'" title="Ver información de la aplicación">
-              SUMATRA Q • RELEASE v1.7.1-STABLE ⓘ
-            </div>
-          </span>
-        </div>
-      </div> 
+<div class="side-panel interactive-element" id="functionalityPanel" style="z-index: 100;">
+  <div class="panel-header">
+    <h3 style="margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+      <img src="./img/LogoEmpresa.png" alt="Sumatra Q" style="height: 70px; width: 70px; object-fit: contain; border-radius: var(--rad-sm);">
+      Inspección 3D
+    </h3>
+    <button class="icon-action-btn" onclick="window.togglePanel()">✕</button>
+  </div>
+  <div class="panel-content" style="display: flex; flex-direction: column; padding: 0;">
+    <div style="padding: var(--sp-2); flex-grow: 1; overflow-y: auto;">
+      <h3 style="margin: 0 0 var(--sp-2) 0; font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">
+        Incidencias Registradas
+        <span style="font-size: 9px; background: rgba(52, 152, 219, 0.15); color: var(--accent-blue); padding: 4px 8px; border-radius: var(--rad-pill); font-weight: 700; letter-spacing: 0.5px; border: 1px solid rgba(52, 152, 219, 0.3);">
+          Lista Activa
+        </span>
+      </h3>
+      <div id="list" style="display: flex; flex-direction: column; gap: var(--sp-1);"></div>
     </div>
-
-    <div id="panelIncidencias" class="panel-lateral oculta" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" onwheel="event.stopPropagation()">
-      <div class="panel-header">
-        <h3>📋 Creación incidencia</h3>
-        <button id="btnCerrarPanel" class="btn-cerrar">&times;</button>
+    <div style="padding: 12px; border-top: 1px solid var(--border-glass); text-align: center; background: rgba(0,0,0,0.2);">
+      <div id="btnOpenInfo" style="font-size: 10px; color: var(--text-muted); letter-spacing: 1.5px; font-weight: 600; cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='var(--accent-blue)'" onmouseout="this.style.color='var(--text-muted)'" title="Ver información de la aplicación">
+        SUMATRA Q • RELEASE v1.7.1-STABLE ⓘ
       </div>
-      <div class="panel-body">
-        <div class="modo-toggle">
-          <button id="btnModoRapido" class="activo">Todo en 1</button>
-          <button id="btnModoGuiado">Paso a Paso</button>
+    </div>
+  </div> 
+</div>
+
+<!-- ========================================== -->
+    <!-- PANEL DIOS: MODO DELUXE (BLINDADO)         -->
+    <!-- ========================================== -->
+    <style>
+      .panel-deluxe {
+        position: absolute; top: 80px; right: 16px; width: 380px; max-height: calc(100vh - 100px);
+        background: rgba(30, 30, 35, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: -5px 10px 30px rgba(0, 0, 0, 0.6);
+        display: flex; flex-direction: column; color: white; z-index: 99999; pointer-events: auto !important;
+        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease;
+      }
+      .panel-deluxe.oculta { transform: translateX(120%); opacity: 0; pointer-events: none !important; }
+      @media (max-width: 768px) {
+        .panel-deluxe { top: auto; bottom: 0; right: 0; width: 100%; border-radius: 20px 20px 0 0; }
+        .panel-deluxe.oculta { transform: translateY(100%); }
+      }
+    </style>
+
+<!-- ========================================== -->
+    <!-- PANEL DIOS: MODO DARK PREMIUM              -->
+    <!-- ========================================== -->
+    <div id="panelIncidencias" class="panel-deluxe oculta interactive-element" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" onwheel="event.stopPropagation()">
+      <div class="panel-header" style="background: rgba(0,0,0,0.4); padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px; color: white; font-size: 1.1rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          Creación Incidencia
+        </h3>
+        <button id="btnCerrarPanel" style="background: none; border: none; color: #aaa; font-size: 1.5rem; cursor: pointer; padding: 0;">✕</button>
+      </div>
+
+      <div class="panel-body" style="padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px;">
+        <div class="modo-toggle" style="display: flex; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 4px;">
+          <button id="btnModoRapido" class="activo" style="flex: 1; padding: 8px; border: none; background: #3498db; color: white; border-radius: 6px; cursor: pointer; font-weight: bold;">Todo en 1</button>
+          <button id="btnModoGuiado" style="flex: 1; padding: 8px; border: none; background: transparent; color: #888; border-radius: 6px; cursor: pointer; font-weight: bold;">Paso a Paso</button>
         </div>
+        
         <div id="contenedorFases" class="seccion-chips">
-          <label>1. Fase de Fabricación:</label>
-          <div id="chipsFases" class="chips-group"></div>
+          <label style="color: #3498db; font-size: 11px; font-weight: bold; margin-bottom: 5px; display: block;">1. FASE DE FABRICACIÓN:</label>
+          <div id="chipsFases" class="chips-group" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
         </div>
+        
         <div id="contenedorActividades" class="seccion-chips">
-          <label>2. Actividad / Contexto:</label>
-          <div id="chipsActividades" class="chips-group">
-            <span class="placeholder-text">⬅️ Selecciona una fase...</span>
-          </div>
+          <label style="color: #3498db; font-size: 11px; font-weight: bold; margin-bottom: 5px; display: block;">2. ACTIVIDAD / CONTEXTO:</label>
+          <div id="chipsActividades" class="chips-group" style="display: flex; flex-wrap: wrap; gap: 8px;"><span class="placeholder-text" style="color:#777; font-size:12px; font-style:italic;">⬅️ Selecciona una fase...</span></div>
         </div>
+        
         <div id="contenedorSubfases" class="seccion-chips">
-          <label>1.5. Subfase / Proceso:</label>
-          <div id="chipsSubfases" class="chips-group">
-            <span class="placeholder-text">⬅️ Selecciona una fase primero...</span>
-          </div>
+          <label style="color: #3498db; font-size: 11px; font-weight: bold; margin-bottom: 5px; display: block;">1.5. SUBFASE / PROCESO:</label>
+          <div id="chipsSubfases" class="chips-group" style="display: flex; flex-wrap: wrap; gap: 8px;"><span class="placeholder-text" style="color:#777; font-size:12px; font-style:italic;">⬅️ Selecciona una fase primero...</span></div>
         </div>
+        
         <div id="contenedorDefectos" class="seccion-chips">
-          <label>2. Tipo de Defecto:</label>
-          <div id="chipsDefectos" class="chips-group">
-            <span class="placeholder-text">⬅️ Selecciona una fase primero...</span>
+          <label style="color: #3498db; font-size: 11px; font-weight: bold; margin-bottom: 5px; display: block;">2. TIPO DE DEFECTO:</label>
+          <div id="chipsDefectos" class="chips-group" style="display: flex; flex-wrap: wrap; gap: 8px;"><span class="placeholder-text" style="color:#777; font-size:12px; font-style:italic;">⬅️ Selecciona una fase primero...</span></div>
+        </div>
+        
+        <div style="display: flex; gap: 15px;">
+          <div id="contenedorPrioridad" class="seccion-chips" style="flex: 1;">
+            <label style="color: #3498db; font-size: 11px; font-weight: bold; margin-bottom: 5px; display: block;">3. PRIORIDAD:</label>
+            <div class="chips-group-circle" style="display:flex; gap:8px;">
+              <button class="chip-circle chip-prio" data-val="prio1" title="Crítica / Prio 1" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #666; background: #444; color: white; font-weight: bold; cursor: pointer;">P</button>
+              <button class="chip-circle chip-prio" data-val="alta" title="Alta" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #666; background: #444; color: white; font-weight: bold; cursor: pointer;">A</button>
+              <button class="chip-circle chip-prio seleccionado" data-val="media" title="Media / Baja" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #8e9eab; background: #8e9eab; color: white; font-weight: bold; cursor: pointer;">B</button>
+            </div>
+          </div>
+          
+          <div id="contenedorEstado" class="seccion-chips" style="flex: 1;">
+            <label style="color: #3498db; font-size: 11px; font-weight: bold; margin-bottom: 5px; display: block;">4. ESTADO:</label>
+            <div class="chips-group-circle" style="display:flex; gap:8px;">
+              <button class="chip-circle chip-estado seleccionado" data-val="open" title="Abierto" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #e74c3c; background: #e74c3c; color: white; font-weight: bold; cursor: pointer;">A</button>
+              <button class="chip-circle chip-estado" data-val="review" title="En Revisión" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #666; background: #444; color: white; font-weight: bold; cursor: pointer;">R</button>
+              <button class="chip-circle chip-estado" data-val="closed" title="Cerrado" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #666; background: #444; color: white; font-weight: bold; cursor: pointer;">C</button>
+            </div>
           </div>
         </div>
-        <div id="contenedorPrioridad" class="seccion-chips">
-          <label>3. Prioridad:</label>
-          <div class="chips-group-circle">
-            <button class="chip-circle chip-prio" data-val="prio1" title="Crítica / Prio 1">P</button>
-            <button class="chip-circle chip-prio" data-val="alta" title="Alta">A</button>
-            <button class="chip-circle chip-prio seleccionado" data-val="media" title="Media / Baja">B</button>
-          </div>
-        </div>
-        <div id="contenedorEstado" class="seccion-chips">
-          <label>4. Estado:</label>
-          <div class="chips-group-circle">
-            <button class="chip-circle chip-estado seleccionado" data-val="open" title="Abierto">A</button>
-            <button class="chip-circle chip-estado" data-val="review" title="En Revisión">R</button>
-            <button class="chip-circle chip-estado" data-val="closed" title="Cerrado">C</button>
-          </div>
-        </div>
+        
         <div class="seccion-chips">
-          <label>5. Evidencia Visual (soporta Ctrl+V):</label>
-          <div class="evidence-group">
-            <button class="evidence-btn" id="btnCameraNivelDios" title="Cámara">📷</button>
-            <button class="evidence-btn" onclick="window.take3DScreenshot(event)" title="Captura 3D">👁️</button>
-            <button class="evidence-btn" id="btnGalleryNivelDios" title="Subir Imagen de Galería">🖼️</button>
-            <button class="evidence-btn" onclick="window.pasteFromClipboard(event)" title="Pegar del portapapeles">📋</button>
+          <label style="display: flex; justify-content: space-between; color: #3498db; font-size: 11px; font-weight: bold; margin-bottom: 5px;">
+            <span>5. EVIDENCIA VISUAL:</span>
+            <span style="font-size: 10px; color: #aaa; font-weight: normal; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">Soporta Ctrl+V</span>
+          </label>
+          <div class="evidence-group" style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <button class="evidence-btn" id="btnCameraNivelDios" title="Cámara" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); border-radius:6px; padding:10px; font-size: 16px; cursor:pointer; color: white;">📷</button>
+            <button class="evidence-btn" onclick="window.take3DScreenshot(event)" title="Captura 3D" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); border-radius:6px; padding:10px; font-size: 16px; cursor:pointer; color: white;">👁️</button>
+            <button class="evidence-btn" id="btnGalleryNivelDios" title="Subir Imagen de Galería" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); border-radius:6px; padding:10px; font-size: 16px; cursor:pointer; color: white;">🖼️</button>
+            <button class="evidence-btn" onclick="window.pasteFromClipboard(event)" title="Pegar del portapapeles" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); border-radius:6px; padding:10px; font-size: 16px; cursor:pointer; color: white;">📋</button>
           </div>
           <input type="file" id="inputGalleryNivelDios" accept="image/*" style="display:none" />
           <input type="file" id="inputCameraNivelDios" accept="image/*" capture="environment" style="display:none" />
-          <div id="photoGrid" class="photo-grid"></div>
+          <div id="photoGrid" class="photo-grid" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
         </div>
+        
         <div class="seccion-comentario">
-          <label>6. Notas:</label>
-          <div class="input-con-voz">
-            <textarea id="textoIncidenciaNivelDios" placeholder="Describe el detalle..."></textarea>
-            <button id="btnVozNivelDios" class="btn-voz" title="Dictar por voz">🎤</button>
+          <label style="color: #3498db; font-size: 11px; font-weight: bold; margin-bottom: 5px; display: block;">6. NOTAS ADICIONALES:</label>
+          <div class="input-con-voz" style="display: flex; gap: 10px;">
+            <textarea id="textoIncidenciaNivelDios" placeholder="Describe el detalle del defecto..." style="flex: 1; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; resize: vertical; min-height: 60px; font-family: inherit; font-size: 13px;"></textarea>
+            <button id="btnVozNivelDios" class="btn-voz" title="Dictar por voz" style="background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">🎤</button>
           </div>
         </div>
       </div>
-      <div class="panel-footer">
-        <button id="saveIssue" class="btn-guardar-principal">✓ Guardar Incidencia</button>
+
+      <div class="panel-footer" style="padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.3); border-radius: 0 0 16px 16px;">
+        <button id="saveIssue" class="btn-guardar-principal" style="width: 100%; padding: 14px; background: #2ecc71; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s;">✓ Guardar Incidencia</button>
       </div>
     </div>
 
-    <div id="filterPanelOverlay" class="filter-panel-overlay">
-      <div class="filter-panel-content interactive-element" style="max-width: 650px; padding: 0; background: transparent; max-height: 90vh; display: flex; flex-direction: column;">
+<!-- ========================================== -->
+    <!-- PANEL FILTROS: MODO DARK PREMIUM           -->
+    <!-- ========================================== -->
+    <div id="filterPanelOverlay" class="filter-panel-overlay interactive-element" onpointerdown="event.stopPropagation()" onclick="event.stopPropagation()">
+      <div class="filter-panel-content interactive-element" style="max-width: 650px; padding: 0; background: rgba(30, 30, 35, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 -10px 30px rgba(0,0,0,0.6); max-height: 90vh; display: flex; flex-direction: column;">
         
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid #eee; background: white; border-radius: 20px 20px 0 0; flex-shrink: 0; z-index: 100;">
-            <h2 style="margin:0; font-size: 18px; color: #333; display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.4); border-radius: 20px 20px 0 0; flex-shrink: 0; z-index: 100;">
+            <h2 style="margin:0; font-size: 18px; color: white; display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
                 Filtrar y Buscar
-                <button id="btnMagicVoice" class="interactive-element" title="Búsqueda por voz" style="background: none; border: none; cursor: pointer; transition: transform 0.2s; padding: 5px; display: flex; align-items: center; color: #78909c;">
+                <button id="btnMagicVoice" class="interactive-element" title="Búsqueda por voz" style="background: none; border: none; cursor: pointer; transition: transform 0.2s; padding: 5px; display: flex; align-items: center; color: #3498db;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                 </button>
             </h2>
             <div style="display: flex; gap: 10px; align-items: center; flex-shrink: 0;">
-                <button id="clearFiltersBtn" onclick="window.clearAllFilters()" title="Limpiar todos los filtros" style="background: none; border: none; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center; transition: 0.2s; color: #999;">
+                <button id="clearFiltersBtn" onclick="window.clearAllFilters()" title="Limpiar todos los filtros" style="background: none; border: none; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center; transition: 0.2s; color: #aaa;">
                     <svg id="funnelIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon><line x1="2" y1="2" x2="22" y2="22" class="funnel-slash"></line></svg>
                 </button>
-                <button id="btnCloseFilterPanel" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; line-height: 1; padding: 0 5px;">✕</button>
+                <button id="btnCloseFilterPanel" onclick="document.getElementById('filterPanelOverlay').classList.remove('active')" style="background:none; border:none; font-size:24px; cursor:pointer; color:#aaa; line-height: 1; padding: 0 5px;">✕</button>
             </div>
         </div>
 
-        <div style="padding: 20px; background: #f8f9fa; display: flex; flex-direction: column; gap: 15px; border-radius: 0 0 20px 20px; overflow-y: auto; flex-grow: 1;">
+        <div style="padding: 20px; background: transparent; display: flex; flex-direction: column; gap: 15px; border-radius: 0 0 20px 20px; overflow-y: auto; flex-grow: 1;">
             <p id="voiceStatus" style="font-size: 11px; color: #888; margin: -10px 0 5px 0; font-style: italic; text-align: right; height: 14px;"></p>
             
-            <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px;">
-                <label style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 8px;">BÚSQUEDA LIBRE</label>
-                <input type="text" id="filterSearch" placeholder="Buscar ID o comentario..." oninput="window.updateFilters('search', this.value)" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 15px;">
+                <label style="font-size: 11px; font-weight: bold; color: #3498db; display: block; margin-bottom: 8px;">BÚSQUEDA LIBRE</label>
+                <input type="text" id="filterSearch" placeholder="Buscar ID o comentario..." oninput="window.updateFilters('search', this.value)" style="width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; box-sizing: border-box; background: rgba(0,0,0,0.3); color: white;">
             </div>
 
-            <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px;">
+            <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 15px;">
                 <div style="display: flex; flex-wrap: wrap; gap: 20px;">
                     <div style="flex: 1; min-width: 200px;">
-                        <label style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 8px;">CUANDO SE ABRIÓ</label>
+                        <label style="font-size: 11px; font-weight: bold; color: #3498db; display: block; margin-bottom: 8px;">CUANDO SE ABRIÓ</label>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;" id="dateQuickButtons">
-                            <button class="filter-chip date-quick-btn" data-range="hoy">HOY</button>
-                            <button class="filter-chip date-quick-btn" data-range="semana">SEM PASADA</button>
-                            <button class="filter-chip date-quick-btn" data-range="ayer">AYER</button>
-                            <button class="filter-chip date-quick-btn" data-range="mes">MES PASADO</button>
+                            <button class="filter-chip date-quick-btn" data-range="hoy" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">HOY</button>
+                            <button class="filter-chip date-quick-btn" data-range="semana" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">SEM PASADA</button>
+                            <button class="filter-chip date-quick-btn" data-range="ayer" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">AYER</button>
+                            <button class="filter-chip date-quick-btn" data-range="mes" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">MES PASADO</button>
                         </div>
                     </div>
                     <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; justify-content: flex-end;">
                         <div style="display: flex; gap: 10px;">
                             <div style="flex: 1;">
-                                <label style="font-size: 10px; color: #888; display: block; margin-bottom: 4px;">Desde</label>
-                                <input type="date" id="filterDateFrom" onchange="window.updateFilters('dateFrom', this.value)" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; box-sizing: border-box; background: white;">
+                                <label style="font-size: 10px; color: #aaa; display: block; margin-bottom: 4px;">Desde</label>
+                                <input type="date" id="filterDateFrom" onchange="window.updateFilters('dateFrom', this.value)" style="width: 100%; padding: 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; font-size: 12px; box-sizing: border-box; background: rgba(0,0,0,0.3); color: white; color-scheme: dark;">
                             </div>
                             <div style="flex: 1;">
-                                <label style="font-size: 10px; color: #888; display: block; margin-bottom: 4px;">Hasta</label>
-                                <input type="date" id="filterDateTo" onchange="window.updateFilters('dateTo', this.value)" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; box-sizing: border-box; background: white;">
+                                <label style="font-size: 10px; color: #aaa; display: block; margin-bottom: 4px;">Hasta</label>
+                                <input type="date" id="filterDateTo" onchange="window.updateFilters('dateTo', this.value)" style="width: 100%; padding: 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; font-size: 12px; box-sizing: border-box; background: rgba(0,0,0,0.3); color: white; color-scheme: dark;">
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 15px;">
-                <div style="flex: 1; min-width: 250px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px;">
-                    <label style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 8px;">USUARIO</label>
+                <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 15px;">
+                    <label style="font-size: 11px; font-weight: bold; color: #3498db; display: block; margin-bottom: 8px;">USUARIO</label>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <button id="btnMisPuntos" onclick="window.toggleMisPuntos()" title="Ver solo mis puntos" class="circle-chip" style="background-color: #1a73e8; padding: 0;">
+                        <button id="btnMisPuntos" onclick="window.toggleMisPuntos()" title="Ver solo mis puntos" class="circle-chip" style="background-color: #3498db; padding: 0; color: white; border:none; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 1px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                         </button>
-                        <select id="filterUser" onchange="window.updateFilters('user', this.value)" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: white; margin-bottom: 0;">
-                            <option value="all">Todos los usuarios</option>
+                        <select id="filterUser" onchange="window.updateFilters('user', this.value)" style="flex: 1; padding: 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; font-size: 13px; background: rgba(0,0,0,0.3); color: white; margin-bottom: 0;">
+                            <option value="all" style="color: black;">Todos los usuarios</option>
                         </select>
                     </div>
                 </div>
-                <div style="flex: 1; min-width: 250px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px;">
-                    <label style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 8px;">ESTADO INCIDENCIA</label>
+                <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 15px;">
+                    <label style="font-size: 11px; font-weight: bold; color: #3498db; display: block; margin-bottom: 8px;">ESTADO INCIDENCIA</label>
                     <div id="filterStatusContainer" style="display: flex; gap: 12px; justify-content: flex-start; align-items: center; height: 35px;">
-                        <button class="filter-chip circle-chip active" data-val="all" title="Todos" style="background-color: #1a73e8;" onclick="window.updateFilters('status', 'all', this)">T</button>
-                        <button class="filter-chip circle-chip" data-val="open" title="Abiertos" style="background-color: #ea4335;" onclick="window.updateFilters('status', 'open', this)">A</button>
-                        <button class="filter-chip circle-chip" data-val="review" title="Revisión" style="background-color: #fbbc04; color: #000;" onclick="window.updateFilters('status', 'review', this)">R</button>
-                        <button class="filter-chip circle-chip" data-val="closed" title="Cerrados" style="background-color: #34a853;" onclick="window.updateFilters('status', 'closed', this)">C</button>
+                        <button class="filter-chip circle-chip active" data-val="all" title="Todos" style="background-color: #3498db; color: white; border:none; width:32px; height:32px; border-radius:50%;" onclick="window.updateFilters('status', 'all', this)">T</button>
+                        <button class="filter-chip circle-chip" data-val="open" title="Abiertos" style="background-color: #e74c3c; color: white; border:none; width:32px; height:32px; border-radius:50%;" onclick="window.updateFilters('status', 'open', this)">A</button>
+                        <button class="filter-chip circle-chip" data-val="review" title="Revisión" style="background-color: #f1c40f; color: black; border:none; width:32px; height:32px; border-radius:50%;" onclick="window.updateFilters('status', 'review', this)">R</button>
+                        <button class="filter-chip circle-chip" data-val="closed" title="Cerrados" style="background-color: transparent; border: 2px dashed #2ecc71 !important; color: #2ecc71; width:32px; height:32px; border-radius:50%;" onclick="window.updateFilters('status', 'closed', this)">C</button>
                     </div>
                 </div>
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 15px;">
-                <div style="flex: 1; min-width: 250px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px;">
-                    <label style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 8px;">1. FASE</label>
-                    <select id="filterFase" onchange="window.updateFilters('fase', this.value)" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: white;"><option value="all">Todas las fases</option></select>
+                <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 15px;">
+                    <label style="font-size: 11px; font-weight: bold; color: #3498db; display: block; margin-bottom: 8px;">1. FASE</label>
+                    <select id="filterFase" onchange="window.updateFilters('fase', this.value)" style="width: 100%; padding: 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; font-size: 13px; background: rgba(0,0,0,0.3); color: white;">
+                        <option value="all" style="color: black;">Todas las fases</option>
+                    </select>
                 </div>
-                <div style="flex: 1; min-width: 250px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px;">
-                    <label style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 8px;">PRIORIDAD</label>
+                <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 15px;">
+                    <label style="font-size: 11px; font-weight: bold; color: #3498db; display: block; margin-bottom: 8px;">PRIORIDAD</label>
                     <div id="filterPriorityContainer" style="display: flex; gap: 10px; justify-content: flex-start; align-items: center; height: 35px;">
-                        <button class="filter-chip circle-chip active" data-val="all" title="Todas" style="background-color: #1a73e8;" onclick="window.updateFilters('priority', 'all', this)">T</button>
-                        <button class="filter-chip circle-chip" data-val="prio1" title="Prio 1" style="background-color: #ea4335;" onclick="window.updateFilters('priority', 'prio1', this)">P</button>
-                        <button class="filter-chip circle-chip" data-val="alta" title="Alta" style="background-color: #78909c;" onclick="window.updateFilters('priority', 'alta', this)">A</button>
-                        <button class="filter-chip circle-chip" data-val="media" title="Media" style="background-color: #90a4ae;" onclick="window.updateFilters('priority', 'media', this)">M</button>
-                        <button class="filter-chip circle-chip" data-val="baja" title="Baja" style="background-color: #b0bec5;" onclick="window.updateFilters('priority', 'baja', this)">B</button>
+                        <button class="filter-chip circle-chip active" data-val="all" title="Todas" style="background-color: #3498db; color: white; border:none; width:32px; height:32px; border-radius:50%;" onclick="window.updateFilters('priority', 'all', this)">T</button>
+                        <button class="filter-chip circle-chip" data-val="prio1" title="Prio 1" style="background-color: #e74c3c; color: white; border:none; width:32px; height:32px; border-radius:50%;" onclick="window.updateFilters('priority', 'prio1', this)">P</button>
+                        <button class="filter-chip circle-chip" data-val="alta" title="Alta" style="background-color: #5d8aa8; color: white; border:none; width:32px; height:32px; border-radius:50%;" onclick="window.updateFilters('priority', 'alta', this)">A</button>
+                        <button class="filter-chip circle-chip" data-val="media" title="Media" style="background-color: #8e9eab; color: white; border:none; width:32px; height:32px; border-radius:50%;" onclick="window.updateFilters('priority', 'media', this)">M</button>
+                        <button class="filter-chip circle-chip" data-val="baja" title="Baja" style="background-color: #b0bec5; color: black; border:none; width:32px; height:32px; border-radius:50%;" onclick="window.updateFilters('priority', 'baja', this)">B</button>
                     </div>
                 </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 15px;">
                 <div>
-                    <label style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 4px;">2. ACTIVIDAD</label>
-                    <select id="filterActividad" onchange="window.updateFilters('actividad', this.value)" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; box-sizing: border-box; background: white;"><option value="all">Todas</option></select>
+                    <label style="font-size: 11px; font-weight: bold; color: #3498db; display: block; margin-bottom: 4px;">2. ACTIVIDAD</label>
+                    <select id="filterActividad" onchange="window.updateFilters('actividad', this.value)" style="width: 100%; padding: 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; font-size: 12px; box-sizing: border-box; background: rgba(0,0,0,0.3); color: white;">
+                        <option value="all" style="color: black;">Todas</option>
+                    </select>
                 </div>
                 <div>
-                    <label style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 4px;">3. SUBFASE</label>
-                    <select id="filterSubfase" onchange="window.updateFilters('subfase', this.value)" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; box-sizing: border-box; background: white;"><option value="all">Todas</option></select>
+                    <label style="font-size: 11px; font-weight: bold; color: #3498db; display: block; margin-bottom: 4px;">3. SUBFASE</label>
+                    <select id="filterSubfase" onchange="window.updateFilters('subfase', this.value)" style="width: 100%; padding: 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; font-size: 12px; box-sizing: border-box; background: rgba(0,0,0,0.3); color: white;">
+                        <option value="all" style="color: black;">Todas</option>
+                    </select>
                 </div>
                 <div>
-                    <label style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 4px;">4. DEFECTO</label>
-                    <select id="filterType" onchange="window.updateFilters('type', this.value)" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; box-sizing: border-box; background: white;"><option value="all">Todos</option></select>
+                    <label style="font-size: 11px; font-weight: bold; color: #3498db; display: block; margin-bottom: 4px;">4. DEFECTO</label>
+                    <select id="filterType" onchange="window.updateFilters('type', this.value)" style="width: 100%; padding: 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; font-size: 12px; box-sizing: border-box; background: rgba(0,0,0,0.3); color: white;">
+                        <option value="all" style="color: black;">Todos</option>
+                    </select>
                 </div>
             </div>
         </div>
       </div>
     </div>
 
-    <div id="toolsModalOverlay" class="layers-modal-overlay">
-      <div class="info-modal-content interactive-element" style="max-width: 400px;">
-        <div class="info-modal-header" style="background-color: #fff; padding: 15px 20px;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q" style="height: 26px; width: 26px; object-fit: contain; border-radius: 4px;">
-            <h2 style="margin:0; color:#333; font-size: 18px; font-weight: bold;">HERRAMIENTAS</h2>
-          </div>
-          <button id="btnCloseTools" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999;">✕</button>
-        </div>
-        <div class="info-modal-body" style="padding: 25px; background: #f8f9fa; display: flex; flex-direction: column; gap: 12px;">
-          <button class="btn-primary" onclick="window.generatePDF()" style="background-color: #d93025; font-size: 15px; padding: 14px; font-weight: bold; border-radius: 8px; display: flex; justify-content: center; align-items: center; gap: 8px;">📄 Generar PDF</button>
-          <button class="btn-primary" onclick="window.exportToCSV()" style="background-color: #1e8e3e; font-size: 15px; padding: 14px; font-weight: bold; border-radius: 8px; display: flex; justify-content: center; align-items: center; gap: 8px;">📊 Exportar a EXCEL (CSV)</button>
-          <button class="btn-primary" id="exportGlobalBtn" onclick="window.exportIssues()" style="background-color: #1a73e8; font-size: 15px; padding: 14px; font-weight: bold; border-radius: 8px; display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px;">💾 Exportar Sesión</button>
-          <button class="btn-primary" onclick="document.getElementById('importInput').click()" style="background-color: #1a73e8; font-size: 15px; padding: 14px; font-weight: bold; border-radius: 8px; display: flex; justify-content: center; align-items: center; gap: 8px;">📂 Importar JSON</button>
-          <button id="importBtn" style="display:none;"></button>
-          <input type="file" id="importInput" accept="application/json" style="display:none" />
-        </div>
-      </div>
+
+<div id="toolsModalOverlay" class="layers-modal-overlay">
+  <div class="info-modal-content interactive-element" style="max-width: 400px;">
+    
+    <div class="info-modal-header">
+      <h3 style="margin: 0; font-size: 16px; display: flex; align-items: center; gap: 10px;">
+        <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q" style="height: 24px; width: 24px; object-fit: contain; border-radius: 4px;">
+        Herramientas
+      </h3>
+      <button id="btnCloseTools" class="icon-action-btn">✕</button>
     </div>
 
-    <div id="historyModalOverlay" class="layers-modal-overlay">
-      <div class="info-modal-content interactive-element" style="width: 100vw; height: 100vh; max-width: 100vw; max-height: 100vh; border-radius: 0; display: flex; flex-direction: column; margin: 0; transform: none; background: #f8f9fa;">
-        <div style="background: white; padding: 15px; border-bottom: 2px solid #eaeaea; display: flex; align-items: stretch; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); flex-shrink: 0;">
-          <div style="width: 90px; height: 90px; background: #e5e3df; border-radius: 10px; overflow: hidden; border: 1px solid #ddd; flex-shrink: 0;">
-            <img id="historyScreenshot" src="" style="width: 100%; height: 100%; object-fit: cover;">
-          </div>
-          <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
-            <h2 style="margin: 0 0 5px 0; color: #1a73e8; font-size: 20px; line-height: 1.1;">Historial de cambios</h2>
-            <h3 id="historyIssueId" style="margin: 0; font-size: 12px; color: #1a73e8; text-transform: uppercase; font-weight: 600; word-wrap: break-word;"># ID: ---</h3>
-          </div>
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; flex-shrink: 0; width: 45px;">
-            <button id="btnCloseHistoryModal" style="background: none; border: none; font-size: 30px; cursor: pointer; color: #999; padding: 0; line-height: 1;">✕</button>
-            <button onclick="window.editExistingIssue()" style="background: #1a73e8; color: white; border: none; border-radius: 50%; width: 42px; height: 42px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 10px rgba(26,115,232,0.3);" title="Actualizar Incidencia">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
-            </button>
-          </div>
+    <div class="info-modal-body" style="display: flex; flex-direction: column; gap: var(--sp-2);">
+      <button onclick="window.generatePDF()" class="menu-action-btn" style="display: flex; align-items: center; gap: 15px; background: var(--bg-input); border: 1px solid var(--border-glass); padding: 16px; border-radius: 12px; color: var(--text-main); cursor: pointer; transition: 0.2s; text-align: left; width: 100%;">
+        <div style="background: rgba(231, 76, 60, 0.1); color: var(--danger-red); padding: 10px; border-radius: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
         </div>
-        <div style="flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column;">
-          <div class="history-container" style="display: block; margin: 0 auto; max-width: 800px; padding: 20px; border: none; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); box-sizing: border-box; width: 100%; flex-grow: 1; min-height: 100%;">
-            <div id="historyTimeline" class="history-timeline" style="margin-left: 5px; padding-left: 15px; max-height: none; overflow-y: visible;"></div>
-          </div>
+        <div style="flex-grow: 1;">
+          <div style="font-weight: 600; font-size: 14px;">Generar Reporte PDF</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Exportar listado actual</div>
         </div>
+      </button>
+
+      <button onclick="window.exportToCSV()" class="menu-action-btn" style="display: flex; align-items: center; gap: 15px; background: var(--bg-input); border: 1px solid var(--border-glass); padding: 16px; border-radius: 12px; color: var(--text-main); cursor: pointer; transition: 0.2s; text-align: left; width: 100%;">
+        <div style="background: rgba(46, 204, 113, 0.1); color: var(--success-green); padding: 10px; border-radius: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+        </div>
+        <div style="flex-grow: 1;">
+          <div style="font-weight: 600; font-size: 14px;">Exportar a Excel (CSV)</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Descargar base de datos</div>
+        </div>
+      </button>
+
+      <button id="exportGlobalBtn" onclick="window.exportIssues()" class="menu-action-btn" style="display: flex; align-items: center; gap: 15px; background: var(--bg-input); border: 1px solid var(--border-glass); padding: 16px; border-radius: 12px; color: var(--text-main); cursor: pointer; transition: 0.2s; text-align: left; width: 100%;">
+        <div style="background: rgba(52, 152, 219, 0.1); color: var(--accent-blue); padding: 10px; border-radius: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        </div>
+        <div style="flex-grow: 1;">
+          <div style="font-weight: 600; font-size: 14px;">Exportar Sesión</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Guardar backup JSON local</div>
+        </div>
+      </button>
+
+      <button onclick="document.getElementById('importInput').click()" class="menu-action-btn" style="display: flex; align-items: center; gap: 15px; background: var(--bg-input); border: 1px solid var(--border-glass); padding: 16px; border-radius: 12px; color: var(--text-main); cursor: pointer; transition: 0.2s; text-align: left; width: 100%;">
+        <div style="background: rgba(241, 196, 15, 0.1); color: var(--warning-yellow); padding: 10px; border-radius: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 14 12 9 7 14"></polyline><line x1="12" y1="9" x2="12" y2="21"></line></svg>
+        </div>
+        <div style="flex-grow: 1;">
+          <div style="font-weight: 600; font-size: 14px;">Importar JSON</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Cargar datos de sesión offline</div>
+        </div>
+      </button>
+
+      <button id="importBtn" style="display:none;"></button>
+      <input type="file" id="importInput" accept="application/json" style="display:none" />
+
+    </div>
+  </div>
+</div>
+
+<div id="historyModalOverlay" class="layers-modal-overlay">
+  <div class="info-modal-content interactive-element" style="width: 100vw; height: 100vh; max-width: 100vw; max-height: 100vh; border-radius: 0; display: flex; flex-direction: column; margin: 0; transform: none; border: none; background: var(--bg-app);">
+    <div style="background: rgba(255,255,255,0.03); padding: var(--sp-3); border-bottom: 1px solid var(--border-glass); display: flex; align-items: stretch; gap: var(--sp-3); flex-shrink: 0; box-shadow: var(--shadow-sm);">
+      <div style="width: 90px; height: 90px; background: #000; border-radius: var(--rad-sm); overflow: hidden; border: 1px solid var(--border-glass); flex-shrink: 0; box-shadow: var(--shadow-sm);">
+        <img id="historyScreenshot" src="" style="width: 100%; height: 100%; object-fit: cover;">
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
+        <h2 style="margin: 0 0 6px 0; color: var(--text-main); font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">Historial de Cambios</h2>
+        <h3 id="historyIssueId" style="margin: 0; font-size: 13px; color: var(--accent-blue); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; word-wrap: break-word;"># ID: ---</h3>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; flex-shrink: 0; width: 48px;">
+        <button id="btnCloseHistoryModal" class="icon-action-btn" style="font-size: 24px; line-height: 1; padding: 4px;">✕</button>
+        <button onclick="window.editExistingIssue()" style="background: var(--accent-blue); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4); transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);" onmouseover="this.style.transform='scale(1.1) rotate(15deg)'" onmouseout="this.style.transform='scale(1) rotate(0deg)'" title="Actualizar Incidencia">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+        </button>
       </div>
     </div>
-
-    <div id="layersModalOverlay" class="layers-modal-overlay">
-      <div class="layers-modal-content interactive-element">
-        <div class="layers-modal-header">
-          <h3 style="margin:0; color:#333; font-size: 18px;">Estilo de Visualización</h3>
-          <button id="btnCloseLayers" style="background:none; border:none; font-size:20px; cursor:pointer; color:#888;">✕</button>
-        </div>
-        <div style="display: flex; justify-content: space-around; margin-top: 20px; gap: 10px;">
-          <button class="layer-card layer-btn active" data-mode="shaded">
-            <div class="layer-icon" style="background: #e0e0e0; border: 2px solid #ccc; border-radius: 8px;"></div><span style="font-size: 13px; margin-top: 5px;">Sólido</span>
-          </button>
-          <button class="layer-card layer-btn" data-mode="shadedEdges">
-            <div class="layer-icon" style="background: #e0e0e0; border: 2px solid #555; border-radius: 8px;"></div><span style="font-size: 13px; margin-top: 5px;">Aristas</span>
-          </button>
-          <button class="layer-card layer-btn" data-mode="wireframe">
-            <div class="layer-icon" style="background: transparent; border: 2px dashed #888; border-radius: 8px;"></div><span style="font-size: 13px; margin-top: 5px;">Malla</span>
-          </button>
-        </div>
+    <div style="flex-grow: 1; overflow-y: auto; padding: var(--sp-3); display: flex; flex-direction: column; align-items: center;">
+      <div class="history-container" style="display: block; max-width: 800px; padding: var(--sp-4); border: 1px solid var(--border-glass); background: var(--bg-panel); border-radius: var(--rad-lg); box-sizing: border-box; width: 100%; flex-grow: 1; min-height: 100%; box-shadow: var(--shadow-lg);">
+        <div id="historyTimeline" class="history-timeline" style="max-height: none; overflow-y: visible;"></div>
       </div>
     </div>
+  </div>
+</div>
 
-    <div id="infoModalOverlay" class="info-modal-overlay">
-      <div class="info-modal-content">
-        <div class="info-modal-header">
-          <h2 style="margin:0; color:#4285F4; font-size: 20px;">🏭 Sumatra Q - Guía Rápida</h2>
-          <button id="btnCloseInfo" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999;">✕</button>
-        </div>
-        <div class="info-modal-body">
-          <p><strong>Sumatra Q</strong> es una plataforma web interactiva diseñada para la inspección y el control de calidad de piezas industriales.</p>
-          <h3 style="color:#333; border-bottom:1px solid #eee; padding-bottom:5px; margin-top:20px;">✨ Características</h3>
-          <ul style="padding-left: 20px; margin-bottom: 20px;">
-            <li><strong>Visualización 3D:</strong> Renderizado de archivos STL.</li>
-            <li><strong>Marcadores:</strong> Creación de incidencias táctil.</li>
-            <li><strong>Trazabilidad:</strong> Historial inmutable de actualizaciones por usuario y fecha.</li>
-            <li><strong>Filtros Ágiles:</strong> Jerarquía visual de incidencias con prioridad.</li>
-          </ul>
-        </div>
-      </div>
+<div id="layersModalOverlay" class="layers-modal-overlay">
+  <div class="layers-modal-content interactive-element">
+    
+    <div class="layers-modal-header">
+      <h3 style="margin: 0; font-size: 14px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">
+        Estilo de Visualización
+      </h3>
+      <button id="btnCloseLayers" class="icon-action-btn">✕</button>
     </div>
 
-    <div id="rapidModeModal" class="info-modal-overlay">
-      <div class="info-modal-content interactive-element" style="max-width: 400px;">
-        <div class="info-modal-header" style="background-color: #fff; padding: 15px 20px;">
-          <h2 style="margin:0; color: #f5b400; font-size: 18px; display: flex; align-items: center; gap: 8px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-            Modo Ráfaga
-          </h2>
-          <button onclick="document.getElementById('rapidModeModal').classList.remove('active')" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999;">✕</button>
-        </div>
-        <div class="info-modal-body" style="padding: 20px; background: #f8f9fa;">
-          <p style="font-size: 13px; color: #666; margin-top: 0; margin-bottom: 20px;">Configura los parámetros comunes. Todos los puntos que toques ahora se guardarán automáticamente.</p>
-          <label style="font-size: 12px; font-weight: bold; color: #555; display: block; margin-bottom: 5px;">1. Fase Productiva Común:</label>
-          <select id="rapidFase" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; margin-bottom: 15px; background: white;">
-              <option value="estampacion">Estampación</option>
-              <option value="chapisteria">Chapistería</option>
-              <option value="pintura">Pintura</option>
-              <option value="ensamblaje">Ensamblaje Final</option>
-          </select>
-          <label style="font-size: 12px; font-weight: bold; color: #555; display: block; margin-bottom: 5px;">2. Comentario Rápido:</label>
-          <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-              <input type="text" id="rapidComentario" placeholder="Ej: Captura de campo..." style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
-              <button id="micBtnRapid" type="button" class="mic-btn" style="background: #f1f3f4; border: 1px solid #ccc; border-radius: 6px; padding: 0 15px; font-size: 18px; cursor: pointer;">🎤</button>
-          </div>
-          <button id="startRapidMode" class="btn-primary" style="width: 100%; background-color: #f5b400; color: #000; font-weight: bold;">⚡ Activar Ráfaga</button>
-        </div>
-      </div>
+    <div style="display: flex; justify-content: space-between; gap: var(--sp-2); margin-top: var(--sp-3);">
+      
+      <button class="layer-card layer-btn active" data-mode="shaded" style="flex: 1;">
+        <div class="layer-icon" style="background: var(--text-muted); border-radius: var(--rad-sm); border: 2px solid transparent;"></div>
+        <span style="font-size: 12px; margin-top: 8px;">Sólido</span>
+      </button>
+
+      <button class="layer-card layer-btn" data-mode="shadedEdges" style="flex: 1;">
+        <div class="layer-icon" style="background: var(--bg-app); border: 2px solid var(--text-muted); border-radius: var(--rad-sm);"></div>
+        <span style="font-size: 12px; margin-top: 8px;">Aristas</span>
+      </button>
+
+      <button class="layer-card layer-btn" data-mode="wireframe" style="flex: 1;">
+        <div class="layer-icon" style="background: transparent; border: 2px dashed var(--text-muted); border-radius: var(--rad-sm);"></div>
+        <span style="font-size: 12px; margin-top: 8px;">Malla</span>
+      </button>
+      
+    </div>
+  </div>
+</div>
+
+<div id="modalCargaModelos" class="info-modal-overlay" style="display: none; opacity: 1; visibility: visible;">
+  <div class="info-modal-content interactive-element" style="max-width: 400px;">
+    
+    <div class="info-modal-header">
+      <h3 style="margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        Gestor de Modelos 3D
+      </h3>
+      <button onclick="document.getElementById('modalCargaModelos').style.display='none'" class="icon-action-btn">✕</button>
     </div>
 
-    <div id="modalCargaModelos" class="interactive-element" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
+    <div class="info-modal-body">
+      
+      <button onclick="document.getElementById('fileInput').click(); document.getElementById('modalCargaModelos').style.display='none';" class="btn-primary" style="margin-bottom: var(--sp-2); display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        Explorar Dispositivo
+      </button>
+
+      <div style="height: 1px; background: var(--border-glass); margin: var(--sp-3) 0;"></div>
+      
+      <p style="margin: 0 0 var(--sp-2) 0; font-size: 11px; color: var(--text-muted); font-weight: bold; text-align: center; letter-spacing: 1px;">PIEZAS DE PRUEBA</p>
+      
+      <div style="display: flex; flex-direction: column; gap: var(--sp-1);">
+        <button onclick="window.inyectarDemo('./demos/demo1.stl', 'demo1.stl'); document.getElementById('modalCargaModelos').style.display='none';" class="menu-action-btn" style="background: var(--bg-input); border: 1px solid var(--border-glass); color: var(--text-main); padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: 0.2s;">
+          📦 Pieza Demo 1
+        </button>
+        <button onclick="window.inyectarDemo('./demos/demo2.stl', 'demo2.stl'); document.getElementById('modalCargaModelos').style.display='none';" class="menu-action-btn" style="background: var(--bg-input); border: 1px solid var(--border-glass); color: var(--text-main); padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: 0.2s;">
+          📦 Pieza Demo 2
+        </button>
+        <button onclick="window.inyectarDemo('./demos/demo3.stl', 'demo3.stl'); document.getElementById('modalCargaModelos').style.display='none';" class="menu-action-btn" style="background: var(--bg-input); border: 1px solid var(--border-glass); color: var(--text-main); padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: 0.2s;">
+          📦 Pieza Demo 3
+        </button>
+      </div>
+
+      <div style="height: 1px; background: var(--border-glass); margin: var(--sp-3) 0;"></div>
+      
+      <p style="margin: 0 0 var(--sp-2) 0; font-size: 11px; color: var(--text-muted); font-weight: bold; text-align: center; letter-spacing: 1px;">PIEZAS CARGADAS</p>
+      
+      <div id="fileListUI" class="files-container" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;"></div>
+      
+    </div>
+  </div>
+</div>
+
+
+<div id="rapidModeModal" class="info-modal-overlay">
+  <div class="info-modal-content interactive-element" style="max-width: 450px;">
+    
+    <div class="info-modal-header">
+      <h3 style="margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--warning-yellow)" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        Modo Ráfaga
+      </h3>
+      <button onclick="document.getElementById('rapidModeModal').classList.remove('active')" class="icon-action-btn">✕</button>
+    </div>
+
+    <div class="info-modal-body">
+      <p style="margin-top: 0; margin-bottom: var(--sp-3); color: var(--text-muted); font-size: 13px;">
+        Configura los parámetros comunes. Todos los puntos que toques ahora se guardarán automáticamente.
+      </p>
+
+      <label>1. Fase Productiva Común:</label>
+      <select id="rapidFase">
+        <option value="estampacion">Estampación</option>
+        <option value="chapisteria">Chapistería</option>
+        <option value="pintura">Pintura</option>
+        <option value="ensamblaje">Ensamblaje Final</option>
+      </select>
+
+      <label>2. Comentario Rápido:</label>
+      <div style="display: flex; gap: var(--sp-1); margin-bottom: var(--sp-3);">
+        <input type="text" id="rapidComentario" placeholder="Ej: Captura de campo..." style="margin-bottom: 0;">
+        
+        <button id="micBtnRapid" type="button" style="background: var(--bg-input); border: 1px solid var(--border-glass); border-radius: var(--rad-sm); padding: 0 16px; font-size: 18px; cursor: pointer; transition: 0.2s; color: var(--text-main);">
+          🎤
+        </button>
+      </div>
+      <button id="startRapidMode" class="btn-primary" style="background-color: var(--warning-yellow); color: #000; box-shadow: 0 4px 15px rgba(241, 196, 15, 0.2);">
+        ⚡ Activar Ráfaga
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<div id="modalCargaModelos" class="interactive-element" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
       <div style="background: white; width: 340px; max-height: 90vh; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column;">
         <div style="background: #1a73e8; color: white; padding: 15px; text-align: center; display: flex; justify-content: space-between; align-items: center;">
           <h3 style="margin: 0; font-size: 16px;">Gestor de Modelos 3D</h3>
@@ -428,9 +685,9 @@
           <div id="fileListUI" class="files-container" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;"></div>
         </div>
       </div>
-    </div>
-
-  </div> <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</div>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script type="importmap">
     {
       "imports": {
@@ -440,8 +697,8 @@
     }
   </script>
 
-  <script type="module" src="./js/app.js"></script>
-  <script src="js/voz.js"></script>
+<script type="module" src="./js/app.js"></script>
+
 
   <script>
     if ('serviceWorker' in navigator) {

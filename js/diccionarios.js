@@ -1,9 +1,14 @@
 // js/diccionarios.js
+
 export const Diccionarios = {
     fases: [], actividades: [], subfases: [], defectos: [],
-    mapa4Niveles: {} // Estructura: { faseId: { actividadId: { subfaseId: [defectos] } } }
+    mapa4Niveles: {} 
 };
 
+// Nuestro "vigilante" de la memoria caché
+let estaEnCache = false;
+
+// Función interna para descargar los CSV
 async function fetchCSV(url) {
     try {
         const response = await fetch(url);
@@ -22,13 +27,21 @@ async function fetchCSV(url) {
 }
 
 export async function initDiccionarios() {
+    // 🛡️ SISTEMA DE CACHÉ (CERO LAG)
+    // Si ya lo descargamos antes, devolvemos los datos instantáneamente
+    if (estaEnCache) {
+        console.log("⚡ Cargando diccionarios desde la memoria RAM (Instantáneo).");
+        return Diccionarios;
+    }
+
+    // Si es la primera vez que abrimos la app, leemos los archivos
     console.log("🧠 Sincronizando Esquema de 4 Niveles...");
 
-    const phases = await fetchCSV('./data/phases.csv'); //
-    const contexts = await fetchCSV('./data/context.csv'); // (Nuestras Actividades)
-    const subphases = await fetchCSV('./data/subphases.csv'); //
-    const defects = await fetchCSV('./data/Tipos_Incidencias.csv'); //
-    const relations = await fetchCSV('./data/phase_defects.csv'); //
+    const phases = await fetchCSV('./data/phases.csv');
+    const contexts = await fetchCSV('./data/context.csv'); 
+    const subphases = await fetchCSV('./data/subphases.csv');
+    const defects = await fetchCSV('./data/Tipos_Incidencias.csv');
+    const relations = await fetchCSV('./data/phase_defects.csv');
 
     Diccionarios.fases = phases;
     Diccionarios.actividades = contexts;
@@ -39,7 +52,7 @@ export async function initDiccionarios() {
     relations.forEach(rel => {
         const fId = rel.phase_id;
         const aId = rel.context_id;
-        const sId = rel.subphase_id || "0"; // "0" para casos sin subfase (como Pintura)
+        const sId = rel.subphase_id || "0"; 
         const dId = rel.defect_type_id;
 
         if (!Diccionarios.mapa4Niveles[fId]) Diccionarios.mapa4Niveles[fId] = {};
@@ -57,6 +70,9 @@ export async function initDiccionarios() {
         }
     });
 
+    // Marcamos que ya están cargados para que no vuelva a leer los CSV nunca más
+    estaEnCache = true; 
+    
     return Diccionarios;
 }
 

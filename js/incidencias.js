@@ -106,7 +106,7 @@ export function openNewIssueForm() {
   const addBtn = document.getElementById('addBtn');
   if(addBtn) addBtn.classList.remove('active');
 
-  const tituloPanel = document.querySelector('.panel-header h3');
+  const tituloPanel = document.querySelector('#panelIncidencias .panel-header h3');
   if (tituloPanel) tituloPanel.innerText = `📋 Creación incidencia`;
   const btnGuardar = document.getElementById('saveIssue');
   if (btnGuardar) btnGuardar.innerText = "✓ Guardar Incidencia";
@@ -350,7 +350,7 @@ export function editExistingIssue() {
   const historyModal = document.getElementById('historyModalOverlay');
   if (historyModal) historyModal.classList.remove('active');
 
-  const tituloPanel = document.querySelector('.panel-header h3');
+  const tituloPanel = document.querySelector('#panelIncidencias .panel-header h3');
   if (tituloPanel) tituloPanel.innerText = `🔄 Actualizar incidencia`;
   
   const btnGuardar = document.getElementById('saveIssue');

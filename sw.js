@@ -1,7 +1,8 @@
 // sw.js
-const CACHE_NAME = 'sumatra-q-v1';
+// Subimos a v2 para forzar al navegador a borrar la caché antigua y usar esta
+const CACHE_NAME = 'sumatra-q-v2';
 
-// Estos son los archivos que se guardarán para funcionar sin internet
+// 📋 LISTA ACTUALIZADA: Todos los archivos necesarios para funcionar sin internet
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -16,15 +17,26 @@ const ASSETS_TO_CACHE = [
     './js/incidencias.js',
     './js/nube.js',
     './js/visor3d.js',
-    './img/SumatraQ_logo.jpg'
+    './js/ui.js',             // NUEVO
+    './js/diccionarios.js',   // NUEVO
+    './js/magiaVoz.js',       // NUEVO
+    './js/exportador.js',     // NUEVO
+    './img/SumatraQ_logo.jpg',
+    './img/LogoEmpresa.png'   // NUEVO
 ];
 
 // 1. INSTALACIÓN: Guardamos los archivos en la caché del móvil
 self.addEventListener('install', (event) => {
+    // Forzamos a que este SW asuma el control inmediatamente
+    self.skipWaiting(); 
+    
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            console.log('📦 Guardián (SW): Descargando y guardando la web entera.');
-            return cache.addAll(ASSETS_TO_CACHE);
+            console.log('📦 Guardián (SW): Descargando y guardando la web entera v2.');
+            // Tolerancia a fallos: si un archivo de la lista no existe, no rompemos toda la instalación
+            return cache.addAll(ASSETS_TO_CACHE).catch(err => {
+                console.warn('⚠️ Guardián (SW): Algún archivo secundario no se pudo cachear.', err);
+            });
         })
     );
 });
@@ -39,18 +51,30 @@ self.addEventListener('activate', (event) => {
             );
         })
     );
+    // Reclamamos el control de las pestañas abiertas
+    return self.clients.claim(); 
 });
 
-// 3. EL INTERCEPTOR DE PETICIONES: Aquí está la magia
+// 3. EL INTERCEPTOR DE PETICIONES: Blindado y seguro
 self.addEventListener('fetch', (event) => {
-    // Si la petición es hacia Google Sheets, que siga su camino (nuestro nube.js se encarga de esto)
+    // 🛡️ REGLA 1: Ignorar peticiones extrañas (como WebSockets de Live Server o extensiones de Chrome)
+    if (!event.request.url.startsWith('http')) return;
+
+    // 🛡️ REGLA 2: Ignorar peticiones a Google Sheets (nuestro nube.js gestiona si hay internet o no)
     if (event.request.url.includes('script.google.com')) return;
 
-    // Para el resto (HTML, CSS, JS), miramos si lo tenemos en la caché
+    // Para el resto de archivos, aplicamos la estrategia "Cache First, then Network"
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
-            // Si está en la caché, se lo damos al instante. Si no, lo pedimos a internet.
-            return cachedResponse || fetch(event.request);
+            if (cachedResponse) {
+                return cachedResponse; // Lo tenemos en caché, se lo damos al instante
+            }
+
+            // Si no está en caché, lo pedimos a internet de forma segura
+            return fetch(event.request).catch((error) => {
+                console.error('🔴 Error de red interceptado por el SW:', event.request.url);
+                // Al fallar de forma controlada evitamos el "Uncaught TypeError" en la consola
+            });
         })
     );
 });
