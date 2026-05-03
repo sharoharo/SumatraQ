@@ -47,8 +47,21 @@
         transform: translateY(0) !important;
       }
     }
-  </style>
 
+    /* 4. SEPARACIÓN DE BARRA SUPERIOR Y PERFIL (Look Nuevo) */
+    .user-profile-floating { 
+      z-index: 150 !important; 
+      top: 16px !important; 
+      right: 16px !important; 
+    }
+    
+    .search-box {
+      right: 85px !important; /* Le decimos que se detenga a 85px del borde derecho */
+      width: auto !important; /* LA CLAVE: Anulamos el ancho fijo viejo */
+      max-width: calc(100vw - 100px) !important; /* Seguro anti-solapamiento en móviles pequeños */
+      border-radius: 30px !important; 
+    }
+  </style>
 
 <head>
   <meta charset="UTF-8" />
@@ -59,38 +72,62 @@
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1a73e8">
-  <link rel="apple-touch-icon" href="img/SumatraQ_logo.jpg">
+  <link rel="apple-touch-icon" href="img/LogoSumatraQ.png">
 </head>
 <body>
 
- <div id="splashScreen" class="splash-screen">
+ <!-- ========================================== -->
+ <!-- SPLASH SCREEN: MINIMALISTA DARK PREMIUM    -->
+ <!-- ========================================== -->
+ <div id="splashScreen" class="splash-screen" style="background: #1c1c1e; display: flex; flex-direction: column; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999999; transition: opacity 0.6s ease-out, visibility 0.6s ease-out;">
    <div style="display: flex; flex-direction: column; align-items: center; animation: pulseLogo 2s infinite ease-in-out;">
-    <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q Logo" style="width: 110px; height: 110px; object-fit: contain; border-radius: var(--rad-md); box-shadow: 0 10px 30px rgba(0,0,0,0.8); margin-bottom: var(--sp-3);">
-    <h2 style="margin: 0 0 4px 0; font-size: 28px; color: var(--text-main); font-weight: 700; letter-spacing: 2px;">Sumatra Q</h2>
-    <p style="margin: 0 0 var(--sp-4) 0; font-size: 11px; color: var(--accent-blue); font-weight: 700; letter-spacing: 3px; text-transform: uppercase;">Release 1.7.1 Stable</p>
+    
+    <!-- Logo sin contenedor blanco. Usa el .png transparente -->
+    <div style="width: 100%; max-width: 240px; margin-bottom: 30px;">
+      <img src="./img/LogoSumatraQ.png" alt="Sumatra Q Logo" style="width: 100%; object-fit: contain;">
+    </div>
+    
+    <!-- Tipografía elegante y espaciada -->
+    <h2 style="margin: 0; font-size: 34px; color: white; font-weight: 700; letter-spacing: 3px;">Sumatra Q</h2>
+    <p style="margin: 5px 0 40px 0; font-size: 11px; color: #8e8e93; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;">Control de Calidad 3D</p>
   </div>
-
-  <div class="splash-spinner"></div>
-  <p style="margin-top: var(--sp-3); font-size: 13px; color: var(--text-muted); font-style: italic; letter-spacing: 0.5px;">Inicializando motor 3D...</p>
-
+  
+  <!-- Spinner Minimalista con el tono azul corporativo -->
+  <div style="border: 3px solid rgba(255,255,255,0.05); border-top: 3px solid #3498db; width: 36px; height: 36px; border-radius: 50%; animation: spinLoader 1s linear infinite;"></div>
+  
+  <p style="margin-top: 25px; font-size: 12px; color: #666; font-style: italic; letter-spacing: 1px;">Inicializando entorno...</p>
 </div>
 
- <div id="loginOverlay">
-  <div class="info-modal-content interactive-element" style="padding: 32px; text-align: center; max-width: 320px; width: 90%; margin: 0 auto;">
-        <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q" style="width: 90px; height: 90px; object-fit: contain; margin: 0 auto var(--sp-3) auto; display: block; border-radius: var(--rad-sm); box-shadow: var(--shadow-sm);">
-        <p style="font-size: 13px; color: var(--text-muted); margin-top: 0; margin-bottom: var(--sp-3);">
-      Identifícate con tus credenciales de sistema para acceder a la base de datos.
-    </p>
-    <input type="email" id="loginEmail" placeholder="Tu Email corporativo" style="width: 100%; padding: 12px; border-radius: var(--rad-sm); border: 1px solid var(--border-glass); background: var(--bg-input); color: var(--text-main); font-size: 14px; margin-bottom: var(--sp-2); outline: none; box-sizing: border-box; transition: 0.2s;">
-    <input type="password" id="loginPassword" placeholder="Tu Contraseña" style="width: 100%; padding: 12px; border-radius: var(--rad-sm); border: 1px solid var(--border-glass); background: var(--bg-input); color: var(--text-main); font-size: 14px; margin-bottom: var(--sp-3); outline: none; box-sizing: border-box; transition: 0.2s;">
-    <button id="loginBtn" onclick="window.processLogin()" class="btn-primary" style="padding: 14px; font-size: 15px;">
-      Acceder al Sistema
+
+ <!-- ========================================== -->
+ <!-- LOGIN OVERLAY: MINIMALISTA DARK PREMIUM    -->
+ <!-- ========================================== -->
+ <div id="loginOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background: #1c1c1e; z-index:10000; display:flex; justify-content:center; align-items:center;">
+  
+  <div class="info-modal-content interactive-element" style="padding: 20px; text-align: center; max-width: 340px; width: 90%; background: transparent; border: none; box-shadow: none; display: flex; flex-direction: column; align-items: center;">
+    
+    <!-- Logo Gigante (Ver nota abajo sobre el formato PNG) -->
+    <div style="width: 100%; max-width: 260px; margin-bottom: 40px;">
+      <!-- ATENCIÓN: He cambiado la extensión a .png para que no tenga fondo blanco -->
+      <img src="./img/LogoSumatraQ.png" alt="Sumatra Q" style="width: 100%; object-fit: contain;">
+    </div>
+    
+    <div style="width: 100%; display: flex; flex-direction: column; gap: 15px;">
+      <!-- Inputs anchos, sin label, fondo claro y texto oscuro -->
+      <input type="email" id="loginEmail" placeholder="usuario@empresa.com" style="width: 100%; padding: 16px; border-radius: 8px; border: none; background: #f0f4f8; color: #333; font-size: 15px; font-weight: 500; outline: none; box-sizing: border-box;">
+      
+      <input type="password" id="loginPassword" placeholder="••••••••" style="width: 100%; padding: 16px; border-radius: 8px; border: none; background: #f0f4f8; color: #333; font-size: 15px; font-weight: 500; outline: none; box-sizing: border-box;">
+    </div>
+
+    <!-- Botón ancho con glow -->
+    <button id="loginBtn" onclick="window.processLogin()" class="btn-primary" style="margin-top: 25px; padding: 16px; background: #3498db; color: white; border: none; font-size: 16px; font-weight: 600; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 20px rgba(52, 152, 219, 0.4); width: 100%; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(52, 152, 219, 0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(52, 152, 219, 0.4)'" onmousedown="this.style.transform='translateY(1px)'; this.style.boxShadow='0 2px 10px rgba(52, 152, 219, 0.3)'">
+      Entrar al Sistema
     </button>
+
   </div>
 </div>
 
 <div id="map-container"></div>
-
   <div class="ui-layer">
   <div id="modalHerramientas" class="info-modal-overlay">
     <div class="info-modal-content interactive-element">
@@ -139,12 +176,21 @@
       <input type="file" id="fileInput" multiple accept=".stl" style="display: none;" onclick="event.stopPropagation();" />
     </div>  
 
-    <div id="emptyState" class="interactive-element" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 999; background: rgba(240, 242, 245, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: opacity 0.5s ease;">
-        <div style="background: white; padding: 60px 40px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.08); text-align: center; max-width: 360px; width: 90%; display: flex; flex-direction: column; align-items: center; border: 1px solid rgba(255,255,255,0.5);">
+    <!-- ========================================== -->
+    <!-- ESTADO VACÍO / ACCESO CORPORATIVO PREMIUM  -->
+    <!-- ========================================== -->
+    <div id="emptyState" class="interactive-element" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 999; background: #1c1c1e; transition: opacity 0.5s ease;">
+        <div style="text-align: center; max-width: 320px; width: 90%; display: flex; flex-direction: column; align-items: center;">
 
-            <img src="./img/LogoEmpresa.png" alt="Logo Empresa" style="width: 100%; max-width: 220px; object-fit: contain; margin-bottom: 15px;">
-            <p style="color: #555; font-size: 13px; font-weight: 500; margin: 0 0 45px 0; letter-spacing: 0.5px;">SumatraQ – Release 1.7.1</p>
-            <button onclick="document.getElementById('modalCargaModelos').style.display = 'flex';" style="background: #1a73e8; color: white; border: none; font-size: 16px; font-weight: 600; padding: 16px 30px; border-radius: 30px; cursor: pointer; box-shadow: 0 6px 15px rgba(26,115,232,0.3); transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); width: 100%; letter-spacing: 0.5px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(26,115,232,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 15px rgba(26,115,232,0.3)'" onmousedown="this.style.transform='translateY(1px)'; this.style.boxShadow='0 2px 8px rgba(26,115,232,0.3)'">
+            <!-- Logo corporativo fusionado: El filtro CSS lo convierte de negro a Plata/Gris -->
+            <div style="width: 100%; max-width: 280px; margin-bottom: 25px;">
+                <img src="./img/LogoEmpresa.png" alt="Logo Empresa" style="width: 100%; object-fit: contain; filter: invert(0.6) brightness(1.2);">
+            </div>
+            
+            <p style="color: #8e8e93; font-size: 11px; font-weight: 700; margin: 0 0 35px 0; letter-spacing: 1.5px; text-transform: uppercase;">SumatraQ – Release 1.7.1</p>
+            
+            <!-- Botón con glow azul elegante y esquinas menos redondeadas -->
+            <button onclick="document.getElementById('modalCargaModelos').style.display = 'flex';" style="background: #3498db; color: white; border: none; font-size: 15px; font-weight: 600; padding: 14px 30px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 20px rgba(52, 152, 219, 0.4); transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); width: 100%; letter-spacing: 0.5px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(52, 152, 219, 0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(52, 152, 219, 0.4)'" onmousedown="this.style.transform='translateY(1px)'; this.style.boxShadow='0 2px 10px rgba(52, 152, 219, 0.3)'">
                 Menú de Carga
             </button>
             
@@ -227,7 +273,7 @@
     </div>
     <div style="padding: 12px; border-top: 1px solid var(--border-glass); text-align: center; background: rgba(0,0,0,0.2);">
       <div id="btnOpenInfo" style="font-size: 10px; color: var(--text-muted); letter-spacing: 1.5px; font-weight: 600; cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='var(--accent-blue)'" onmouseout="this.style.color='var(--text-muted)'" title="Ver información de la aplicación">
-        SUMATRA Q • RELEASE v1.7.1-STABLE ⓘ
+        SUMATRA Q • RELEASE v1.8.1-STABLE ⓘ
       </div>
     </div>
   </div> 
@@ -464,7 +510,7 @@
     
     <div class="info-modal-header">
       <h3 style="margin: 0; font-size: 16px; display: flex; align-items: center; gap: 10px;">
-        <img src="./img/SumatraQ_logo.jpg" alt="Sumatra Q" style="height: 24px; width: 24px; object-fit: contain; border-radius: 4px;">
+        <img src="./img/LogoSumatraQ.png" alt="Sumatra Q" style="height: 24px; width: 24px; object-fit: contain; border-radius: 4px;">
         Herramientas
       </h3>
       <button id="btnCloseTools" class="icon-action-btn">✕</button>
