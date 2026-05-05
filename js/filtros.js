@@ -81,6 +81,8 @@ export function clearAllFilters() {
 
   if (window.renderIssues) window.renderIssues();
   if (window.asistenteVoz) window.asistenteVoz("Filtros limpiados.");
+
+  actualizarIconoFiltro();
 }
 
 // 4. El "Juez Universal" - A PRUEBA DE BALAS (TU LÓGICA + 4 NIVELES)
@@ -241,3 +243,30 @@ window.setAdvancedFilter = function(type, value) {
     const btn = document.querySelector(selector);
     updateFilters(type, value, btn);
 };
+
+// Evalúa si hay algún filtro activo para encender el botón en amarillo
+function actualizarIconoFiltro() {
+    const f = State.filters;
+    const btnFiltro = document.getElementById('btnOpenFilterPanel');
+    if (!btnFiltro) return;
+
+    // Comprobamos si ALGO es diferente de 'all' o está escrito
+    const hayFiltroActivo = (
+        (f.status && f.status !== 'all') || 
+        (f.priority && f.priority !== 'all') || 
+        (f.user && f.user !== 'all') ||
+        (f.type && f.type !== 'all') || 
+        (f.fase && f.fase !== 'all') || 
+        (f.actividad && f.actividad !== 'all') || 
+        (f.subfase && f.subfase !== 'all') ||
+        (f.dateFrom && f.dateFrom !== '') || 
+        (f.dateTo && f.dateTo !== '') || 
+        (f.search && f.search !== '')
+    );
+
+    if (hayFiltroActivo) {
+        btnFiltro.classList.add('filter-active');
+    } else {
+        btnFiltro.classList.remove('filter-active');
+    }
+}
