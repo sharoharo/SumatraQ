@@ -343,3 +343,72 @@ select option { background: var(--bg-app); color: var(--text-main); }
 
 /* BOTÓN HUÉRFANO RECUPERADO */
 .menu-action-btn:hover { background: var(--bg-input-hover) !important; border-color: var(--accent-blue) !important; transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+
+/* 🔧 FIX: Evitar cortes en los botones de la barra al hacer hover */
+.top-toolbar {
+    padding-top: 6px !important;
+    padding-bottom: 15px !important;
+    margin-top: -6px !important; /* Compensa el padding para que sigan a la misma altura visual */
+}
+
+/* =========================================================
+   📸 MINIATURAS Y VISOR DE FOTOS (DARK PREMIUM)
+   ========================================================= */
+/* 1. Resucitar las miniaturas del historial */
+.photo-grid, .history-photos {
+  display: flex !important;
+  gap: 10px !important;
+  margin-top: 12px !important;
+  overflow-x: auto !important; /* Scroll horizontal si hay muchas fotos */
+  padding-bottom: 5px !important;
+}
+
+.photo-thumb, .history-thumb, .foto-miniatura, .photo-item {
+  width: 65px !important;
+  height: 65px !important;
+  min-width: 65px !important; /* Fuerza a que no se aplasten */
+  object-fit: cover !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+  transition: transform 0.2s ease, border-color 0.2s ease !important;
+}
+
+.photo-thumb:hover, .history-thumb:hover, .photo-item:hover {
+  transform: scale(1.05) !important;
+  border-color: var(--accent-blue) !important;
+}
+
+/* 2. Visor de fotos en grande (Modo Cine) */
+.photo-viewer-overlay {
+  position: fixed !important;
+  top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important;
+  background: rgba(0, 0, 0, 0.9) !important; /* Fondo casi negro para resaltar la foto */
+  backdrop-filter: blur(10px) !important;
+  display: flex !important; justify-content: center !important; align-items: center !important;
+  z-index: 9999 !important; /* POR ENCIMA DE TODOS LOS PANELES */
+  opacity: 0; pointer-events: none; transition: opacity 0.3s ease !important;
+}
+
+.photo-viewer-overlay.active {
+  opacity: 1 !important; pointer-events: auto !important;
+}
+
+.photo-viewer-image {
+  max-width: 90vw !important; max-height: 85vh !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  object-fit: contain !important;
+}
+
+.photo-viewer-close {
+  position: absolute !important; top: 20px !important; right: 20px !important;
+  background: rgba(255,255,255,0.1) !important; border: none !important; color: white !important;
+  width: 44px !important; height: 44px !important; border-radius: 50% !important;
+  font-size: 20px !important; cursor: pointer !important; 
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  transition: 0.2s !important;
+}
+.photo-viewer-close:hover { background: var(--danger-red) !important; transform: scale(1.1) !important; }

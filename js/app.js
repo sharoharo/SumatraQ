@@ -101,7 +101,7 @@ window.onload = async () => {
   }
 
   // --- CONECTAR BOTONES DE VISTAS (ZOOM EXTENSIÓN, ISOMÉTRICO) ---
-  document.querySelectorAll('.fab[data-view]').forEach(btn => {
+  document.querySelectorAll('.toolbar-btn[data-view]').forEach(btn => {
     btn.addEventListener('click', () => setView(btn.dataset.view));
   });
 
@@ -128,7 +128,7 @@ window.onload = async () => {
   const historyModal = document.getElementById('historyModalOverlay');
   if (btnCloseHistoryModal && historyModal) {
       btnCloseHistoryModal.addEventListener('click', () => {
-          historyModal.classList.remove('active');
+          historyModal.classList.add('oculta'); 
           deselectMarker(); 
       });
   }
@@ -292,5 +292,28 @@ document.addEventListener('DOMContentLoaded', () => {
     window.updateCloudStatusUI();
     if (navigator.onLine) {
         syncOfflineIssues();
+    }
+});
+
+// ==========================================
+// 📸 VISOR DE FOTOS GLOBAL
+// ==========================================
+window.openPhotoViewer = function(imgSrc) {
+    const modal = document.getElementById('photoViewerModal');
+    const img = document.getElementById('photoViewerImage');
+    if (modal && img) {
+        img.src = imgSrc;
+        modal.classList.add('active');
+    }
+};
+
+// Escuchador global: Si haces clic en cualquier foto miniatura, se abre en grande
+document.addEventListener('click', function(e) {
+    if (e.target.tagName === 'IMG' && (
+        e.target.classList.contains('photo-thumb') || 
+        e.target.classList.contains('history-thumb') || 
+        e.target.classList.contains('photo-item')
+    )) {
+        window.openPhotoViewer(e.target.src);
     }
 });

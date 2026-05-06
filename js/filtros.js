@@ -47,6 +47,7 @@ export function updateFilters(key, value, btnElement = null) {
   
   // Repintamos el 3D y la lista
   if (window.renderIssues) window.renderIssues();
+    actualizarIconoFiltro();
 }
 
 // 3. Limpiar todos los filtros (ACTUALIZADO CON 4 NIVELES)
