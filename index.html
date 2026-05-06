@@ -415,10 +415,10 @@
     <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px;">
       <label style="font-size: 11px; font-weight: bold; color: #3498db; display: block; margin-bottom: 8px;">CUANDO SE ABRIÓ</label>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;" id="dateQuickButtons">
-        <button class="filter-chip date-quick-btn" data-range="hoy" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">HOY</button>
-        <button class="filter-chip date-quick-btn" data-range="semana" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">SEM PASADA</button>
-        <button class="filter-chip date-quick-btn" data-range="ayer" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">AYER</button>
-        <button class="filter-chip date-quick-btn" data-range="mes" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">MES PASADO</button>
+        <button class="filter-chip date-quick-btn" data-range="hoy" onclick="window.setQuickDate('hoy', this)" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">HOY</button>
+        <button class="filter-chip date-quick-btn" data-range="semana" onclick="window.setQuickDate('semana', this)" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">SEM PASADA</button>
+        <button class="filter-chip date-quick-btn" data-range="ayer" onclick="window.setQuickDate('ayer', this)" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">AYER</button>
+        <button class="filter-chip date-quick-btn" data-range="mes" onclick="window.setQuickDate('mes', this)" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">MES PASADO</button>
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
         <div>

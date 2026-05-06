@@ -6,18 +6,26 @@ import { saveIssueToCloud, deleteIssueFromCloud } from './nube.js';
 import { renderPhotoGrid } from './fotos.js';
 import { passesFilters, populateFilterSelects } from './filtros.js';
 
-// --- AYUDANTES PARA CHIPS TÁCTILES ---
+// --- AYUDANTES PARA CHIPS TÁCTILES (FIX UNIVERSAL) ---
 export function getActiveChip(groupId) {
-  const active = document.querySelector(`#${groupId} .ui-chip.active`);
+  // Busca tanto los botones nuevos (.seleccionado) como los antiguos (.active)
+  const active = document.querySelector(`#${groupId} .seleccionado`) || document.querySelector(`#${groupId} .ui-chip.active`);
   return active ? active.dataset.val : null;
 }
 
 export function setActiveChip(groupId, value) {
-  document.querySelectorAll(`#${groupId} .ui-chip`).forEach(chip => {
-    chip.classList.toggle('active', chip.dataset.val === value);
+  // Resetea y marca correctamente sin importar si es el panel nuevo o el viejo
+  document.querySelectorAll(`#${groupId} .chip-prio, #${groupId} .chip-estado, #${groupId} .ui-chip`).forEach(chip => {
+    const isMatch = chip.dataset.val === value;
+    if (isMatch) {
+        chip.classList.add('seleccionado');
+        chip.classList.add('active'); // Mantenemos ambas clases por compatibilidad
+    } else {
+        chip.classList.remove('seleccionado');
+        chip.classList.remove('active');
+    }
   });
 }
-
 export function getColor(status) {
   const colors = { 'open': 0xe94335, 'review': 0xfbbc04, 'closed': 0x34a853 };
   return colors[status] || 0x4285f4; 
@@ -245,7 +253,7 @@ function activarChip(selector, target) {
 export function selectMarker(marker){
   if (State.rapidPhotoMode) {
       State.rapidPhotoTargetId = marker.userData.issueId;
-      document.getElementById('inputCameraNivelDios')?.click(); // 👈 ¡Arreglado!
+      document.getElementById('inputCameraNivelDios')?.click(); 
       return; 
   }
 
@@ -279,16 +287,26 @@ export function selectMarker(marker){
                 const dateObj = new Date(h.date);
                 const dateStr = isNaN(dateObj.getTime()) ? h.date : dateObj.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
 
-                let dotColor = '#4285F4'; 
-                if(h.status === 'open') dotColor = '#e94335';
-                if(h.status === 'review') dotColor = '#fbbc04';
-                if(h.status === 'closed') dotColor = '#34a853';
+                let dotColor = '#3498db'; // Azul por defecto
+                if(h.status === 'open') dotColor = '#e74c3c'; // Rojo
+                if(h.status === 'review') dotColor = '#f1c40f'; // Amarillo
+                if(h.status === 'closed') dotColor = '#2ecc71'; // Verde
 
+                // 🛡️ PARCHE PARA FOTOS DESDE LA BASE DE DATOS 🛡️
                 let photosHtml = '';
-                if (h.photos && h.photos.length > 0) {
-                    photosHtml = `<div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">`;
-                    h.photos.forEach(photo => {
-                        photosHtml += `<img src="${photo.dataUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="window.openLightbox('${photo.dataUrl}')" title="Ver imagen ampliada">`;
+                let arrayFotos = [];
+                try {
+                    // Si viene como texto de la BD, lo transformamos en lista real
+                    if (typeof h.photos === 'string') arrayFotos = JSON.parse(h.photos);
+                    else if (Array.isArray(h.photos)) arrayFotos = h.photos;
+                } catch(e) { console.warn("Error leyendo fotos", e); }
+
+                // Generamos las miniaturas con estilo Dark Premium
+                if (arrayFotos && arrayFotos.length > 0) {
+                    photosHtml = `<div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; padding-bottom: 5px; overflow-x: auto;">`;
+                    arrayFotos.forEach(photo => {
+                        const imgSrc = photo.dataUrl || photo.url || photo;
+                        photosHtml += `<img src="${imgSrc}" class="history-thumb photo-item" style="width: 65px; height: 65px; min-width: 65px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.5); transition: 0.2s;" title="Ver imagen en grande">`;
                     });
                     photosHtml += `</div>`;
                 }
@@ -318,17 +336,18 @@ export function selectMarker(marker){
 
                 const trashBtnHTML = puedeBorrar ? 
                     `<button onclick="window.deleteHistoryEntry('${issue.id}', ${originalIndex}, '${h.date}')" 
-                            style="position: absolute; right: 0; top: 0; background: none; border: none; font-size: 18px; cursor: pointer; color: #d93025; padding: 5px;" 
+                            style="position: absolute; right: 0; top: 0; background: none; border: none; font-size: 18px; cursor: pointer; color: var(--danger-red); padding: 5px;" 
                             title="Borrar esta actualización">🗑️</button>` : '';
 
+                // Estructura del comentario adaptada a Modo Dark (cristal oscuro)
                 entryDiv.innerHTML = `
                     ${trashBtnHTML}
                     <div class="history-dot" style="background-color: ${dotColor}; border-color: ${dotColor}; width: 14px; height: 14px; left: -24px; top: 2px;"></div>
-                    <div class="history-date" style="font-size: 13px; padding-right: 30px;">${dateStr} - 👤 ${h.user || 'Anónimo'}</div>
-                    <div class="history-comment" style="font-weight: bold; font-size: 14px; text-transform: uppercase; margin-top: 6px;">
+                    <div class="history-date" style="font-size: 13px; color: #aaa; padding-right: 30px;">${dateStr} - 👤 <span style="color:white;">${h.user || 'Anónimo'}</span></div>
+                    <div class="history-comment" style="color: ${dotColor}; font-weight: bold; font-size: 13px; text-transform: uppercase; margin-top: 6px;">
                         Estado: ${h.status} | Fase: ${h.fase || 'N/A'}
                     </div>
-                    ${h.comment ? `<div class="history-comment" style="color: #444; font-style: italic; background: #f4f7f6; padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 14px;">💬 "${h.comment}"</div>` : ''}
+                    ${h.comment ? `<div class="history-comment" style="color: #ddd; font-style: italic; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 13px;">💬 "${h.comment}"</div>` : ''}
                     ${photosHtml} `;
 
                 historyTimeline.appendChild(entryDiv);
@@ -1225,7 +1244,56 @@ function initVoiceDictation(inputId, btnId) {
     };
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    initVoiceDictation('issueComment', 'micBtnNormal');
-    initVoiceDictation('rapidComentario', 'micBtnRapid');
-});
+// ==========================================
+// 🎤 INICIALIZACIÓN DIRECTA DE MICRÓFONOS Y ANTÍDOTO
+// ==========================================
+setTimeout(() => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel(); // 💊 ANTÍDOTO VOZ (Borra atascos)
+    if (typeof initVoiceDictation === 'function') {
+        initVoiceDictation('textoIncidenciaNivelDios', 'btnVozNivelDios');
+        initVoiceDictation('rapidComentario', 'micBtnRapid');
+    }
+}, 500);
+
+// ==========================================
+// 🎛️ DELEGACIÓN UNIVERSAL (PANEL NORMAL Y RÁFAGA)
+// ==========================================
+document.addEventListener('click', (e) => {
+    // 🔊 FIX VOZ: Desatasca el motor de voz del navegador al hacer clic
+    if (window.speechSynthesis && window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+    }
+
+    // 1. PANEL NORMAL (Prioridad y Estado antiguos)
+    const uiChip = e.target.closest('.ui-chip');
+    if (uiChip) {
+        e.preventDefault();
+        const container = uiChip.parentElement;
+        if (container) {
+            container.querySelectorAll('.ui-chip').forEach(c => c.classList.remove('active', 'seleccionado'));
+            uiChip.classList.add('active', 'seleccionado');
+        }
+    }
+
+    // 2. PANEL NUEVO - Prioridad (.chip-prio)
+    const btnPrio = e.target.closest('.chip-prio');
+    if (btnPrio) {
+        e.preventDefault();
+        const container = btnPrio.closest('.chips-group-circle');
+        if (container) {
+            container.querySelectorAll('.chip-prio').forEach(c => c.classList.remove('seleccionado', 'active'));
+            btnPrio.classList.add('seleccionado', 'active');
+        }
+    }
+
+    // 3. PANEL NUEVO - Estado (.chip-estado)
+    const btnEstado = e.target.closest('.chip-estado');
+    if (btnEstado) {
+        e.preventDefault();
+        const container = btnEstado.closest('.chips-group-circle');
+        if (container) {
+            container.querySelectorAll('.chip-estado').forEach(c => c.classList.remove('seleccionado', 'active'));
+            btnEstado.classList.add('seleccionado', 'active');
+        }
+    }
+}, true); // <--- ESTE 'true' ES LA CLAVE PARA QUE LOS BOTONES FUNCIONEN

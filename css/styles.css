@@ -412,3 +412,13 @@ select option { background: var(--bg-app); color: var(--text-main); }
   transition: 0.2s !important;
 }
 .photo-viewer-close:hover { background: var(--danger-red) !important; transform: scale(1.1) !important; }
+
+/* 🔧 FIX: Desplegables Legibles en Modo Dark Premium */
+#panelFiltros select {
+    color-scheme: dark !important; /* Obliga a Windows/iOS a pintar el menú nativo en oscuro */
+}
+
+#panelFiltros select option {
+    background-color: #1c1c1e !important;
+    color: #ffffff !important;
+}
