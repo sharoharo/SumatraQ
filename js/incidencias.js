@@ -6,18 +6,26 @@ import { saveIssueToCloud, deleteIssueFromCloud } from './nube.js';
 import { renderPhotoGrid } from './fotos.js';
 import { passesFilters, populateFilterSelects } from './filtros.js';
 
-// --- AYUDANTES PARA CHIPS TÁCTILES ---
+// --- AYUDANTES PARA CHIPS TÁCTILES (FIX UNIVERSAL) ---
 export function getActiveChip(groupId) {
-  const active = document.querySelector(`#${groupId} .ui-chip.active`);
+  // Busca tanto los botones nuevos (.seleccionado) como los antiguos (.active)
+  const active = document.querySelector(`#${groupId} .seleccionado`) || document.querySelector(`#${groupId} .ui-chip.active`);
   return active ? active.dataset.val : null;
 }
 
 export function setActiveChip(groupId, value) {
-  document.querySelectorAll(`#${groupId} .ui-chip`).forEach(chip => {
-    chip.classList.toggle('active', chip.dataset.val === value);
+  // Resetea y marca correctamente sin importar si es el panel nuevo o el viejo
+  document.querySelectorAll(`#${groupId} .chip-prio, #${groupId} .chip-estado, #${groupId} .ui-chip`).forEach(chip => {
+    const isMatch = chip.dataset.val === value;
+    if (isMatch) {
+        chip.classList.add('seleccionado');
+        chip.classList.add('active'); // Mantenemos ambas clases por compatibilidad
+    } else {
+        chip.classList.remove('seleccionado');
+        chip.classList.remove('active');
+    }
   });
 }
-
 export function getColor(status) {
   const colors = { 'open': 0xe94335, 'review': 0xfbbc04, 'closed': 0x34a853 };
   return colors[status] || 0x4285f4; 
@@ -92,17 +100,22 @@ export function openNewIssueForm() {
           x: State.currentPoint ? State.currentPoint.x : 0,
           y: State.currentPoint ? State.currentPoint.y : 0,
           z: State.currentPoint ? State.currentPoint.z : 0,
-          type: "Pendiente", priority: "Pendiente", status: "open",                     
+          type: State.rapidPhotoDefaults ? State.rapidPhotoDefaults.type : "Sin clasificar", 
+          priority: State.rapidPhotoDefaults ? State.rapidPhotoDefaults.priority : "media", 
+          status: State.rapidPhotoDefaults ? State.rapidPhotoDefaults.status : "open",                     
           fase: State.rapidPhotoDefaults ? State.rapidPhotoDefaults.fase : "estampacion", 
+          actividad: State.rapidPhotoDefaults ? State.rapidPhotoDefaults.actividad : "N/A", 
+          subfase: State.rapidPhotoDefaults ? State.rapidPhotoDefaults.subfase : "N/A", 
           history: []
       };
       State.issues.push(newIssue);
-      document.getElementById('inputCameraNivelDios')?.click(); // 👈 ¡Arreglado!
+      document.getElementById('inputCameraNivelDios')?.click(); // 👈 Lanza la cámara
       return; 
   }
 
   deselectMarker(); 
-  State.mode = false; 
+  State.mode = false;
+
   const addBtn = document.getElementById('addBtn');
   if(addBtn) addBtn.classList.remove('active');
 
@@ -117,7 +130,7 @@ export function openNewIssueForm() {
   if (textoNotas) textoNotas.value = ""; 
 
   const historyModal = document.getElementById('historyModalOverlay');
-  if (historyModal) historyModal.classList.remove('active');
+  if (historyModal) historyModal.classList.add('oculta');
   
   import('./diccionarios.js').then(module => {
       const dict = module.Diccionarios;
@@ -240,7 +253,7 @@ function activarChip(selector, target) {
 export function selectMarker(marker){
   if (State.rapidPhotoMode) {
       State.rapidPhotoTargetId = marker.userData.issueId;
-      document.getElementById('inputCameraNivelDios')?.click(); // 👈 ¡Arreglado!
+      document.getElementById('inputCameraNivelDios')?.click(); 
       return; 
   }
 
@@ -274,16 +287,26 @@ export function selectMarker(marker){
                 const dateObj = new Date(h.date);
                 const dateStr = isNaN(dateObj.getTime()) ? h.date : dateObj.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
 
-                let dotColor = '#4285F4'; 
-                if(h.status === 'open') dotColor = '#e94335';
-                if(h.status === 'review') dotColor = '#fbbc04';
-                if(h.status === 'closed') dotColor = '#34a853';
+                let dotColor = '#3498db'; // Azul por defecto
+                if(h.status === 'open') dotColor = '#e74c3c'; // Rojo
+                if(h.status === 'review') dotColor = '#f1c40f'; // Amarillo
+                if(h.status === 'closed') dotColor = '#2ecc71'; // Verde
 
+                // 🛡️ PARCHE PARA FOTOS DESDE LA BASE DE DATOS 🛡️
                 let photosHtml = '';
-                if (h.photos && h.photos.length > 0) {
-                    photosHtml = `<div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">`;
-                    h.photos.forEach(photo => {
-                        photosHtml += `<img src="${photo.dataUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="window.openLightbox('${photo.dataUrl}')" title="Ver imagen ampliada">`;
+                let arrayFotos = [];
+                try {
+                    // Si viene como texto de la BD, lo transformamos en lista real
+                    if (typeof h.photos === 'string') arrayFotos = JSON.parse(h.photos);
+                    else if (Array.isArray(h.photos)) arrayFotos = h.photos;
+                } catch(e) { console.warn("Error leyendo fotos", e); }
+
+                // Generamos las miniaturas con estilo Dark Premium
+                if (arrayFotos && arrayFotos.length > 0) {
+                    photosHtml = `<div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; padding-bottom: 5px; overflow-x: auto;">`;
+                    arrayFotos.forEach(photo => {
+                        const imgSrc = photo.dataUrl || photo.url || photo;
+                        photosHtml += `<img src="${imgSrc}" class="history-thumb photo-item" style="width: 65px; height: 65px; min-width: 65px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.5); transition: 0.2s;" title="Ver imagen en grande">`;
                     });
                     photosHtml += `</div>`;
                 }
@@ -313,17 +336,18 @@ export function selectMarker(marker){
 
                 const trashBtnHTML = puedeBorrar ? 
                     `<button onclick="window.deleteHistoryEntry('${issue.id}', ${originalIndex}, '${h.date}')" 
-                            style="position: absolute; right: 0; top: 0; background: none; border: none; font-size: 18px; cursor: pointer; color: #d93025; padding: 5px;" 
+                            style="position: absolute; right: 0; top: 0; background: none; border: none; font-size: 18px; cursor: pointer; color: var(--danger-red); padding: 5px;" 
                             title="Borrar esta actualización">🗑️</button>` : '';
 
+                // Estructura del comentario adaptada a Modo Dark (cristal oscuro)
                 entryDiv.innerHTML = `
                     ${trashBtnHTML}
                     <div class="history-dot" style="background-color: ${dotColor}; border-color: ${dotColor}; width: 14px; height: 14px; left: -24px; top: 2px;"></div>
-                    <div class="history-date" style="font-size: 13px; padding-right: 30px;">${dateStr} - 👤 ${h.user || 'Anónimo'}</div>
-                    <div class="history-comment" style="font-weight: bold; font-size: 14px; text-transform: uppercase; margin-top: 6px;">
+                    <div class="history-date" style="font-size: 13px; color: #aaa; padding-right: 30px;">${dateStr} - 👤 <span style="color:white;">${h.user || 'Anónimo'}</span></div>
+                    <div class="history-comment" style="color: ${dotColor}; font-weight: bold; font-size: 13px; text-transform: uppercase; margin-top: 6px;">
                         Estado: ${h.status} | Fase: ${h.fase || 'N/A'}
                     </div>
-                    ${h.comment ? `<div class="history-comment" style="color: #444; font-style: italic; background: #f4f7f6; padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 14px;">💬 "${h.comment}"</div>` : ''}
+                    ${h.comment ? `<div class="history-comment" style="color: #ddd; font-style: italic; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 13px;">💬 "${h.comment}"</div>` : ''}
                     ${photosHtml} `;
 
                 historyTimeline.appendChild(entryDiv);
@@ -333,11 +357,11 @@ export function selectMarker(marker){
         }
     }
 
-    const issueModal = document.getElementById('issueModalOverlay');
-    if (issueModal) issueModal.classList.remove('active');
+    const panelIncidencias = document.getElementById('panelIncidencias');
+    if (panelIncidencias) panelIncidencias.classList.add('oculta');
     
     const historyModal = document.getElementById('historyModalOverlay');
-    if (historyModal) historyModal.classList.add('active');
+    if (historyModal) historyModal.classList.remove('oculta');
   }
 }
 
@@ -347,8 +371,9 @@ export function editExistingIssue() {
   const issue = State.issues.find(i => i.id === State.selectedMarker.userData.issueId);
   if(!issue) return;
 
+  // Ocultamos el panel de historial
   const historyModal = document.getElementById('historyModalOverlay');
-  if (historyModal) historyModal.classList.remove('active');
+  if (historyModal) historyModal.classList.add('oculta'); // ✅ AHORA SÍ
 
   const tituloPanel = document.querySelector('#panelIncidencias .panel-header h3');
   if (tituloPanel) tituloPanel.innerText = `🔄 Actualizar incidencia`;
@@ -434,8 +459,7 @@ export function deselectMarker() {
   }
   State.selectedMarker = null; 
   
-  document.getElementById('issueModalOverlay')?.classList.remove('active');
-  document.getElementById('historyModalOverlay')?.classList.remove('active');
+  document.getElementById('historyModalOverlay')?.classList.add('oculta');
 
   const panelDios = document.getElementById('panelIncidencias');
   if (panelDios) panelDios.classList.add('oculta');
@@ -895,7 +919,7 @@ window.deleteHistoryEntry = async function(issueId, arrayIndex, dateString) {
 };
 
 // ==========================================
-// ⚡ MOTOR DE GUARDADO AUTO (MODO RÁFAGA V3)
+// ⚡ MOTOR DE GUARDADO AUTO (MODO RÁFAGA V4 - DELUXE)
 // ==========================================
 window.processRapidPhoto = async function(photoDataUrl) {
     const issueId = State.rapidPhotoTargetId;
@@ -910,9 +934,12 @@ window.processRapidPhoto = async function(photoDataUrl) {
     const historyEntry = {
         date: new Date().toISOString(),
         user: State.userName || "Inspector",
-        status: issue.status,      
-        priority: issue.priority,  
+        status: State.rapidPhotoDefaults.status,      
+        priority: State.rapidPhotoDefaults.priority,  
         fase: State.rapidPhotoDefaults.fase, 
+        actividad: State.rapidPhotoDefaults.actividad,
+        subfase: State.rapidPhotoDefaults.subfase,
+        type: State.rapidPhotoDefaults.type,
         comment: textoComentario,
         photos: [{ dataUrl: photoDataUrl }]
     };
@@ -920,7 +947,13 @@ window.processRapidPhoto = async function(photoDataUrl) {
     if (!issue.history) issue.history = [];
     issue.history.push(historyEntry);
     
+    // Sincronizamos la incidencia principal con el historial nuevo
     issue.fase = historyEntry.fase;
+    issue.actividad = historyEntry.actividad;
+    issue.subfase = historyEntry.subfase;
+    issue.type = historyEntry.type;
+    issue.status = historyEntry.status;
+    issue.priority = historyEntry.priority;
     issue.date = historyEntry.date;
     issue.user = historyEntry.user;
     issue.photos = historyEntry.photos; 
@@ -928,7 +961,6 @@ window.processRapidPhoto = async function(photoDataUrl) {
     if (window.asistenteVoz) window.asistenteVoz("Sincronizando con la base de datos...");
 
     try {
-        // En Ráfaga también usamos el interceptor Offline
         const result = await saveIssueToCloud(issue);
         if (result && result.status === 'offline') {
             console.log("⚡ Ráfaga guardada en OFFLINE.");
@@ -949,27 +981,45 @@ window.processRapidPhoto = async function(photoDataUrl) {
 };
 
 // ==========================================
-// ⚡ EVENTOS DE INTERFAZ (MODO RÁFAGA)
+// ⚡ EVENTOS DE INTERFAZ (MODO RÁFAGA V4 - DELUXE)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     const rapidBtn = document.getElementById('rapidModeBtn');
-    const rapidModal = document.getElementById('rapidModeModal');
+    const panelRafaga = document.getElementById('panelRafaga');
     const startRapidBtn = document.getElementById('startRapidMode');
 
-    if (rapidBtn && rapidModal) {
+    if (rapidBtn && panelRafaga) {
         rapidBtn.addEventListener('click', () => {
             if (State.rapidPhotoMode) {
                 deactivateRapidMode();
             } else {
-                rapidModal.classList.add('active');
+                abrirPanelRafaga(); // Llama a la función que pinta los diccionarios
             }
         });
     }
 
     if (startRapidBtn) {
         startRapidBtn.addEventListener('click', () => {
+            // Helper para sacar el valor seleccionado de los chips de texto
+            const getChipVal = (containerId) => {
+                const active = document.querySelector(`#${containerId} .seleccionado`);
+                return active ? active.innerText : 'N/A';
+            };
+            
+            // Helper para sacar el valor (data-val) de los chips redondos (prioridad/estado)
+            const getChipDataVal = (selector) => {
+                const active = document.querySelector(`${selector}.seleccionado`);
+                return active ? active.dataset.val : null;
+            };
+
+            // Recolectamos TODA la configuración del panel
             State.rapidPhotoDefaults = {
-                fase: document.getElementById('rapidFase').value,
+                fase: getChipVal('rafagaChipsFases'),
+                actividad: getChipVal('rafagaChipsActividades'),
+                subfase: getChipVal('rafagaChipsSubfases'),
+                type: getChipVal('rafagaChipsDefectos'),
+                priority: getChipDataVal('.rafaga-prio') || 'media',
+                status: getChipDataVal('.rafaga-estado') || 'open',
                 comentario: document.getElementById('rapidComentario').value
             };
             
@@ -981,9 +1031,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 rapidBtn.classList.add('pulsing-warning'); 
             }
 
-            rapidModal.classList.remove('active');
+            panelRafaga.classList.add('oculta'); // Escondemos el panel al empezar
             
-            if (window.asistenteVoz) window.asistenteVoz("Modo ráfaga activado. Toque un punto para capturar foto.");
+            if (window.asistenteVoz) window.asistenteVoz("Modo ráfaga activado. Toque la pieza para capturar.");
             
             State.mode = true; 
             const addBtn = document.getElementById('addBtn');
@@ -1009,6 +1059,127 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.asistenteVoz) window.asistenteVoz("Modo ráfaga desactivado.");
     }
 });
+
+// --- LÓGICA DE CASCADA EXCLUSIVA PARA EL PANEL DE RÁFAGA ---
+function abrirPanelRafaga() {
+    const panel = document.getElementById('panelRafaga');
+    if(!panel) return;
+    
+    // Muestra este y oculta los demás
+    panel.classList.remove('oculta');
+    document.getElementById('panelIncidencias')?.classList.add('oculta');
+    document.getElementById('filterPanelOverlay')?.classList.remove('active');
+
+    import('./diccionarios.js').then(module => {
+        const dict = module.Diccionarios;
+        const contenedorFases = document.getElementById('rafagaChipsFases');
+        if (contenedorFases) contenedorFases.innerHTML = '';
+        
+        dict.fases.forEach(fase => {
+            const btn = document.createElement('button');
+            btn.className = 'chip chip-fase-rafaga';
+            btn.innerText = fase.phase_name || fase.nombre || fase.name;
+            btn.onclick = (e) => { 
+                e.preventDefault(); 
+                document.querySelectorAll('.chip-fase-rafaga').forEach(c => c.classList.remove('seleccionado'));
+                btn.classList.add('seleccionado');
+                actualizarActividadesRafaga(fase.id, module);
+            };
+            if (contenedorFases) contenedorFases.appendChild(btn);
+        });
+
+        // Autoclic en el primero para que fluya la cascada
+        if(contenedorFases && contenedorFases.firstChild) contenedorFases.firstChild.click();
+    });
+}
+
+function actualizarActividadesRafaga(fId, module) {
+    const contenedor = document.getElementById('rafagaChipsActividades');
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+    const ids = module.getActividades(fId);
+
+    if (ids.length === 0) {
+        contenedor.innerHTML = '<span class="placeholder-text">Sin actividades.</span>';
+        actualizarSubfasesRafaga(fId, null, module);
+        return;
+    }
+
+    ids.forEach(aId => {
+        const data = module.Diccionarios.actividades.find(a => a.id == aId);
+        const nombre = data ? (data.context_name || data.Nombre || data.nombre || data.Name || data.name) : "Actividad " + aId;
+        const btn = document.createElement('button');
+        btn.className = 'chip chip-actividad-rafaga';
+        btn.innerText = nombre;
+        btn.onclick = (e) => { 
+            e.preventDefault(); 
+            document.querySelectorAll('.chip-actividad-rafaga').forEach(c => c.classList.remove('seleccionado'));
+            btn.classList.add('seleccionado');
+            actualizarSubfasesRafaga(fId, aId, module);
+        };
+        contenedor.appendChild(btn);
+    });
+    if(contenedor.firstChild) contenedor.firstChild.click();
+}
+
+function actualizarSubfasesRafaga(fId, aId, module) {
+    const contenedor = document.getElementById('rafagaChipsSubfases');
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+    const ids = module.getSubfases(fId, aId);
+
+    if (ids.length === 0) {
+        contenedor.innerHTML = '<span class="placeholder-text">Sin subfases.</span>';
+        actualizarDefectosRafaga(fId, aId, null, module);
+        return;
+    }
+
+    ids.forEach(sId => {
+        const isZero = (sId === "0" || sId == 0);
+        let nombre = "General / Proceso";
+        if (!isZero) {
+            const data = module.Diccionarios.subfases.find(s => s.id == sId);
+            if (data) nombre = data.subphase_name || data.Nombre || data.nombre || data.Name || data.name;
+        }
+        
+        const btn = document.createElement('button');
+        btn.className = 'chip chip-subfase-rafaga';
+        btn.innerText = nombre;
+        btn.onclick = (e) => { 
+            e.preventDefault(); 
+            document.querySelectorAll('.chip-subfase-rafaga').forEach(c => c.classList.remove('seleccionado'));
+            btn.classList.add('seleccionado');
+            actualizarDefectosRafaga(fId, aId, sId, module);
+        };
+        contenedor.appendChild(btn);
+    });
+    if(contenedor.firstChild) contenedor.firstChild.click();
+}
+
+function actualizarDefectosRafaga(fId, aId, sId, module) {
+    const contenedor = document.getElementById('rafagaChipsDefectos');
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+    const lista = module.getDefectos(fId, aId, sId);
+
+    if (lista.length === 0) {
+        contenedor.innerHTML = '<span class="placeholder-text">No hay defectos.</span>';
+        return;
+    }
+
+    lista.forEach(def => {
+        const nombreDefecto = def.Nombre_Falla || def.Nombre || def.nombre || def.Name || def.name || def.id;
+        const btn = document.createElement('button');
+        btn.className = 'chip chip-defecto-rafaga';
+        btn.innerText = nombreDefecto;
+        btn.onclick = (e) => { 
+            e.preventDefault(); 
+            document.querySelectorAll('.chip-defecto-rafaga').forEach(c => c.classList.remove('seleccionado'));
+            btn.classList.add('seleccionado');
+        };
+        contenedor.appendChild(btn);
+    });
+}
 
 // ==========================================
 // 🎤 MOTOR DE DICTADO POR VOZ (SPEECH TO TEXT)
@@ -1073,7 +1244,56 @@ function initVoiceDictation(inputId, btnId) {
     };
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    initVoiceDictation('issueComment', 'micBtnNormal');
-    initVoiceDictation('rapidComentario', 'micBtnRapid');
-});
+// ==========================================
+// 🎤 INICIALIZACIÓN DIRECTA DE MICRÓFONOS Y ANTÍDOTO
+// ==========================================
+setTimeout(() => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel(); // 💊 ANTÍDOTO VOZ (Borra atascos)
+    if (typeof initVoiceDictation === 'function') {
+        initVoiceDictation('textoIncidenciaNivelDios', 'btnVozNivelDios');
+        initVoiceDictation('rapidComentario', 'micBtnRapid');
+    }
+}, 500);
+
+// ==========================================
+// 🎛️ DELEGACIÓN UNIVERSAL (PANEL NORMAL Y RÁFAGA)
+// ==========================================
+document.addEventListener('click', (e) => {
+    // 🔊 FIX VOZ: Desatasca el motor de voz del navegador al hacer clic
+    if (window.speechSynthesis && window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+    }
+
+    // 1. PANEL NORMAL (Prioridad y Estado antiguos)
+    const uiChip = e.target.closest('.ui-chip');
+    if (uiChip) {
+        e.preventDefault();
+        const container = uiChip.parentElement;
+        if (container) {
+            container.querySelectorAll('.ui-chip').forEach(c => c.classList.remove('active', 'seleccionado'));
+            uiChip.classList.add('active', 'seleccionado');
+        }
+    }
+
+    // 2. PANEL NUEVO - Prioridad (.chip-prio)
+    const btnPrio = e.target.closest('.chip-prio');
+    if (btnPrio) {
+        e.preventDefault();
+        const container = btnPrio.closest('.chips-group-circle');
+        if (container) {
+            container.querySelectorAll('.chip-prio').forEach(c => c.classList.remove('seleccionado', 'active'));
+            btnPrio.classList.add('seleccionado', 'active');
+        }
+    }
+
+    // 3. PANEL NUEVO - Estado (.chip-estado)
+    const btnEstado = e.target.closest('.chip-estado');
+    if (btnEstado) {
+        e.preventDefault();
+        const container = btnEstado.closest('.chips-group-circle');
+        if (container) {
+            container.querySelectorAll('.chip-estado').forEach(c => c.classList.remove('seleccionado', 'active'));
+            btnEstado.classList.add('seleccionado', 'active');
+        }
+    }
+}, true); // <--- ESTE 'true' ES LA CLAVE PARA QUE LOS BOTONES FUNCIONEN

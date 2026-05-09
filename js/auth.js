@@ -76,7 +76,7 @@ export function processLogin() {
     State.userName = userMatch.Nombre || userMatch.nombre || "Usuario";
     localStorage.setItem('userName', State.userName);
     checkAuthStatus();
-    if (window.asistenteVoz) window.asistenteVoz(`Bienvenido al sistema de inspección Sumatra Q, ${State.userName.split(' ')[0]}. Base de datos sincronizada.`);
+    if (window.asistenteVoz) window.asistenteVoz(`Estas en Sumatra Q, ${State.userName.split(' ')[0]}. Base de datos sincronizada.`);
   } else {
     alert("❌ Credenciales incorrectas. Revisa tu Excel.");
   }
